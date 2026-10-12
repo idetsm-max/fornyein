@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For Nyein — Video Maker</title>
+<style>
+  :root{--bg:#10131a;--card:#181d28;--line:#2a3142;--tx:#e8ecf5;--mut:#8894ad;--ac:#5b9dff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Noto Sans Myanmar","Padauk",sans-serif}
+  header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+  main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;padding:14px}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+  button,select,input,textarea{font:inherit;color:var(--tx);background:#0e121a;border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+  button{cursor:pointer}button:hover{border-color:var(--ac)}button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+  canvas{width:100%;display:block;background:#000;border-radius:6px}
+  textarea{width:100%;height:130px;font-size:16px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .mut{color:var(--mut);font-size:13px}
+  #list{max-height:340px;overflow:auto;margin-top:8px}
+  .sub{display:grid;grid-template-columns:28px 1fr 78px 78px;gap:6px;margin-bottom:6px;align-items:center}
+  .sub input{width:100%;padding:4px 6px}
+  progress{width:200px}
+</style>
+</head>
+<body>
+<header>
+  <b>For Nyein</b>
+  <select id="size"></select>
+  <label class="mut">အသံ/Video: <input id="file" type="file" accept="audio/*,video/*"></label>
+  <button id="saveJson">Project export</button>
+  <label class="mut">import: <input id="loadJson" type="file" accept=".json"></label>
+  <span class="mut" id="status"></span>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <canvas id="cv"></canvas>
+      <div class="row">
+        <button id="play">▶ Play</button>
+        <span class="mut" id="time">0.00 / 0.00</span>
+        <button id="export" class="pri">MP4 ထုတ်မယ်</button>
+        <button id="cancel" hidden>Cancel</button>
+        <progress id="prog" value="0" max="1" hidden></progress>
+      </div>
+      <canvas id="wf" width="1000" height="90" style="margin-top:10px;cursor:pointer"></canvas>
+      <div class="mut" style="margin-top:4px">Waveform (ကလစ်နှိပ်ရင် ရွှေ့ပါမယ်)၊ အောက်ခြေ အပြာတန်းတွေက စာတန်းတွေပါ။</div>
+    </div>
+  </section>
+  <section>
+    <div class="card">
+      <b>စာသား (ကဗျာ)</b>
+      <textarea id="txt" placeholder="ကဗျာစာသား paste လုပ်ပါ။ စာကြောင်း ၂ ကြောင်းအထက်ရှိရင် တစ်ကြောင်း=တစ်တန်း၊ မရှိရင် ။ ၊ နဲ့ ခွဲပါမယ်။"></textarea>
+      <div class="row">
+        <button id="split">စာတန်းခွဲမယ်</button>
+        <span class="mut">အသံကြာချိန်ကို syllable အရေအတွက်အချိုးနဲ့ ယာယီ ခွဲထားပေးပါမယ်</span>
+      </div>
+      <div class="row">
+        Font <input id="font" size="16">
+        အရွယ် % <input id="fsz" type="number" min="2" max="20" step="0.5" style="width:70px">
+        အမြင့် % <input id="ypos" type="number" min="10" max="95" step="1" style="width:70px">
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <b>စာတန်းများ</b> <span class="mut" id="cnt"></span>
+      <div id="list"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH }
+  from 'https://cdn.jsdelivr.net/npm/mediabunny@1/+esm';
+
+const $ = (id) => document.getElementById(id);
+const FPS = 30;
+const SIZES = {
+  '16:9 · 1280×720': [1280, 720], '16:9 · 1920×1080': [1920, 1080],
+  '9:16 · 720×1280': [720, 1280], '9:16 · 1080×1920': [1080, 1920],
+  '1:1 · 720×720': [720, 720], '1:1 · 1080×1080': [1080, 1080],
+};
+const defaults = () => ({
+  version: 1, output: { size: '16:9 · 1280×720', fps: FPS },
+  media: { main: null }, audioOffset: 0,
+  style: { font: 'Noto Sans Myanmar', sizePct: 6, yPct: 80 },
+  subtitles: [],
+});
+let P = defaults();
+let audio = null;                       // main AudioBuffer, decoded once
+const ac = new AudioContext({ sampleRate: 48000 });
+const cv = $('cv'), cx = cv.getContext('2d'), wf = $('wf'), wx = wf.getContext('2d');
+const setStatus = (s) => { $('status').textContent = s; };
+
+// ---------- IndexedDB autosave (project JSON only) ----------
+const dbp = new Promise((res, rej) => {
+  const r = indexedDB.open('fornyein', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv');
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+});
+const kvSet = async (k, v) => { const d = await dbp; return new Promise((res, rej) => {
+  const tx = d.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k);
+  tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); };
+const kvGet = async (k) => { const d = await dbp; return new Promise((res, rej) => {
+  const q = d.transaction('kv').objectStore('kv').get(k);
+  q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); };
+let saveTimer;
+const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(async () => {
+  try { await kvSet('project', P); setStatus('autosave ✓'); } catch { setStatus('autosave မရ'); } }, 500); };
+
+// ---------- Myanmar helpers ----------
+function syllables(str) {
+  const cs = [...str], out = []; let cur = '';
+  const isCons = (c) => /[\u1000-\u1021\u1023-\u1027\u1029\u102A\u103F\u104E]/.test(c);
+  for (let i = 0; i < cs.length; i++) {
+    const c = cs[i], next = cs[i + 1], prev = cs[i - 1];
+    if (cur && isCons(c) && next !== '\u103A' && next !== '\u1039' && prev !== '\u1039') { out.push(cur); cur = ''; }
+    cur += c;
+  }
+  if (cur) out.push(cur); return out;
+}
+const weight = (s) => Math.max(1, syllables(s.replace(/[\s၊။]/g, '')).length);
+const seg = new Intl.Segmenter('my', { granularity: 'word' });
+function wrap(c, text, maxW) {
+  const lines = [];
+  for (const para of text.split('\n')) {
+    let cur = '';
+    for (const { segment } of seg.segment(para)) {
+      if (cur && c.measureText(cur + segment).width > maxW) { lines.push(cur.trim()); cur = segment.trimStart(); }
+      else cur += segment;
+    }
+    lines.push(cur.trim());
+  }
+  return lines.filter(Boolean);
+}
+
+// ---------- the ONE draw function (preview = export) ----------
+function drawFrame(c, W, H, t) {
+  c.fillStyle = '#10131a'; c.fillRect(0, 0, W, H);
+  const s = P.subtitles.find((x) => t >= x.start && t < x.end);
+  if (!s) return;
+  const fs = Math.round(H * P.style.sizePct / 100);
+  c.font = `${fs}px "${P.style.font}", sans-serif`;
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  c.lineWidth = fs / 7; c.strokeStyle = '#000'; c.fillStyle = '#fff';
+  const lines = wrap(c, s.text, W * 0.86), lh = fs * 1.5;
+  const y0 = H * P.style.yPct / 100 - ((lines.length - 1) * lh) / 2;
+  lines.forEach((l, i) => { c.strokeText(l, W / 2, y0 + i * lh); c.fillText(l, W / 2, y0 + i * lh); });
+}
+const duration = () => audio ? audio.duration : Math.max(10, ...P.subtitles.map((s) => s.end));
+
+// ---------- playback (audio clock is master) ----------
+let playing = false, src = null, startAC = 0, startPos = 0, tpos = 0;
+const nowT = () => playing ? startPos + (ac.currentTime - startAC) : tpos;
+function play() {
+  if (!audio) { setStatus('အသံဖိုင် အရင်ရွေးပါ'); return; }
+  ac.resume(); if (tpos >= audio.duration - 0.05) tpos = 0;
+  src = ac.createBufferSource(); src.buffer = audio; src.connect(ac.destination);
+  src.start(0, tpos); startAC = ac.currentTime; startPos = tpos; playing = true;
+  $('play').textContent = '⏸ Pause'; loop();
+}
+function pause() {
+  if (!playing) return; tpos = nowT(); playing = false;
+  src.onended = null; try { src.stop(); } catch {} $('play').textContent = '▶ Play';
+}
+function seek(t) { const was = playing; pause(); tpos = Math.max(0, Math.min(t, duration())); if (was) play(); redraw(); }
+function loop() { if (!playing) return; if (nowT() >= audio.duration) { pause(); tpos = 0; } redraw(); if (playing) requestAnimationFrame(loop); }
+
+function redraw() {
+  const [W, H] = SIZES[P.output.size];
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const t = nowT(); drawFrame(cx, W, H, t);
+  $('time').textContent = `${t.toFixed(2)} / ${duration().toFixed(2)}`;
+  drawWave(t);
+}
+function drawWave(t) {
+  const w = wf.width, h = wf.height; wx.clearRect(0, 0, w, h); wx.fillStyle = '#0e121a'; wx.fillRect(0, 0, w, h);
+  const D = duration();
+  if (audio) {
+    const d = audio.getChannelData(0), step = Math.floor(d.length / w) || 1; wx.fillStyle = '#5b9dff';
+    for (let x = 0; x < w; x++) { let m = 0; for (let i = x * step; i < (x + 1) * step && i < d.length; i += 8) m = Math.max(m, Math.abs(d[i]));
+      const bh = m * (h - 22); wx.fillRect(x, (h - 22) / 2 - bh / 2, 1, Math.max(1, bh)); }
+  }
+  P.subtitles.forEach((s, i) => { wx.fillStyle = i % 2 ? '#2f6fd0' : '#3f84f0';
+    wx.fillRect(s.start / D * w, h - 16, Math.max(1, (s.end - s.start) / D * w - 1), 14); });
+  wx.fillStyle = '#ff5b6e'; wx.fillRect(t / D * w, 0, 2, h);
+}
+wf.onclick = (e) => { const r = wf.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * duration()); };
+$('play').onclick = () => playing ? pause() : play();
+
+// ---------- subtitles ----------
+function splitText(txt) {
+  const lines = txt.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+  return lines.length >= 2 ? lines : txt.split(/(?<=[။၊])\s*/).map((s) => s.trim()).filter(Boolean);
+}
+$('split').onclick = () => {
+  const parts = splitText($('txt').value); if (!parts.length) return;
+  const D = duration(), tot = parts.reduce((a, p) => a + weight(p), 0); let acc = 0;
+  P.subtitles = parts.map((text) => { const start = acc / tot * D; acc += weight(text);
+    return { text, start: +start.toFixed(2), end: +(acc / tot * D).toFixed(2), locked: false, confidence: 0 }; });
+  renderList(); save(); redraw();
+  setStatus('ယာယီ ချိန်ခွဲပြီး (အသံနဲ့ မကိုက်သေး — Timeline editor/alignment က နောက်အဆင့်)');
+};
+function renderList() {
+  const box = $('list'); box.innerHTML = ''; $('cnt').textContent = `(${P.subtitles.length})`;
+  P.subtitles.forEach((s, i) => {
+    const r = document.createElement('div'); r.className = 'sub';
+    r.innerHTML = `<span class="mut">${i + 1}</span><input value="" data-k="text"><input type="number" step="0.01" data-k="start"><input type="number" step="0.01" data-k="end">`;
+    const ins = r.querySelectorAll('input'); ins[0].value = s.text; ins[1].value = s.start; ins[2].value = s.end;
+    ins.forEach((el) => el.oninput = () => { const k = el.dataset.k;
+      s[k] = k === 'text' ? el.value : parseFloat(el.value) || 0; save(); redraw(); });
+    ins[0].onfocus = () => seek(s.start + 0.01);
+    box.appendChild(r);
+  });
+}
+
+// ---------- audio load (decode once) ----------
+$('file').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return; setStatus('decode လုပ်နေပါတယ်...');
+  try { audio = await ac.decodeAudioData(await f.arrayBuffer()); P.media.main = 'local:' + f.name;
+    tpos = 0; setStatus(`${f.name} — ${audio.duration.toFixed(1)} s`); save(); redraw();
+  } catch (err) { setStatus('အသံဖတ်မရပါ: ' + err.message); }
+};
+
+// ---------- settings / project file ----------
+for (const k of Object.keys(SIZES)) $('size').add(new Option(k, k));
+$('size').onchange = () => { P.output.size = $('size').value; save(); redraw(); };
+$('font').onchange = async () => { P.style.font = $('font').value.trim() || 'sans-serif';
+  try { await document.fonts.load(`40px "${P.style.font}"`, 'မြန်မာ'); } catch {} save(); redraw(); };
+$('fsz').oninput = () => { P.style.sizePct = parseFloat($('fsz').value) || 6; save(); redraw(); };
+$('ypos').oninput = () => { P.style.yPct = parseFloat($('ypos').value) || 80; save(); redraw(); };
+function applyUI() {
+  $('size').value = P.output.size; $('font').value = P.style.font; $('fsz').value = P.style.sizePct; $('ypos').value = P.style.yPct;
+  renderList(); redraw();
+}
+$('saveJson').onclick = () => { const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(P, null, 2)], { type: 'application/json' }));
+  a.download = 'project.json'; a.click(); };
+$('loadJson').onchange = async (e) => { const f = e.target.files[0]; if (!f) return;
+  try { P = { ...defaults(), ...JSON.parse(await f.text()) }; applyUI(); save(); setStatus('project ဖွင့်ပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)'); }
+  catch { setStatus('project ဖိုင်ဖတ်မရပါ'); } };
+
+// ---------- export ----------
+let cancelFlag = false; $('cancel').onclick = () => { cancelFlag = true; };
+async function render(audioCodec) {
+  const [W, H] = SIZES[P.output.size], c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'), N = Math.ceil(audio.duration * FPS);
+  const out = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+  const vs = new CanvasSource(c, { codec: 'avc', bitrate: QUALITY_HIGH }); out.addVideoTrack(vs, { frameRate: FPS });
+  const as = new AudioBufferSource({ codec: audioCodec, bitrate: QUALITY_HIGH }); out.addAudioTrack(as);
+  await out.start(); await as.add(audio);
+  for (let i = 0; i < N; i++) {
+    if (cancelFlag) throw new Error('cancelled');
+    drawFrame(g, W, H, i / FPS); await vs.add(i / FPS, 1 / FPS);
+    if (i % 15 === 0) { $('prog').value = i / N; setStatus(`render ${Math.round(i / N * 100)}%`); }
+  }
+  await out.finalize(); return out.target.buffer;
+}
+$('export').onclick = async () => {
+  if (!audio) { setStatus('အသံဖိုင် အရင်ရွေးပါ'); return; }
+  pause(); cancelFlag = false; $('prog').hidden = false; $('cancel').hidden = false; $('export').disabled = true;
+  try { await document.fonts.load(`40px "${P.style.font}"`, 'မြန်မာ'); } catch {}
+  let buf;
+  try { try { buf = await render('aac'); } catch (e) { if (e.message === 'cancelled') throw e; setStatus('AAC မရလို့ Opus နဲ့ ပြန်စမ်းနေပါတယ်'); buf = await render('opus'); }
+    const ratio = P.output.size.split(' ')[0].replace(':', 'x'), base = (P.media.main || 'poem').replace(/^local:/, '').replace(/\.[^.]+$/, '');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
+    a.download = `${base}_${ratio}.mp4`; a.click(); setStatus(`ပြီးပါပြီ — ${(buf.byteLength / 1048576).toFixed(1)} MB`);
+  } catch (e) { setStatus(e.message === 'cancelled' ? 'Cancel လုပ်ပြီး' : 'Export မအောင်: ' + e.message); }
+  $('prog').hidden = true; $('cancel').hidden = true; $('export').disabled = false;
+};
+document.addEventListener('keydown', (e) => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { e.preventDefault(); $('play').click(); } });
+
+// ---------- boot ----------
+(async () => { try { const s = await kvGet('project'); if (s) P = { ...defaults(), ...s }; } catch {}
+  try { await document.fonts.load(`40px "${P.style.font}"`, 'မြန်မာ'); } catch {}
+  applyUI(); setStatus(P.subtitles.length ? 'project ပြန်ယူပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)' : ''); })();
+</script>
+</body>
+</html>
