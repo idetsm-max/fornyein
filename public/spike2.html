@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spike 2 — MP4 export test</title>
+<style>
+  body{font-family:system-ui,"Noto Sans Myanmar","Padauk",sans-serif;margin:24px;max-width:900px}
+  button{font-size:16px;padding:8px 16px}
+  pre{background:#f4f4f4;padding:10px;white-space:pre-wrap}
+  video,canvas{max-width:100%;background:#000;margin-top:10px}
+</style>
+</head>
+<body>
+<h2>Spike 2 — Canvas + အသံ → MP4 (Mediabunny)</h2>
+<p>၁၀ စက္ကန့် 1280×720 30fps video ထုတ်ပါမယ်။ <b>၁ စက္ကန့်၊ ၄ စက္ကန့်၊ ၇ စက္ကန့်</b> မှာ စာတန်းအသစ် ပေါ်ပြီး အဲဒီအချိန်တိုင်း "ပီ" အသံ (beep) ထွက်ပါမယ်။ စာတန်းနဲ့ beep တိုက်ဆိုင်မှု ကြည့်ပါ။</p>
+<p>Font: <input id="font" value="Noto Sans Myanmar"> <button id="go">MP4 ထုတ်မယ်</button></p>
+<pre id="log">အဆင်သင့်</pre>
+<canvas id="cv" width="1280" height="720" style="width:640px"></canvas>
+<div id="out"></div>
+
+<h3>Syllable split test (ကိုယ်ပိုင် function)</h3>
+<pre id="syl"></pre>
+
+<script type="module">
+import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH }
+  from 'https://cdn.jsdelivr.net/npm/mediabunny@1/+esm';
+
+const W = 1280, H = 720, FPS = 30, DUR = 10, SR = 48000;
+const SUBS = [
+  { text: 'မြန်မာစာ ကဗျာ စမ်းသပ်ချက်', start: 1, end: 3.5 },
+  { text: 'ကြွက်၊ ကျွန်း၊ ပြည်ထောင်စု၊ ဂျပန်', start: 4, end: 6.5 },
+  { text: 'အသံနဲ့ စာတန်း ကိုက်ရဲ့လား', start: 7, end: 9.5 },
+];
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const logEl = document.getElementById('log');
+const log = (s) => { logEl.textContent += '\n' + s; };
+
+// ---- own syllable splitter (Myanmar) ----
+function syllables(str) {
+  const cs = [...str], out = []; let cur = '';
+  const isCons = (c) => /[\u1000-\u1021\u1023-\u1027\u1029\u102A\u103F\u104E]/.test(c);
+  for (let i = 0; i < cs.length; i++) {
+    const c = cs[i], next = cs[i + 1], prev = cs[i - 1];
+    if (cur && isCons(c) && next !== '\u103A' && next !== '\u1039' && prev !== '\u1039') {
+      out.push(cur); cur = '';
+    }
+    cur += c;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+document.getElementById('syl').textContent =
+  SUBS.map(s => s.text + '\n  → ' + syllables(s.text).join(' | ')).join('\n') +
+  '\n\n(မှန်/မမှန် ကိုယ်တိုင်ကြည့်ပြီး မှတ်ပါ)';
+
+// ---- one drawFrame(t) for preview + export ----
+function drawFrame(t, font) {
+  ctx.fillStyle = '#10131a'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#1d2433'; ctx.fillRect(0, H - 8, W * (t / DUR), 8);
+  ctx.fillStyle = '#8894ad'; ctx.font = '28px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('t = ' + t.toFixed(2) + ' s  (frame ' + Math.round(t * FPS) + ')', 24, 44);
+  const s = SUBS.find(x => t >= x.start && t < x.end);
+  if (s) {
+    ctx.font = `64px "${font}", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 8; ctx.strokeStyle = '#000'; ctx.lineJoin = 'round';
+    ctx.strokeText(s.text, W / 2, H / 2);
+    ctx.fillStyle = '#fff'; ctx.fillText(s.text, W / 2, H / 2);
+    ctx.textBaseline = 'alphabetic';
+  }
+}
+
+// ---- test audio: soft hum + beep (880Hz, 120ms) at each subtitle start ----
+function makeAudio() {
+  const len = SR * DUR;
+  const buf = new AudioBuffer({ length: len, sampleRate: SR, numberOfChannels: 2 });
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = 0.03 * Math.sin(2 * Math.PI * 220 * i / SR);
+    for (const s of SUBS) {
+      const a = Math.floor(s.start * SR), n = Math.floor(0.12 * SR);
+      for (let i = 0; i < n; i++) {
+        const env = Math.min(1, i / 200, (n - i) / 200);
+        d[a + i] += 0.5 * env * Math.sin(2 * Math.PI * 880 * i / SR);
+      }
+    }
+  }
+  return buf;
+}
+
+async function run(audioCodec) {
+  const font = document.getElementById('font').value.trim() || 'sans-serif';
+  try { await document.fonts.load(`64px "${font}"`, 'မြန်မာ'); } catch {}
+  const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+  const videoSource = new CanvasSource(cv, { codec: 'avc', bitrate: QUALITY_HIGH });
+  output.addVideoTrack(videoSource, { frameRate: FPS });
+  const audioSource = new AudioBufferSource({ codec: audioCodec, bitrate: QUALITY_HIGH });
+  output.addAudioTrack(audioSource);
+  await output.start();
+  await audioSource.add(makeAudio());
+  const N = DUR * FPS;
+  for (let i = 0; i < N; i++) {
+    const t = i / FPS;
+    drawFrame(t, font);
+    await videoSource.add(t, 1 / FPS);
+    if (i % 30 === 0) log(`frame ${i}/${N}`);
+  }
+  await output.finalize();
+  return output.target.buffer;
+}
+
+document.getElementById('go').onclick = async () => {
+  logEl.textContent = 'စတင်နေပါတယ်...';
+  const t0 = performance.now();
+  let buf, used = 'aac';
+  try { buf = await run('aac'); }
+  catch (e) {
+    log('AAC မအောင်ပါ: ' + e);
+    try { used = 'opus'; buf = await run('opus'); }
+    catch (e2) { log('Opus လည်း မအောင်ပါ: ' + e2); return; }
+  }
+  const blob = new Blob([buf], { type: 'video/mp4' });
+  const url = URL.createObjectURL(blob);
+  log(`ပြီးပါပြီ — audio=${used}, ${(blob.size / 1024).toFixed(0)} KB, ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+  document.getElementById('out').innerHTML =
+    `<video src="${url}" controls width="640"></video><p><a download="spike2.mp4" href="${url}">spike2.mp4 ဒေါင်းမယ်</a></p>`;
+};
+
+drawFrame(1.5, 'Noto Sans Myanmar');
+</script>
+</body>
+</html>
