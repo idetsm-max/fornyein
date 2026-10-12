@@ -13,6 +13,7 @@
   @media(max-width:900px){main{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
   button,select,input,textarea{font:inherit;color:var(--tx);background:#0e121a;border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+  input[type=color]{padding:0;width:34px;height:30px}
   button{cursor:pointer}button:hover{border-color:var(--ac)}button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
   button.rec{background:#c0392b;border-color:#c0392b;color:#fff}
   canvas{width:100%;display:block;background:#000;border-radius:6px}
@@ -82,6 +83,7 @@
         အရွယ် % <input id="fsz" type="number" min="2" max="20" step="0.5" style="width:70px">
         အမြင့် % <input id="ypos" type="number" min="10" max="95" step="1" style="width:70px">
       </div>
+      <div class="row" id="extra"></div>
     </div>
     <div class="card" style="margin-top:14px">
       <b>စာတန်းများ</b> <span class="mut" id="cnt"></span>
@@ -163,11 +165,15 @@ function wrap(c, text, maxW) {
   return lines.filter(Boolean);
 }
 
+// ---------- hooks for modules in /ext (window.FN) ----------
+const FN = window.FN = {
+  get P() { return P; }, get audio() { return audio; }, ac, cv, wrap, syllables, setStatus,
+  redraw: () => redraw(), save: () => save(), changed: () => changed(), snap: () => snap(),
+  drawSubtitle: null,   // module may replace the subtitle renderer: (ctx, W, H, subtitle, t)
+};
+
 // ---------- the ONE draw function (preview = export) ----------
-function drawFrame(c, W, H, t) {
-  c.fillStyle = '#10131a'; c.fillRect(0, 0, W, H);
-  const s = P.subtitles.find((x) => t >= x.start && t < x.end);
-  if (!s) return;
+function defaultSubtitle(c, W, H, s) {
   const fs = Math.round(H * P.style.sizePct / 100);
   c.font = `${fs}px "${P.style.font}", sans-serif`;
   c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
@@ -175,6 +181,11 @@ function drawFrame(c, W, H, t) {
   const lines = wrap(c, s.text, W * 0.86), lh = fs * 1.5;
   const y0 = H * P.style.yPct / 100 - ((lines.length - 1) * lh) / 2;
   lines.forEach((l, i) => { c.strokeText(l, W / 2, y0 + i * lh); c.fillText(l, W / 2, y0 + i * lh); });
+}
+function drawFrame(c, W, H, t) {
+  c.fillStyle = '#10131a'; c.fillRect(0, 0, W, H);
+  const s = P.subtitles.find((x) => t >= x.start && t < x.end);
+  if (s) (FN.drawSubtitle || defaultSubtitle)(c, W, H, s, t);
 }
 const duration = () => audio ? audio.duration : Math.max(10, ...P.subtitles.map((s) => s.end));
 
@@ -330,13 +341,14 @@ $('file').onchange = async (e) => {
 
 // ---------- settings / project file ----------
 for (const k of Object.keys(SIZES)) $('size').add(new Option(k, k));
-$('size').onchange = () => { P.output.size = $('size').value; save(); redraw(); };
+$('size').onchange = () => { P.output.size = $('size').value; $('ypos').value = P.layout?.[P.output.size.split(' ')[0]]?.y ?? P.style.yPct; save(); redraw(); };
 $('font').onchange = async () => { P.style.font = $('font').value.trim() || 'sans-serif';
   try { await document.fonts.load(`40px "${P.style.font}"`, 'မြန်မာ'); } catch {} save(); redraw(); };
 $('fsz').oninput = () => { P.style.sizePct = parseFloat($('fsz').value) || 6; save(); redraw(); };
 $('ypos').oninput = () => { P.style.yPct = parseFloat($('ypos').value) || 80; save(); redraw(); };
 function applyUI() {
-  $('size').value = P.output.size; $('font').value = P.style.font; $('fsz').value = P.style.sizePct; $('ypos').value = P.style.yPct;
+  $('size').value = P.output.size; $('font').value = P.style.font; $('fsz').value = P.style.sizePct;
+  $('ypos').value = P.layout?.[P.output.size.split(' ')[0]]?.y ?? P.style.yPct;
   $('lead').value = P.leadMs; $('tail').value = P.tailMs; $('calib').value = P.calibMs;
   renderList(); redraw();
 }
@@ -404,7 +416,8 @@ document.addEventListener('keyup', (e) => { if (e.code === 'KeyT') tapUp(); });
 // ---------- boot ----------
 (async () => { try { const s = await kvGet('project'); if (s) P = { ...defaults(), ...s }; } catch {}
   try { await document.fonts.load(`40px "${P.style.font}"`, 'မြန်မာ'); } catch {}
-  applyUI(); setStatus(P.subtitles.length ? 'project ပြန်ယူပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)' : ''); })();
+  applyUI(); setStatus(P.subtitles.length ? 'project ပြန်ယူပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)' : '');
+  try { await import('/ext/style.js'); } catch (e) { console.warn('ext/style.js', e); setStatus('style module မတင်နိုင်ပါ: ' + e.message); } })();
 </script>
 </body>
 </html>
