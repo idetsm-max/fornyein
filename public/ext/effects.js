@@ -7,13 +7,13 @@ const rnd = (n) => { const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453; retu
 const seg = new Intl.Segmenter('my', { granularity: 'word' });
 const EASE = { out: (x) => 1 - Math.pow(1 - x, 3), back: (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); } };
 
-// [id, label, needsTest]  — needsTest = မြန်မာစာနဲ့ စမ်းရန်
+// [id, label, needsTest]  (needsTest = Myanmar text still to be verified)
 const FXLIST = [
   ['outline', 'Outline', 0], ['shadow', 'Shadow', 0], ['longshadow', 'Long Shadow', 1], ['glow', 'Glow', 0], ['neon', 'Neon', 0],
   ['gradient', 'Gradient', 0], ['gold', 'Gold / Metallic', 1], ['emboss', '3D / Emboss', 1], ['float', 'Float', 0], ['pulse', 'Pulse', 0],
   ['shimmer', 'Shimmer', 0], ['flicker', 'Neon Flicker', 0], ['shake', 'Shake', 1], ['wave', 'Wave', 1], ['glitch', 'Glitch', 1],
 ];
-const ANIMS_IN = [['none', 'မလုပ်'], ['fade', 'Fade'], ['slideUp', 'Slide ပေါ်'], ['slideDown', 'Slide ေအာက်'], ['slideLeft', 'Slide ဘယ်'], ['slideRight', 'Slide ညာ'], ['zoom', 'Zoom'], ['pop', 'Pop'], ['blur', 'Blur-in'], ['typewriter', 'Typewriter'], ['word', 'Word reveal']];
+const ANIMS_IN = [['none', 'None'], ['fade', 'Fade'], ['slideUp', 'Slide ↑'], ['slideDown', 'Slide ↓'], ['slideLeft', 'Slide ←'], ['slideRight', 'Slide →'], ['zoom', 'Zoom'], ['pop', 'Pop'], ['blur', 'Blur'], ['typewriter', 'Typewriter'], ['word', 'Word reveal']];
 const ANIMS_OUT = ANIMS_IN.filter(([k]) => !['typewriter', 'word'].includes(k));
 
 // ---------- animation state ----------
@@ -141,7 +141,7 @@ card.append(mk('b', { textContent: 'Effect / Animation / Preset' }));
 const presetRow = mk('div', { className: 'row' }); card.append(presetRow);
 const animRow = mk('div', { className: 'row mut' }); card.append(animRow);
 const fxGrid = mk('div', { className: 'row' }); fxGrid.style.display = 'grid'; fxGrid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(230px,1fr))'; card.append(fxGrid);
-card.append(mk('div', { className: 'mut', style: 'margin-top:8px', textContent: '⚠ = မြန်မာစာနဲ့ စမ်းရန် (သရ/သတ် နေရာ မလွဲတာ ကိုယ်တိုင်စစ်ပါ)။ Effect တစ်ခုထက်မက ထပ်သုံးလို့ရပါတယ်၊ intensity slider ပါ၍။ Preview နှေးရင် Glow/Neon/Shadow ကို ပိတ်ပါ။' }));
+card.append(mk('div', { className: 'mut', style: 'margin-top:8px', textContent: '⚠ = မြန်မာစာနဲ့ စမ်းရန် (သရ/သတ် နေရာ မလွဲတာ ကိုယ်တိုင်စစ်ပါ)။ Effect တစ်ခုထက်မက ထပ်သုံးလို့ရပါတယ်၊ intensity slider ပါပါတယ်။ Preview နှေးရင် Glow/Neon/Shadow ကို ပိတ်ပါ။' }));
 
 const rows = {};
 for (const [id, label, test] of FXLIST) {
@@ -159,7 +159,7 @@ for (const [id, label, test] of FXLIST) {
 const selIn = mk('select'), selOut = mk('select'), durIn = mk('input', { type: 'number', min: 0.05, max: 2, step: 0.05, value: 0.3 }); durIn.style.width = '70px';
 ANIMS_IN.forEach(([k, l]) => selIn.add(new Option(l, k))); ANIMS_OUT.forEach(([k, l]) => selOut.add(new Option(l, k)));
 const boxCb = mk('input', { type: 'checkbox' });
-animRow.append('စတင်', selIn, 'ပြီးပြီပြီ', selOut, 'ကြာ s', durIn, mk('label', {}, [boxCb, ' နောက်ခံ bar']));
+animRow.append('In', selIn, 'Out', selOut, 'Duration (s)', durIn, mk('label', {}, [boxCb, ' နောက်ခံ bar']));
 const setAnim = () => { P().anim = { in: selIn.value, out: selOut.value, dur: +durIn.value || 0.3 }; FN.save(); FN.redraw(); };
 selIn.onchange = selOut.onchange = durIn.oninput = setAnim;
 boxCb.onchange = () => { const S = P().style; S.box = { ...(S.box || { color: '#000000', alpha: 0.55 }), on: boxCb.checked }; FN.save(); FN.redraw(); };
@@ -183,7 +183,7 @@ function renderPresets() {
   presetRow.append(mk('button', { textContent: '＋ Save as preset', onclick: () => {
     const name = prompt('Preset နာမည်?'); if (!name) return; const p = P();
     p.userPresets = { ...(p.userPresets || {}), [name]: { font: p.style.font, style: JSON.parse(JSON.stringify(p.style)), fx: JSON.parse(JSON.stringify(p.fx || [])), anim: { ...p.anim } } };
-    FN.save(); renderPresets(); FN.setStatus('Preset သိမ်းပြီး (project ထဲမှာ၊ R2 ကို နောက်မှ)');
+    FN.save(); renderPresets(); FN.setStatus('Preset သိမ်းပြီး (project ထဲမှာပဲ၊ R2 ကို နောက်မှ)');
   } }));
 }
 let lastP = P(); syncUI(); renderPresets(); FN.redraw();

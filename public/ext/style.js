@@ -1,5 +1,6 @@
 // Stage 5 module: fonts (GitHub), colors, per-aspect text position, Zawgyi -> Unicode.
 // Loaded by app.html via import('/ext/style.js'); talks to the app through window.FN.
+// Also loads every module listed in /ext/modules.json (e.g. effects.js).
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
 
@@ -22,12 +23,12 @@ async function loadFonts() {
     try {
       const ff = new FontFace(f.family, `url(/fonts/${encodeURI(f.file)})`, { weight: String(f.weight || 400) });
       await ff.load(); document.fonts.add(ff);
-      families.delete(f.family); // let the loaded file replace a same-named system entry
+      families.delete(f.family);
       for (const o of [...fontSel.options]) if (o.value === f.family) o.remove();
       addFamily(f.family, f.name + (f.myanmarFull === false ? ' (မြန်မာစာ မပြည့်စုံ)' : ''));
     } catch { missing.push(f.file); }
   }
-  if (missing.length) console.info('Font file မတွေ့သေး:', missing);
+  if (missing.length) console.info('Font file မတွေ့တာ:', missing);
   const cur = P().style.font;
   if (cur && !families.has(cur)) addFamily(cur);
   fontSel.value = cur || 'Noto Sans Myanmar';
@@ -39,6 +40,7 @@ fontSel.onchange = async () => {
 };
 $('font').style.display = 'none';
 $('font').before(fontSel);
+FN.fontSel = fontSel;
 
 // ---------- 2. Colors ----------
 const st = () => P().style;
@@ -54,8 +56,10 @@ function layout() {
   const p = P(); p.layout = p.layout || {};
   return p.layout[key()] || { x: 50, y: p.style.yPct || 80 };
 }
+FN.layout = layout;
 function setLayout(x, y) { P().layout = P().layout || {}; P().layout[key()] = { x: +x.toFixed(1), y: +y.toFixed(1) }; }
 
+// basic renderer (effects.js replaces it when loaded)
 FN.drawSubtitle = (c, W, H, s) => {
   const S = st(), L = layout(), fs = Math.round(H * S.sizePct / 100), cx = W * L.x / 100;
   c.font = `${fs}px "${S.font}", sans-serif`;
@@ -70,7 +74,7 @@ let dragging = false;
 function moveTo(e) {
   const r = FN.cv.getBoundingClientRect();
   let x = (e.clientX - r.left) / r.width * 100; const y = (e.clientY - r.top) / r.height * 100;
-  if (Math.abs(x - 50) < 2) x = 50;                                  // snap to center
+  if (Math.abs(x - 50) < 2) x = 50;
   setLayout(Math.max(5, Math.min(95, x)), Math.max(5, Math.min(95, y)));
   $('ypos').value = layout().y; FN.save(); FN.redraw();
 }
@@ -91,8 +95,8 @@ function loadRabbit() {
   if (window.Rabbit?.zg2uni) return Promise.resolve(window.Rabbit);
   rabbitP = rabbitP || new Promise((res, rej) => {
     const s = mk('script', { src: 'https://cdn.jsdelivr.net/npm/rabbit-node@1.0.3/dist/rabbit.min.js' });
-    s.onload = () => (window.Rabbit?.zg2uni ? res(window.Rabbit) : rej(new Error('Rabbit မတွေ့')));
-    s.onerror = () => rej(new Error('Rabbit ဒေါင်းမရ'));
+    s.onload = () => (window.Rabbit?.zg2uni ? res(window.Rabbit) : rej(new Error('Rabbit မတွေ့ပါ')));
+    s.onerror = () => rej(new Error('Rabbit ဒေါင်းမရပါ'));
     document.head.append(s);
   });
   return rabbitP;
@@ -105,7 +109,7 @@ async function convertText(ask) {
   try {
     const R = await loadRabbit(); ta.value = R.zg2uni(text);
     FN.setStatus('Zawgyi → Unicode ပြောင်းပြီး — စာသားကို ကြည့်ပြီး မှန်မမှန် စစ်ပါ');
-  } catch (e) { FN.setStatus('ပြောင်းမရ: ' + e.message); }
+  } catch (e) { FN.setStatus('ပြောင်းမရပါ: ' + e.message); }
 }
 $('txt').addEventListener('paste', () => setTimeout(() => convertText(true), 0));
 const zgBtn = mk('button', { textContent: 'Zawgyi → Unicode', title: 'စာသားကို Zawgyi လို့ သတ်မှတ်ပြီး ပြောင်းမယ်' });
@@ -114,3 +118,11 @@ $('split').after(zgBtn);
 
 await loadFonts();
 FN.redraw();
+
+// ---------- load other modules listed in /ext/modules.json ----------
+try {
+  const mods = await (await fetch('/ext/modules.json')).json();
+  for (const m of mods) {
+    try { await import(m); } catch (e) { console.warn(m, e); FN.setStatus('module မတင်နိုင်ပါ: ' + m); }
+  }
+} catch {}
