@@ -14,14 +14,17 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
   button,select,input,textarea{font:inherit;color:var(--tx);background:#0e121a;border:1px solid var(--line);border-radius:6px;padding:6px 10px}
   button{cursor:pointer}button:hover{border-color:var(--ac)}button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+  button.rec{background:#c0392b;border-color:#c0392b;color:#fff}
   canvas{width:100%;display:block;background:#000;border-radius:6px}
   textarea{width:100%;height:130px;font-size:16px}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
   .mut{color:var(--mut);font-size:13px}
   #list{max-height:340px;overflow:auto;margin-top:8px}
-  .sub{display:grid;grid-template-columns:28px 1fr 78px 78px;gap:6px;margin-bottom:6px;align-items:center}
+  .sub{display:grid;grid-template-columns:28px 1fr 78px 78px;gap:6px;margin-bottom:6px;align-items:center;padding:2px;border-radius:6px}
+  .sub.sel{background:#243049}
   .sub input{width:100%;padding:4px 6px}
   progress{width:200px}
+  kbd{background:#0e121a;border:1px solid var(--line);border-radius:4px;padding:0 5px}
 </style>
 </head>
 <body>
@@ -44,8 +47,26 @@
         <button id="cancel" hidden>Cancel</button>
         <progress id="prog" value="0" max="1" hidden></progress>
       </div>
-      <canvas id="wf" width="1000" height="90" style="margin-top:10px;cursor:pointer"></canvas>
-      <div class="mut" style="margin-top:4px">Waveform (ကလစ်နှိပ်ရင် ရွှေ့ပါမယ်)၊ အောက်ခြေ အပြာတန်းတွေက စာတန်းတွေပါ။</div>
+      <canvas id="wf" width="1000" height="120" style="margin-top:10px;cursor:pointer;touch-action:none"></canvas>
+      <div class="mut" style="margin-top:4px">Waveform ကိုနှိပ်ရင် ရွှေ့။ အောက်ခြေ အပြာတန်းကို ဆွဲရွှေ့၊ ဘေးအစွန်းကိုဆွဲရင် အစ/အဆုံး ပြင်။</div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <b>Timeline ကိရိယာ</b>
+      <div class="row">
+        <button id="tap">⏺ Tap-sync</button>
+        <button id="aud">▶ ဒီစာကြောင်း (အရင်/နောက် ၀.၃s)</button>
+        <button id="bSplit">Split (S)</button><button id="bMerge">Merge (M)</button><button id="bDel">ဖျက် (Del)</button>
+        <button id="bUndo">Undo</button><button id="bRedo">Redo</button>
+      </div>
+      <div class="row mut">
+        စော ပြမယ့် ms <input id="lead" type="number" value="100" style="width:70px">
+        ကြာထားမယ့် ms <input id="tail" type="number" value="200" style="width:70px">
+        Preview ချိန်ညှိ ms <input id="calib" type="number" value="0" style="width:70px">
+      </div>
+      <div class="mut" style="margin-top:8px;line-height:1.7">
+        <b>Tap-sync</b>: နှိပ်ပြီး အသံစဖွင့်ပါမယ်။ စာကြောင်းတစ်ကြောင်းစဖတ်ချိန် <kbd>T</kbd> ကိုနှိပ်ထားပြီး၊ ဖတ်ပြီးတာနဲ့ လွှတ်ပါ (စာတန်း ၁ ကြောင်း=နှိပ်တစ်ခါ)။<br>
+        <kbd>Space</kbd> play · <kbd>A</kbd> audition · <kbd>←/→</kbd> အစ ၁၀ms (Shift ၁၀၀ms၊ Alt=အဆုံး) · <kbd>S</kbd> split · <kbd>M</kbd> merge · <kbd>Del</kbd> · <kbd>Ctrl+Z/Y</kbd>
+      </div>
     </div>
   </section>
   <section>
@@ -54,7 +75,7 @@
       <textarea id="txt" placeholder="ကဗျာစာသား paste လုပ်ပါ။ စာကြောင်း ၂ ကြောင်းအထက်ရှိရင် တစ်ကြောင်း=တစ်တန်း၊ မရှိရင် ။ ၊ နဲ့ ခွဲပါမယ်။"></textarea>
       <div class="row">
         <button id="split">စာတန်းခွဲမယ်</button>
-        <span class="mut">အသံကြာချိန်ကို syllable အရေအတွက်အချိုးနဲ့ ယာယီ ခွဲထားပေးပါမယ်</span>
+        <span class="mut">အသံကြာချိန်ကို syllable အချိုးနဲ့ ယာယီခွဲပေးပါမယ်</span>
       </div>
       <div class="row">
         Font <input id="font" size="16">
@@ -82,7 +103,7 @@ const SIZES = {
 };
 const defaults = () => ({
   version: 1, output: { size: '16:9 · 1280×720', fps: FPS },
-  media: { main: null }, audioOffset: 0,
+  media: { main: null }, audioOffset: 0, calibMs: 0, leadMs: 100, tailMs: 200,
   style: { font: 'Noto Sans Myanmar', sizePct: 6, yPct: 80 },
   subtitles: [],
 });
@@ -91,6 +112,7 @@ let audio = null;                       // main AudioBuffer, decoded once
 const ac = new AudioContext({ sampleRate: 48000 });
 const cv = $('cv'), cx = cv.getContext('2d'), wf = $('wf'), wx = wf.getContext('2d');
 const setStatus = (s) => { $('status').textContent = s; };
+const r2 = (x) => Math.round(x * 100) / 100;
 
 // ---------- IndexedDB autosave (project JSON only) ----------
 const dbp = new Promise((res, rej) => {
@@ -107,6 +129,13 @@ const kvGet = async (k) => { const d = await dbp; return new Promise((res, rej) 
 let saveTimer;
 const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(async () => {
   try { await kvSet('project', P); setStatus('autosave ✓'); } catch { setStatus('autosave မရ'); } }, 500); };
+
+// ---------- Undo / Redo (snapshots of subtitles) ----------
+let hist = [], fut = [], sel = -1;
+const snap = () => { hist.push(JSON.stringify(P.subtitles)); if (hist.length > 100) hist.shift(); fut = []; };
+function undo() { if (!hist.length) return; fut.push(JSON.stringify(P.subtitles)); P.subtitles = JSON.parse(hist.pop()); sel = -1; changed(); }
+function redo() { if (!fut.length) return; hist.push(JSON.stringify(P.subtitles)); P.subtitles = JSON.parse(fut.pop()); sel = -1; changed(); }
+const changed = () => { renderList(); save(); redraw(); };
 
 // ---------- Myanmar helpers ----------
 function syllables(str) {
@@ -150,11 +179,14 @@ function drawFrame(c, W, H, t) {
 const duration = () => audio ? audio.duration : Math.max(10, ...P.subtitles.map((s) => s.end));
 
 // ---------- playback (audio clock is master) ----------
-let playing = false, src = null, startAC = 0, startPos = 0, tpos = 0;
+let playing = false, src = null, startAC = 0, startPos = 0, tpos = 0, rangeEnd = null;
 const nowT = () => playing ? startPos + (ac.currentTime - startAC) : tpos;
-function play() {
+function play(from, to) {
   if (!audio) { setStatus('အသံဖိုင် အရင်ရွေးပါ'); return; }
-  ac.resume(); if (tpos >= audio.duration - 0.05) tpos = 0;
+  if (playing) pause();
+  ac.resume(); if (from !== undefined) tpos = Math.max(0, from);
+  if (tpos >= audio.duration - 0.05) tpos = 0;
+  rangeEnd = to ?? null;
   src = ac.createBufferSource(); src.buffer = audio; src.connect(ac.destination);
   src.start(0, tpos); startAC = ac.currentTime; startPos = tpos; playing = true;
   $('play').textContent = '⏸ Pause'; loop();
@@ -164,28 +196,81 @@ function pause() {
   src.onended = null; try { src.stop(); } catch {} $('play').textContent = '▶ Play';
 }
 function seek(t) { const was = playing; pause(); tpos = Math.max(0, Math.min(t, duration())); if (was) play(); redraw(); }
-function loop() { if (!playing) return; if (nowT() >= audio.duration) { pause(); tpos = 0; } redraw(); if (playing) requestAnimationFrame(loop); }
+// ---- Tap-sync (hold T while a line is being read) ----
+let tapMode = false, tapIdx = 0, tapHeld = false;
+function loop() {
+  if (!playing) return;
+  const t = nowT();
+  if (t >= audio.duration || (rangeEnd !== null && t >= rangeEnd)) { pause(); if (rangeEnd === null) tpos = 0; rangeEnd = null; endTap(); }
+  if (tapHeld) { const s = P.subtitles[tapIdx]; if (s) s.end = r2(Math.max(s.start + 0.1, t + P.tailMs / 1000)); }
+  redraw(); if (playing) requestAnimationFrame(loop);
+}
+function endTap() { if (tapMode) { tapMode = false; tapHeld = false; $('tap').classList.remove('rec'); $('tap').textContent = '⏺ Tap-sync'; renderList(); save(); } }
+$('tap').onclick = () => {
+  if (tapMode) { endTap(); pause(); return; }
+  if (!audio || !P.subtitles.length) { setStatus('အသံဖိုင်နဲ့ စာတန်း အရင်လိုပါတယ်'); return; }
+  snap(); tapMode = true; tapIdx = 0; tapHeld = false; $('tap').classList.add('rec'); $('tap').textContent = '⏹ Tap-sync ရပ်'; play(0);
+};
+function tapDown() {
+  if (!tapMode || !playing || tapHeld || tapIdx >= P.subtitles.length) return;
+  const s = P.subtitles[tapIdx], t = nowT(); tapHeld = true;
+  s.start = r2(Math.max(0, t - P.leadMs / 1000)); s.end = r2(s.start + 0.2);
+  const p = P.subtitles[tapIdx - 1]; if (p && p.end > s.start) p.end = r2(Math.max(p.start + 0.05, s.start - 0.02));
+}
+function tapUp() {
+  if (!tapHeld) return; tapHeld = false;
+  const s = P.subtitles[tapIdx], t = nowT(); s.end = r2(Math.max(s.start + 0.1, t + P.tailMs / 1000));
+  tapIdx++; sel = tapIdx - 1; renderList();
+  if (tapIdx >= P.subtitles.length) { endTap(); setStatus('Tap-sync ပြီး — ပြီးမှ waveform ပေါ်မှာ ပြင်ပါ'); }
+}
 
 function redraw() {
   const [W, H] = SIZES[P.output.size];
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-  const t = nowT(); drawFrame(cx, W, H, t);
+  const t = nowT(), lat = playing ? (ac.outputLatency || 0) : 0;   // preview-only latency compensation
+  drawFrame(cx, W, H, Math.max(0, t - lat - P.calibMs / 1000));
   $('time').textContent = `${t.toFixed(2)} / ${duration().toFixed(2)}`;
   drawWave(t);
 }
+const STRIP = 34;
 function drawWave(t) {
-  const w = wf.width, h = wf.height; wx.clearRect(0, 0, w, h); wx.fillStyle = '#0e121a'; wx.fillRect(0, 0, w, h);
-  const D = duration();
+  const w = wf.width, h = wf.height; wx.fillStyle = '#0e121a'; wx.fillRect(0, 0, w, h);
+  const D = duration(), wh = h - STRIP - 6;
   if (audio) {
     const d = audio.getChannelData(0), step = Math.floor(d.length / w) || 1; wx.fillStyle = '#5b9dff';
     for (let x = 0; x < w; x++) { let m = 0; for (let i = x * step; i < (x + 1) * step && i < d.length; i += 8) m = Math.max(m, Math.abs(d[i]));
-      const bh = m * (h - 22); wx.fillRect(x, (h - 22) / 2 - bh / 2, 1, Math.max(1, bh)); }
+      const bh = m * wh; wx.fillRect(x, wh / 2 - bh / 2, 1, Math.max(1, bh)); }
   }
-  P.subtitles.forEach((s, i) => { wx.fillStyle = i % 2 ? '#2f6fd0' : '#3f84f0';
-    wx.fillRect(s.start / D * w, h - 16, Math.max(1, (s.end - s.start) / D * w - 1), 14); });
+  P.subtitles.forEach((s, i) => {
+    const x = s.start / D * w, bw = Math.max(2, (s.end - s.start) / D * w - 1);
+    wx.fillStyle = i === sel ? '#ffb02e' : (i % 2 ? '#2f6fd0' : '#3f84f0'); wx.fillRect(x, h - STRIP, bw, STRIP - 4);
+    if (bw > 14) { wx.fillStyle = '#fff'; wx.font = '12px system-ui'; wx.fillText(String(i + 1), x + 3, h - STRIP + 14); }
+  });
   wx.fillStyle = '#ff5b6e'; wx.fillRect(t / D * w, 0, 2, h);
 }
-wf.onclick = (e) => { const r = wf.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * duration()); };
+// ---- drag blocks on the timeline ----
+let drag = null;
+const wpos = (e) => { const r = wf.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * wf.width, y: (e.clientY - r.top) / r.height * wf.height }; };
+wf.onpointerdown = (e) => {
+  const { x, y } = wpos(e), D = duration(), t = x / wf.width * D;
+  if (y > wf.height - STRIP - 2) {
+    const i = P.subtitles.findIndex((s) => t >= s.start - 4 / wf.width * D && t <= s.end + 4 / wf.width * D);
+    if (i >= 0) {
+      const s = P.subtitles[i], th = 8 / wf.width * D; sel = i; snap();
+      drag = { i, mode: Math.abs(t - s.start) < th ? 'l' : Math.abs(t - s.end) < th ? 'r' : 'm', off: t - s.start, len: s.end - s.start };
+      wf.setPointerCapture(e.pointerId); renderList(); redraw(); return;
+    }
+  }
+  seek(t);
+};
+wf.onpointermove = (e) => {
+  if (!drag) return; const D = duration(), t = wpos(e).x / wf.width * D, s = P.subtitles[drag.i];
+  if (drag.mode === 'l') s.start = r2(Math.max(0, Math.min(t, s.end - 0.05)));
+  else if (drag.mode === 'r') s.end = r2(Math.max(t, s.start + 0.05));
+  else { s.start = r2(Math.max(0, t - drag.off)); s.end = r2(s.start + drag.len); }
+  syncRow(drag.i); save(); redraw();
+};
+wf.onpointerup = () => { drag = null; };
 $('play').onclick = () => playing ? pause() : play();
 
 // ---------- subtitles ----------
@@ -194,25 +279,46 @@ function splitText(txt) {
   return lines.length >= 2 ? lines : txt.split(/(?<=[။၊])\s*/).map((s) => s.trim()).filter(Boolean);
 }
 $('split').onclick = () => {
-  const parts = splitText($('txt').value); if (!parts.length) return;
+  const parts = splitText($('txt').value); if (!parts.length) return; snap();
   const D = duration(), tot = parts.reduce((a, p) => a + weight(p), 0); let acc = 0;
   P.subtitles = parts.map((text) => { const start = acc / tot * D; acc += weight(text);
-    return { text, start: +start.toFixed(2), end: +(acc / tot * D).toFixed(2), locked: false, confidence: 0 }; });
-  renderList(); save(); redraw();
-  setStatus('ယာယီ ချိန်ခွဲပြီး (အသံနဲ့ မကိုက်သေး — Timeline editor/alignment က နောက်အဆင့်)');
+    return { text, start: r2(start), end: r2(acc / tot * D), locked: false, confidence: 0 }; });
+  sel = -1; changed();
+  setStatus('ယာယီ ချိန်ခွဲပြီး — Tap-sync နဲ့ အသံကိုက်အောင် လုပ်ပါ');
 };
+function rowEl(i) { return $('list').children[i]; }
+function syncRow(i) { const r = rowEl(i); if (!r) return; const ins = r.querySelectorAll('input'); ins[0].value = P.subtitles[i].text; ins[1].value = P.subtitles[i].start; ins[2].value = P.subtitles[i].end; }
 function renderList() {
   const box = $('list'); box.innerHTML = ''; $('cnt').textContent = `(${P.subtitles.length})`;
   P.subtitles.forEach((s, i) => {
-    const r = document.createElement('div'); r.className = 'sub';
-    r.innerHTML = `<span class="mut">${i + 1}</span><input value="" data-k="text"><input type="number" step="0.01" data-k="start"><input type="number" step="0.01" data-k="end">`;
+    const r = document.createElement('div'); r.className = 'sub' + (i === sel ? ' sel' : '');
+    r.innerHTML = `<span class="mut">${i + 1}</span><input data-k="text"><input type="number" step="0.01" data-k="start"><input type="number" step="0.01" data-k="end">`;
     const ins = r.querySelectorAll('input'); ins[0].value = s.text; ins[1].value = s.start; ins[2].value = s.end;
-    ins.forEach((el) => el.oninput = () => { const k = el.dataset.k;
-      s[k] = k === 'text' ? el.value : parseFloat(el.value) || 0; save(); redraw(); });
-    ins[0].onfocus = () => seek(s.start + 0.01);
+    ins.forEach((el) => { el.onfocus = () => { sel = i; snap(); [...box.children].forEach((c, j) => c.classList.toggle('sel', j === i)); };
+      el.oninput = () => { const k = el.dataset.k; s[k] = k === 'text' ? el.value : parseFloat(el.value) || 0; save(); redraw(); }; });
+    ins[0].onclick = () => seek(s.start + 0.01);
     box.appendChild(r);
   });
 }
+function splitAt() {
+  const t = nowT(); let i = sel >= 0 && t > P.subtitles[sel]?.start && t < P.subtitles[sel]?.end ? sel : P.subtitles.findIndex((s) => t > s.start && t < s.end);
+  if (i < 0) { setStatus('Playhead က စာတန်းထဲ မရှိပါ'); return; } snap();
+  const s = P.subtitles[i], sy = syllables(s.text), k = Math.min(sy.length - 1, Math.max(1, Math.round(sy.length * (t - s.start) / (s.end - s.start))));
+  if (sy.length < 2) { setStatus('ခွဲလို့မရ (syllable ၁ ခုတည်း)'); return; }
+  const b = { text: sy.slice(k).join('').trim(), start: r2(t), end: s.end, locked: false, confidence: s.confidence };
+  s.text = sy.slice(0, k).join('').trim(); s.end = r2(t); P.subtitles.splice(i + 1, 0, b); sel = i; changed();
+}
+function mergeNext() {
+  if (sel < 0 || sel >= P.subtitles.length - 1) return; snap();
+  const a = P.subtitles[sel], b = P.subtitles[sel + 1]; a.text = (a.text + ' ' + b.text).trim(); a.end = b.end; P.subtitles.splice(sel + 1, 1); changed();
+}
+function delSel() { if (sel < 0) return; snap(); P.subtitles.splice(sel, 1); sel = -1; changed(); }
+function audition() { const s = P.subtitles[sel]; if (!s) { setStatus('စာတန်း ရွေးပါ (waveform အပြာတန်း သို့ စာရင်း)'); return; } play(s.start - 0.3, s.end + 0.3); }
+$('bSplit').onclick = splitAt; $('bMerge').onclick = mergeNext; $('bDel').onclick = delSel;
+$('bUndo').onclick = undo; $('bRedo').onclick = redo; $('aud').onclick = audition;
+$('lead').oninput = () => { P.leadMs = +$('lead').value || 0; save(); };
+$('tail').oninput = () => { P.tailMs = +$('tail').value || 0; save(); };
+$('calib').oninput = () => { P.calibMs = +$('calib').value || 0; save(); redraw(); };
 
 // ---------- audio load (decode once) ----------
 $('file').onchange = async (e) => {
@@ -231,13 +337,14 @@ $('fsz').oninput = () => { P.style.sizePct = parseFloat($('fsz').value) || 6; sa
 $('ypos').oninput = () => { P.style.yPct = parseFloat($('ypos').value) || 80; save(); redraw(); };
 function applyUI() {
   $('size').value = P.output.size; $('font').value = P.style.font; $('fsz').value = P.style.sizePct; $('ypos').value = P.style.yPct;
+  $('lead').value = P.leadMs; $('tail').value = P.tailMs; $('calib').value = P.calibMs;
   renderList(); redraw();
 }
 $('saveJson').onclick = () => { const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(P, null, 2)], { type: 'application/json' }));
   a.download = 'project.json'; a.click(); };
 $('loadJson').onchange = async (e) => { const f = e.target.files[0]; if (!f) return;
-  try { P = { ...defaults(), ...JSON.parse(await f.text()) }; applyUI(); save(); setStatus('project ဖွင့်ပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)'); }
+  try { P = { ...defaults(), ...JSON.parse(await f.text()) }; hist = []; fut = []; sel = -1; applyUI(); save(); setStatus('project ဖွင့်ပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)'); }
   catch { setStatus('project ဖိုင်ဖတ်မရပါ'); } };
 
 // ---------- export ----------
@@ -268,7 +375,31 @@ $('export').onclick = async () => {
   } catch (e) { setStatus(e.message === 'cancelled' ? 'Cancel လုပ်ပြီး' : 'Export မအောင်: ' + e.message); }
   $('prog').hidden = true; $('cancel').hidden = true; $('export').disabled = false;
 };
-document.addEventListener('keydown', (e) => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { e.preventDefault(); $('play').click(); } });
+
+// ---------- keyboard ----------
+const typing = (e) => /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && !typing(e)) {
+    if (e.code === 'KeyZ') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+    else if (e.code === 'KeyY') { e.preventDefault(); redo(); }
+    else if (e.code === 'KeyS') { e.preventDefault(); $('saveJson').click(); }
+    return;
+  }
+  if (typing(e)) return;
+  if (e.code === 'Space') { e.preventDefault(); $('play').click(); }
+  else if (e.code === 'KeyT') { e.preventDefault(); if (!e.repeat) tapDown(); }
+  else if (e.code === 'KeyA') audition();
+  else if (e.code === 'KeyS') splitAt();
+  else if (e.code === 'KeyM') mergeNext();
+  else if (e.code === 'Delete') delSel();
+  else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+    e.preventDefault(); const dir = e.code === 'ArrowLeft' ? -1 : 1, step = e.shiftKey ? 0.1 : 0.01, s = P.subtitles[sel];
+    if (!s) { seek(nowT() + dir * 1); return; } snap();
+    if (e.altKey) s.end = r2(Math.max(s.start + 0.05, s.end + dir * step)); else s.start = r2(Math.max(0, Math.min(s.end - 0.05, s.start + dir * step)));
+    syncRow(sel); save(); redraw();
+  }
+});
+document.addEventListener('keyup', (e) => { if (e.code === 'KeyT') tapUp(); });
 
 // ---------- boot ----------
 (async () => { try { const s = await kvGet('project'); if (s) P = { ...defaults(), ...s }; } catch {}
