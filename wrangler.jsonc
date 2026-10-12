@@ -1,0 +1,9 @@
+{
+  // Stage 0: serve the static app from ./public (Workers static assets).
+  // The R2/API worker (worker/) gets merged in later, after the R2 bucket exists.
+  "name": "fornyein",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public"
+  }
+}
