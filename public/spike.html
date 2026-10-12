@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spike S — capability check</title>
+<style>
+  body{font-family:system-ui,"Noto Sans Myanmar","Padauk",sans-serif;margin:24px;max-width:860px}
+  td,th{border-bottom:1px solid #ddd;padding:6px 10px;text-align:left}
+  .ok{color:#0a7d2c;font-weight:600}.no{color:#c0262d;font-weight:600}
+  canvas{max-width:100%;border:1px solid #ccc;background:#111}
+  textarea{width:100%;height:90px;font-size:18px}
+</style>
+</head>
+<body>
+<h2>Spike S — capability check</h2>
+<p>Chrome/Edge desktop မှာ ဖွင့်ပြီး ရလဒ်ကို မှတ်ပါ။</p>
+<table id="res"><tr><th>စစ်ချက်</th><th>ရလဒ်</th></tr></table>
+
+<h3>(၁) Canvas ပေါ် မြန်မာစာ (သရ/သတ် နေရာ စစ်ရန်)</h3>
+<textarea id="txt">မြန်မာစာ ကဗျာ စမ်းသပ်ချက်
+ကြွက်၊ ကျွန်း၊ ပြည်ထောင်စု၊ ဂျပန်</textarea>
+<p>Font: <input id="font" value="Noto Sans Myanmar"> <button id="draw">ဆွဲ</button>
+(Font ကို installed/loaded ဖြစ်ရမယ်၊ ဥပမာ Padauk)</p>
+<canvas id="cv" width="960" height="360"></canvas>
+
+<h3>(၃) Intl.Segmenter (မြန်မာ grapheme / word)</h3>
+<pre id="seg"></pre>
+
+<script>
+const res = document.getElementById('res');
+function row(name, ok, note=''){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${name}</td><td class="${ok?'ok':'no'}">${ok?'ရ':'မရ'} ${note}</td>`;
+  res.appendChild(tr);
+}
+(async()=>{
+  row('WebCodecs (VideoEncoder)', 'VideoEncoder' in window);
+  row('WebCodecs (AudioEncoder)', 'AudioEncoder' in window);
+  if ('VideoEncoder' in window){
+    for (const [label,codec,w,h] of [
+      ['H.264 1080p30','avc1.640028',1920,1080],
+      ['H.264 1080x1920 (9:16)','avc1.640032',1080,1920],
+      ['H.264 720p','avc1.64001f',1280,720],
+      ['VP9','vp09.00.40.08',1920,1080]]){
+      try{
+        const r = await VideoEncoder.isConfigSupported({codec,width:w,height:h,framerate:30,bitrate:8e6});
+        row(label, !!r.supported);
+      }catch(e){ row(label,false,String(e)); }
+    }
+  }
+  if ('AudioEncoder' in window){
+    for (const [label,codec] of [['AAC-LC (mp4a.40.2)','mp4a.40.2'],['Opus','opus']]){
+      try{
+        const r = await AudioEncoder.isConfigSupported({codec,sampleRate:48000,numberOfChannels:2,bitrate:128000});
+        row(label, !!r.supported);
+      }catch(e){ row(label,false,String(e)); }
+    }
+  }
+  row('File System Access API (showSaveFilePicker)', 'showSaveFilePicker' in window);
+  row('OfflineAudioContext', 'OfflineAudioContext' in window);
+  row('OffscreenCanvas', 'OffscreenCanvas' in window);
+  row('Wake Lock', 'wakeLock' in navigator);
+  row('Intl.Segmenter', 'Segmenter' in Intl);
+
+  // Segmenter output
+  const s = 'မြန်မာစာကဗျာ';
+  let out = '';
+  if ('Segmenter' in Intl){
+    for (const g of ['grapheme','word']){
+      const seg = new Intl.Segmenter('my',{granularity:g});
+      out += g+': '+[...seg.segment(s)].map(x=>x.segment).join(' | ')+'\n';
+    }
+  } else out = 'Intl.Segmenter မရှိ';
+  document.getElementById('seg').textContent = out + '\n(မှန်/မမှန် ကိုယ်တိုင်ကြည့်ပြီး မှတ်ပါ)';
+})();
+
+async function draw(){
+  const f = document.getElementById('font').value.trim() || 'sans-serif';
+  try { await document.fonts.load(`40px "${f}"`, 'မြန်မာ'); } catch(e){}
+  const cv = document.getElementById('cv'), c = cv.getContext('2d');
+  c.fillStyle = '#111'; c.fillRect(0,0,cv.width,cv.height);
+  c.font = `40px "${f}", sans-serif`;
+  c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.shadowColor = '#000'; c.shadowBlur = 6;
+  const lines = document.getElementById('txt').value.split('\n');
+  lines.forEach((l,i)=>c.fillText(l, cv.width/2, 100 + i*70));
+}
+document.getElementById('draw').onclick = draw;
+draw();
+</script>
+</body>
+</html>

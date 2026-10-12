@@ -1,0 +1,11 @@
+name = "fornyein-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Change bucket_name to your real private R2 bucket.
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "fornyein-assets"
+
+# Route on the same domain as the Pages app so CORS is not needed, e.g.
+# routes = [{ pattern = "your-domain.com/api/*", zone_name = "your-domain.com" }]
