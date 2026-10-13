@@ -1,4 +1,4 @@
-// Stage 10 module: R2 library browser (Music / BG / Logo / SE), background image, logo, music mix.
+// Stage 10/12 module: R2 library browser (Music / BG / Logo / SE), background image + VIDEO, logo, music mix.
 // Talks to the Worker (/api/library, /api/asset). Uses hooks in window.FN.
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
@@ -13,7 +13,7 @@ const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max
 const cache = {};
 async function list(type, force) {
   if (!force && cache[type]) return cache[type];
-  const r = await fetch(`/api/library/${type}`);
+  const r = await fetch(`/api/library/${type}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(r.status === 503 ? 'R2 မချိတ်ရသေးပါ (bucket မရှိသေး)' : `HTTP ${r.status}`);
   return (cache[type] = await r.json());
 }
@@ -52,7 +52,7 @@ async function show(type, force) {
 }
 
 // ---------- selection ----------
-let musicBuf = null, bgImg = null, logoImg = null, bgCache = null;
+let musicBuf = null, bgImg = null, bgVideo = null, logoImg = null, bgCache = null;
 const volIn = mk('input', { type: 'number', min: -40, max: 6, step: 1, value: -18 }); volIn.style.width = '60px';
 const loopCb = mk('input', { type: 'checkbox', checked: true });
 const bgMode = mk('select'); [['cover', 'Cover'], ['contain', 'Contain + blur']].forEach(([v, l]) => bgMode.add(new Option(l, v)));
@@ -68,17 +68,68 @@ async function choose(type, it) {
     FN.setStatus(`${it.name} ဒေါင်းနေပါတယ်...`);
     if (type === 'Music') { await loadMusic(it.name); P().media.music = `Music/${it.name}`; }
     else if (type === 'BG') {
-      if (VID.test(it.name)) { FN.setStatus('Video BG က အဆင့် ၁၂ မှာ ထည့်မယ် (အခုပုံတွေပဲ သုံးလို့ရ)'); return; }
-      await loadBg(it.name); P().media.bg = `BG/${it.name}`;
+      if (VID.test(it.name)) { await loadBgVideo(it.name); FN.setStatus(`${it.name} Video BG ဖွင့်ပြီး — Play လုပ်ကြည့်ပါ`); }
+      else { await loadBg(it.name); FN.setStatus(`${it.name} သုံးပြီး`); }
+      P().media.bg = `BG/${it.name}`;
     } else if (type === 'Logo') { await loadLogo(it.name); P().logo = { ...(P().logo || {}), path: `Logo/${it.name}` }; }
     else { FN.setStatus('SE က အဆင့် ၁၁ (Audio Engine) မှာ Timeline ပေါ်ထည့်မယ်၊ အခု နားထောင်လို့ပဲရ'); return; }
-    FN.save(); FN.redraw(); FN.setStatus(`${it.name} သုံးပြီး`);
+    FN.save(); FN.redraw();
   } catch (e) { FN.setStatus('မရပါ: ' + e.message); }
 }
 async function loadMusic(name) { musicBuf = await FN.ac.decodeAudioData(await (await load('Music', name)).arrayBuffer()); }
-async function loadBg(name) { bgImg = await createImageBitmap(await (await load('BG', name)).blob()); bgCache = null; }
+async function loadBg(name) { dropVideo(); bgImg = await createImageBitmap(await (await load('BG', name)).blob()); bgCache = null; }
 async function loadLogo(name) { logoImg = await createImageBitmap(await (await load('Logo', name)).blob()); }
-function clearAll() { musicBuf = bgImg = logoImg = bgCache = null; const p = P(); delete p.media.music; delete p.media.bg; delete p.logo; stopM(); FN.save(); FN.redraw(); FN.setStatus('ဖယ်ရှားပြီး'); }
+
+// ---------- Video BG: <video> for preview (streams with Range), Mediabunny CanvasSink for exact export frames ----------
+function dropVideo() {
+  if (!bgVideo) return;
+  try { bgVideo.el.pause(); bgVideo.el.removeAttribute('src'); bgVideo.el.load(); } catch {}
+  try { bgVideo.input?.dispose?.(); } catch {}
+  bgVideo = null;
+}
+async function loadBgVideo(name) {
+  dropVideo(); bgImg = null; bgCache = null;
+  const el = mk('video', { muted: true, loop: true, playsInline: true, preload: 'auto' });
+  el.muted = true; el.src = assetUrl('BG', name);
+  await new Promise((res, rej) => { el.onloadeddata = res; el.onerror = () => rej(new Error('Video ဖွင့်မရပါ (codec မပံ့ပိုးနိုင်)')); });
+  el.addEventListener('seeked', () => FN.redraw());
+  bgVideo = { el, name, url: assetUrl('BG', name), frame: null, sinkP: null, sink: null, input: null, vdur: el.duration, useEl: false };
+  el.currentTime = 0;
+}
+let mbP;
+const mediabunny = () => (mbP = mbP || import('https://cdn.jsdelivr.net/npm/mediabunny@1/+esm'));
+async function initSink(v) {
+  const mb = await mediabunny();
+  v.input = new mb.Input({ source: new mb.UrlSource(new URL(v.url, location.href).href), formats: mb.ALL_FORMATS });
+  const track = await v.input.getPrimaryVideoTrack();
+  if (!track) throw new Error('video track မတွေ့');
+  if (track.canDecode && !(await track.canDecode())) throw new Error('codec decode မရ');
+  try { v.vdur = (await track.computeDuration()) || v.vdur; } catch {}
+  v.sink = new mb.CanvasSink(track);
+}
+const seekTo = (el, t) => new Promise((res) => {
+  if (Math.abs(el.currentTime - t) < 0.001) { res(); return; }
+  const h = () => { el.removeEventListener('seeked', h); res(); };
+  el.addEventListener('seeked', h); el.currentTime = t;
+});
+// export: called before every frame (t = exact timeline time)
+FN.beforeFrame = async (t) => {
+  const v = bgVideo; if (!v) return;
+  const tl = v.vdur > 0 ? t % v.vdur : t;
+  if (!v.useEl) {
+    try {
+      v.sinkP = v.sinkP || initSink(v); await v.sinkP;
+      const r = await v.sink.getCanvas(tl);
+      if (r?.canvas) { v.frame = r.canvas; return; }
+    } catch (e) { v.useEl = true; v.frame = null; FN.setStatus('Video decode (WebCodecs) မရလို့ ပိုနှေးတဲ့နည်းနဲ့ ထုတ်နေပါတယ် — ' + e.message); }
+  }
+  v.el.pause(); await seekTo(v.el, tl); v.frame = null;
+};
+
+function clearAll() {
+  musicBuf = bgImg = logoImg = bgCache = null; dropVideo();
+  const p = P(); delete p.media.music; delete p.media.bg; delete p.logo; stopM(); FN.save(); FN.redraw(); FN.setStatus('ဖယ်ရှားပြီး');
+}
 
 // ---------- settings -> project ----------
 volIn.oninput = () => { P().media.musicDb = +volIn.value; if (mGain) mGain.gain.value = db2g(+volIn.value); FN.save(); };
@@ -88,18 +139,40 @@ const saveLogo = () => { P().logo = { ...(P().logo || {}), pos: logoPos.value, s
 logoPos.onchange = logoSize.oninput = logoOp.oninput = saveLogo;
 
 // ---------- background + logo (called by drawFrame for every frame) ----------
-FN.drawBackground = (c, W, H) => {
-  if (bgImg) {
-    const iw = bgImg.width, ih = bgImg.height, mode = P().media.bgMode || 'cover';
-    const cover = Math.max(W / iw, H / ih), fit = Math.min(W / iw, H / ih);
-    if (mode === 'cover') c.drawImage(bgImg, (W - iw * cover) / 2, (H - ih * cover) / 2, iw * cover, ih * cover);
-    else {
-      if (!bgCache || bgCache.w !== W || bgCache.h !== H) {         // blurred backdrop cached per frame size
-        const o = document.createElement('canvas'); o.width = W; o.height = H; const g = o.getContext('2d');
-        g.filter = 'blur(28px)'; g.drawImage(bgImg, (W - iw * cover) / 2, (H - ih * cover) / 2, iw * cover, ih * cover); g.filter = 'none';
-        g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, W, H); bgCache = { w: W, h: H, o };
+let smallCv = null;
+function drawSrc(c, W, H, s, iw, ih, mode, live) {
+  const cover = Math.max(W / iw, H / ih), fit = Math.min(W / iw, H / ih);
+  if (mode === 'cover') { c.drawImage(s, (W - iw * cover) / 2, (H - ih * cover) / 2, iw * cover, ih * cover); return; }
+  if (live) {                                // moving video: cheap blurred backdrop (draw small, upscale with blur)
+    const sw = Math.max(32, Math.round(W / 10)), sh = Math.max(32, Math.round(H / 10));
+    if (!smallCv || smallCv.width !== sw || smallCv.height !== sh) { smallCv = document.createElement('canvas'); smallCv.width = sw; smallCv.height = sh; }
+    const g = smallCv.getContext('2d'), sc = Math.max(sw / iw, sh / ih);
+    g.drawImage(s, (sw - iw * sc) / 2, (sh - ih * sc) / 2, iw * sc, ih * sc);
+    c.save(); c.imageSmoothingQuality = 'high'; c.filter = 'blur(6px)'; c.drawImage(smallCv, 0, 0, W, H); c.restore();
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, 0, W, H);
+  } else {                                   // still image: blurred backdrop cached per frame size
+    if (!bgCache || bgCache.w !== W || bgCache.h !== H) {
+      const o = document.createElement('canvas'); o.width = W; o.height = H; const g = o.getContext('2d');
+      g.filter = 'blur(28px)'; g.drawImage(s, (W - iw * cover) / 2, (H - ih * cover) / 2, iw * cover, ih * cover); g.filter = 'none';
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, W, H); bgCache = { w: W, h: H, o };
+    }
+    c.drawImage(bgCache.o, 0, 0);
+  }
+  c.drawImage(s, (W - iw * fit) / 2, (H - ih * fit) / 2, iw * fit, ih * fit);
+}
+FN.drawBackground = (c, W, H, t) => {
+  const mode = P().media.bgMode || 'cover', isExport = c.canvas !== FN.cv;
+  if (bgImg) drawSrc(c, W, H, bgImg, bgImg.width, bgImg.height, mode, false);
+  else if (bgVideo) {
+    const v = bgVideo, el = v.el;
+    if (isExport && v.frame) drawSrc(c, W, H, v.frame, v.frame.width, v.frame.height, mode, true);
+    else if (el.videoWidth && el.readyState >= 2) {
+      if (!isExport) {                       // preview: keep the <video> in step with the timeline
+        const tl = el.duration > 0 ? t % el.duration : t;
+        if (el.paused) { if (Math.abs(el.currentTime - tl) > 0.04) el.currentTime = tl; }
+        else if (Math.abs(el.currentTime - tl) > 0.25) el.currentTime = tl;
       }
-      c.drawImage(bgCache.o, 0, 0); c.drawImage(bgImg, (W - iw * fit) / 2, (H - ih * fit) / 2, iw * fit, ih * fit);
+      drawSrc(c, W, H, el, el.videoWidth, el.videoHeight, mode, true);
     }
   }
   const L = P().logo;
@@ -110,19 +183,21 @@ FN.drawBackground = (c, W, H) => {
   }
 };
 
-// ---------- music: preview in sync with the main clock ----------
+// ---------- music + video BG: preview in sync with the main clock ----------
 let mSrc = null, mGain = null;
 function stopM() { if (mSrc) { try { mSrc.stop(); } catch {} mSrc.disconnect(); mSrc = null; } }
 FN.onPlay.push((t) => {
+  if (bgVideo) { const el = bgVideo.el; if (el.duration > 0) el.currentTime = t % el.duration; el.play().catch(() => {}); }
   stopM(); if (!musicBuf) return;
   const loop = loopCb.checked, off = loop ? t % musicBuf.duration : t; if (off >= musicBuf.duration) return;
   mGain = FN.ac.createGain(); mGain.gain.value = db2g(+volIn.value); mGain.connect(FN.ac.destination);
   mSrc = FN.ac.createBufferSource(); mSrc.buffer = musicBuf; mSrc.loop = loop; mSrc.connect(mGain); mSrc.start(0, off);
 });
-FN.onPause.push(stopM);
+FN.onPause.push(() => { stopM(); if (bgVideo) bgVideo.el.pause(); });
 
 // ---------- music: export mix (basic; the full mixer comes with the Audio Engine) ----------
 FN.mixExport = async (main) => {
+  if (bgVideo) { bgVideo.el.pause(); bgVideo.useEl = false; bgVideo.frame = null; }
   if (!musicBuf) return main;
   const D = main.duration, oc = new OfflineAudioContext(2, main.length, main.sampleRate);
   const m = oc.createBufferSource(); m.buffer = main; m.connect(oc.destination);
@@ -137,10 +212,10 @@ async function restore() {
   const p = P(), md = p.media || {};
   volIn.value = md.musicDb ?? -18; loopCb.checked = md.musicLoop ?? true; bgMode.value = md.bgMode || 'cover';
   if (p.logo) { logoPos.value = p.logo.pos || 'tr'; logoSize.value = p.logo.sizePct || 12; logoOp.value = p.logo.opacity ?? 0.9; }
-  musicBuf = bgImg = logoImg = bgCache = null;
+  musicBuf = bgImg = logoImg = bgCache = null; dropVideo();
   try {
     if (md.music) await loadMusic(md.music.replace(/^Music\//, ''));
-    if (md.bg) await loadBg(md.bg.replace(/^BG\//, ''));
+    if (md.bg) { const n = md.bg.replace(/^BG\//, ''); if (VID.test(n)) await loadBgVideo(n); else await loadBg(n); }
     if (p.logo?.path) await loadLogo(p.logo.path.replace(/^Logo\//, ''));
   } catch { /* R2 not reachable yet: ignore */ }
   FN.redraw();
