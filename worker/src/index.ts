@@ -11,8 +11,19 @@ const PRESETS_KEY = "Presets/presets.json";
 const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", ...extra },
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-cache", ...extra },
   });
+
+async function listPrefix(bucket: R2Bucket, prefix?: string, max = 5000): Promise<R2Object[]> {
+  const out: R2Object[] = [];
+  let cursor: string | undefined;
+  do {
+    const res = await bucket.list({ prefix, cursor });
+    out.push(...res.objects);
+    cursor = res.truncated ? res.cursor : undefined;
+  } while (cursor && out.length < max);
+  return out;
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -24,21 +35,25 @@ export default {
     const bucket = env.BUCKET;
     if (!bucket) return json({ error: "R2 not configured" }, 503);
 
-    // GET /api/library/:type  -> file list
+    // GET /api/library/_all -> what is actually in the bucket (top-level folders), for troubleshooting
+    if (parts[1] === "library" && parts[2] === "_all") {
+      const res = await bucket.list({ delimiter: "/", limit: 200 });
+      return json({ folders: res.delimitedPrefixes, rootFiles: res.objects.map((o) => o.key), truncated: res.truncated });
+    }
+
+    // GET /api/library/:type  -> file list (exact prefix first, then a case-insensitive fallback)
     if (parts[1] === "library" && parts.length === 3 && request.method === "GET") {
       const type = parts[2];
       if (!TYPES.has(type)) return json({ error: "bad type" }, 400);
-      const items: { name: string; size: number; uploaded: string }[] = [];
-      let cursor: string | undefined;
-      do {
-        const res = await bucket.list({ prefix: `${type}/`, cursor });
-        for (const o of res.objects) {
-          if (o.key.endsWith("/")) continue;
-          items.push({ name: o.key.slice(type.length + 1), size: o.size, uploaded: o.uploaded.toISOString() });
-        }
-        cursor = res.truncated ? res.cursor : undefined;
-      } while (cursor);
-      return json(items, 200, { "cache-control": "private, max-age=30" });
+      let objs = await listPrefix(bucket, `${type}/`);
+      if (!objs.length) {
+        const pre = `${type}/`.toLowerCase();
+        objs = (await listPrefix(bucket)).filter((o) => o.key.toLowerCase().startsWith(pre));
+      }
+      const items = objs
+        .filter((o) => !o.key.endsWith("/"))
+        .map((o) => ({ name: o.key.slice(type.length + 1), size: o.size, uploaded: o.uploaded.toISOString() }));
+      return json(items);
     }
 
     // GET /api/asset/:type/:name -> raw stream with Range support
@@ -46,7 +61,15 @@ export default {
       const type = parts[2];
       const name = parts.slice(3).join("/");
       if (!TYPES.has(type) || name.includes("..")) return json({ error: "bad path" }, 400);
-      const obj = await bucket.get(`${type}/${name}`, { range: request.headers });
+      let key = `${type}/${name}`;
+      let probe = await bucket.head(key);
+      if (!probe) {
+        const want = key.toLowerCase();
+        const hit = (await listPrefix(bucket)).find((o) => o.key.toLowerCase() === want);
+        if (!hit) return json({ error: "not found" }, 404);
+        key = hit.key;
+      }
+      const obj = await bucket.get(key, { range: request.headers });
       if (!obj) return json({ error: "not found" }, 404);
       const h = new Headers();
       obj.writeHttpMetadata(h);
