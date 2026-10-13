@@ -1,5 +1,6 @@
-// Stage 10/12 module: R2 library browser (Music / BG / Logo / SE), background image + VIDEO, logo, music mix.
+// Stage 10/12 module: R2 library browser (Music / BG / Logo / SE), background image + VIDEO, logo.
 // If the MAIN input is a video file: its picture becomes the background, its sound the main audio, and BG selection is locked.
+// Music playback / mixing lives in audio.js (Audio Engine); this module only loads the chosen music buffer (FN.music.buf).
 // Talks to the Worker (/api/library, /api/asset). Uses hooks in window.FN.
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
@@ -7,7 +8,6 @@ function mk(tag, props = {}, kids = []) { const e = Object.assign(document.creat
 const TYPES = ['Music', 'BG', 'Logo', 'SE'];
 const IMG = /\.(png|jpe?g|webp|gif|avif)$/i, VID = /\.(mp4|webm|mov|m4v|mkv)$/i;
 const assetUrl = (type, name) => `/api/asset/${type}/${name.split('/').map(encodeURIComponent).join('/')}`;
-const db2g = (db) => Math.pow(10, db / 20);
 const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 
 // ---------- list (cached in memory) ----------
@@ -62,31 +62,30 @@ async function show(type, force) {
 
 // ---------- selection ----------
 let musicBuf = null, bgImg = null, bgVideo = null, logoImg = null, bgCache = null;
-const volIn = mk('input', { type: 'number', min: -40, max: 6, step: 1, value: -18 }); volIn.style.width = '60px';
-const loopCb = mk('input', { type: 'checkbox', checked: true });
+FN.music = { get buf() { return musicBuf; } };
 const bgMode = mk('select'); [['cover', 'Cover'], ['contain', 'Contain + blur']].forEach(([v, l]) => bgMode.add(new Option(l, v)));
 const logoPos = mk('select'); [['tr', 'ညာပေါ်'], ['tl', 'ဘယ်ပေါ်'], ['br', 'ညာအောက်'], ['bl', 'ဘယ်အောက်']].forEach(([v, l]) => logoPos.add(new Option(l, v)));
 const logoSize = mk('input', { type: 'number', min: 3, max: 50, step: 1, value: 12 }); logoSize.style.width = '60px';
 const logoOp = mk('input', { type: 'number', min: 0.1, max: 1, step: 0.1, value: 0.9 }); logoOp.style.width = '60px';
-ctl.append('Music dB', volIn, mk('label', {}, [loopCb, ' loop']), ' BG', bgMode, ' Logo', logoPos, '%', logoSize, 'opacity', logoOp,
+ctl.append('BG', bgMode, ' Logo', logoPos, '%', logoSize, 'opacity', logoOp,
   mk('button', { textContent: 'BG/Logo/Music ဖယ်', onclick: clearAll }));
 
 const load = async (type, name) => { const r = await fetch(assetUrl(type, name)); if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`); return r; };
 async function choose(type, it) {
   try {
     if (type === 'BG' && lockBg) { FN.setStatus('ပင်မ input က Video ဖြစ်နေလို့ BG ရွေးလို့မရပါ'); return; }
+    if (type === 'SE') { FN.setStatus('SE ကို Audio Mixer card ထဲက "SE" အပိုင်းမှာ အချိန်သတ်မှတ်ပြီး ထည့်ပါ'); return; }
     FN.setStatus(`${it.name} ဒေါင်းနေပါတယ်...`);
-    if (type === 'Music') { await loadMusic(it.name); P().media.music = `Music/${it.name}`; }
+    if (type === 'Music') { await loadMusic(it.name); P().media.music = `Music/${it.name}`; FN.setStatus(`${it.name} သုံးပြီး`); }
     else if (type === 'BG') {
       if (VID.test(it.name)) { await loadBgVideo(it.name); FN.setStatus(`${it.name} Video BG ဖွင့်ပြီး — Play လုပ်ကြည့်ပါ`); }
       else { await loadBg(it.name); FN.setStatus(`${it.name} သုံးပြီး`); }
       P().media.bg = `BG/${it.name}`;
-    } else if (type === 'Logo') { await loadLogo(it.name); P().logo = { ...(P().logo || {}), path: `Logo/${it.name}` }; }
-    else { FN.setStatus('SE က အဆင့် ၁၁ (Audio Engine) မှာ Timeline ပေါ်ထည့်မယ်၊ အခု နားထောင်လို့ပဲရ'); return; }
+    } else if (type === 'Logo') { await loadLogo(it.name); P().logo = { ...(P().logo || {}), path: `Logo/${it.name}` }; FN.setStatus(`${it.name} သုံးပြီး`); }
     FN.save(); FN.redraw();
   } catch (e) { FN.setStatus('မရပါ: ' + e.message); }
 }
-async function loadMusic(name) { musicBuf = await FN.ac.decodeAudioData(await (await load('Music', name)).arrayBuffer()); }
+async function loadMusic(name) { musicBuf = await FN.ac.decodeAudioData(await (await load('Music', name)).arrayBuffer()); FN.audioChanged?.(); }
 async function loadBg(name) { dropVideo(); bgImg = await createImageBitmap(await (await load('BG', name)).blob()); bgCache = null; }
 async function loadLogo(name) { logoImg = await createImageBitmap(await (await load('Logo', name)).blob()); }
 
@@ -161,12 +160,10 @@ $('file').addEventListener('change', async (e) => {
 function clearAll() {
   musicBuf = logoImg = null; const p = P(); delete p.media.music; delete p.logo;
   if (!lockBg) { bgImg = bgCache = null; dropVideo(); delete p.media.bg; }   // main video's picture stays
-  stopM(); FN.save(); FN.redraw(); FN.setStatus('ဖယ်ရှားပြီး');
+  FN.audioChanged?.(); FN.save(); FN.redraw(); FN.setStatus('ဖယ်ရှားပြီး');
 }
 
 // ---------- settings -> project ----------
-volIn.oninput = () => { P().media.musicDb = +volIn.value; if (mGain) mGain.gain.value = db2g(+volIn.value); FN.save(); };
-loopCb.onchange = () => { P().media.musicLoop = loopCb.checked; FN.save(); };
 bgMode.onchange = () => { P().media.bgMode = bgMode.value; bgCache = null; FN.save(); FN.redraw(); };
 const saveLogo = () => { P().logo = { ...(P().logo || {}), pos: logoPos.value, sizePct: +logoSize.value || 12, opacity: +logoOp.value || 0.9 }; FN.save(); FN.redraw(); };
 logoPos.onchange = logoSize.oninput = logoOp.oninput = saveLogo;
@@ -216,34 +213,22 @@ FN.drawBackground = (c, W, H, t) => {
   }
 };
 
-// ---------- music + video picture: preview in sync with the main clock ----------
-let mSrc = null, mGain = null;
-function stopM() { if (mSrc) { try { mSrc.stop(); } catch {} mSrc.disconnect(); mSrc = null; } }
+// ---------- video picture follows play / pause ----------
 FN.onPlay.push((t) => {
   if (bgVideo) { const el = bgVideo.el; if (el.duration > 0) el.currentTime = t % el.duration; el.play().catch(() => {}); }
-  stopM(); if (!musicBuf) return;
-  const loop = loopCb.checked, off = loop ? t % musicBuf.duration : t; if (off >= musicBuf.duration) return;
-  mGain = FN.ac.createGain(); mGain.gain.value = db2g(+volIn.value); mGain.connect(FN.ac.destination);
-  mSrc = FN.ac.createBufferSource(); mSrc.buffer = musicBuf; mSrc.loop = loop; mSrc.connect(mGain); mSrc.start(0, off);
 });
-FN.onPause.push(() => { stopM(); if (bgVideo) bgVideo.el.pause(); });
+FN.onPause.push(() => { if (bgVideo) bgVideo.el.pause(); });
 
-// ---------- music: export mix (basic; the full mixer comes with the Audio Engine) ----------
+// ---------- export: reset video state, then hand the main audio to the Audio Engine (audio.js) ----------
 FN.mixExport = async (main) => {
   if (bgVideo) { bgVideo.el.pause(); bgVideo.useEl = false; bgVideo.frame = null; }
-  if (!musicBuf) return main;
-  const D = main.duration, oc = new OfflineAudioContext(2, main.length, main.sampleRate);
-  const m = oc.createBufferSource(); m.buffer = main; m.connect(oc.destination);
-  const mu = oc.createBufferSource(); mu.buffer = musicBuf; mu.loop = loopCb.checked;
-  const g = oc.createGain(), v = db2g(+volIn.value); g.gain.setValueAtTime(v, 0); g.gain.setValueAtTime(v, Math.max(0, D - 2)); g.gain.linearRampToValueAtTime(0, D);
-  mu.connect(g); g.connect(oc.destination); m.start(0); mu.start(0);
-  return await oc.startRendering();
+  return FN.audioMix ? await FN.audioMix(main) : main;
 };
 
 // ---------- restore from project (also after import) ----------
 async function restore() {
   const p = P(), md = p.media || {};
-  volIn.value = md.musicDb ?? -18; loopCb.checked = md.musicLoop ?? true; bgMode.value = md.bgMode || 'cover';
+  bgMode.value = md.bgMode || 'cover';
   if (p.logo) { logoPos.value = p.logo.pos || 'tr'; logoSize.value = p.logo.sizePct || 12; logoOp.value = p.logo.opacity ?? 0.9; }
   musicBuf = bgImg = logoImg = bgCache = null; dropVideo();
   setLock(!!md.mainIsVideo);                 // main video file must be chosen again; BG stays locked meanwhile
@@ -252,7 +237,7 @@ async function restore() {
     if (md.bg && !md.mainIsVideo) { const n = md.bg.replace(/^BG\//, ''); if (VID.test(n)) await loadBgVideo(n); else await loadBg(n); }
     if (p.logo?.path) await loadLogo(p.logo.path.replace(/^Logo\//, ''));
   } catch { /* R2 not reachable yet: ignore */ }
-  FN.redraw();
+  FN.audioChanged?.(); FN.redraw();
 }
 let lastP = P(); restore(); show('Music', false);
 setInterval(() => { if (P() !== lastP) { lastP = P(); restore(); } }, 500);
