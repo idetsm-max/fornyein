@@ -169,7 +169,11 @@ function wrap(c, text, maxW) {
 const FN = window.FN = {
   get P() { return P; }, get audio() { return audio; }, ac, cv, wrap, syllables, setStatus,
   redraw: () => redraw(), save: () => save(), changed: () => changed(), snap: () => snap(),
-  drawSubtitle: null,   // module may replace the subtitle renderer: (ctx, W, H, subtitle, t)
+  drawSubtitle: null,    // (ctx, W, H, subtitle, t) — replaces the subtitle renderer
+  drawBackground: null,  // (ctx, W, H, t) — background / logo, called every frame before subtitles
+  beforeFrame: null,     // async (t) — awaited before each exported frame (e.g. video BG decode)
+  mixExport: null,       // async (mainAudioBuffer) => AudioBuffer — final mix for export
+  onPlay: [], onPause: [], // callbacks: onPlay(startPos) / onPause()
 };
 
 // ---------- the ONE draw function (preview = export) ----------
@@ -184,6 +188,7 @@ function defaultSubtitle(c, W, H, s) {
 }
 function drawFrame(c, W, H, t) {
   c.fillStyle = '#10131a'; c.fillRect(0, 0, W, H);
+  if (FN.drawBackground) FN.drawBackground(c, W, H, t);
   const s = P.subtitles.find((x) => t >= x.start && t < x.end);
   if (s) (FN.drawSubtitle || defaultSubtitle)(c, W, H, s, t);
 }
@@ -200,10 +205,11 @@ function play(from, to) {
   rangeEnd = to ?? null;
   src = ac.createBufferSource(); src.buffer = audio; src.connect(ac.destination);
   src.start(0, tpos); startAC = ac.currentTime; startPos = tpos; playing = true;
+  FN.onPlay.forEach((f) => f(startPos));
   $('play').textContent = '⏸ Pause'; loop();
 }
 function pause() {
-  if (!playing) return; tpos = nowT(); playing = false;
+  if (!playing) return; FN.onPause.forEach((f) => f()); tpos = nowT(); playing = false;
   src.onended = null; try { src.stop(); } catch {} $('play').textContent = '▶ Play';
 }
 function seek(t) { const was = playing; pause(); tpos = Math.max(0, Math.min(t, duration())); if (was) play(); redraw(); }
@@ -367,9 +373,11 @@ async function render(audioCodec) {
   const out = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
   const vs = new CanvasSource(c, { codec: 'avc', bitrate: QUALITY_HIGH }); out.addVideoTrack(vs, { frameRate: FPS });
   const as = new AudioBufferSource({ codec: audioCodec, bitrate: QUALITY_HIGH }); out.addAudioTrack(as);
-  await out.start(); await as.add(audio);
+  const mixed = FN.mixExport ? await FN.mixExport(audio) : audio;   // music / effects mixed by modules
+  await out.start(); await as.add(mixed);
   for (let i = 0; i < N; i++) {
     if (cancelFlag) throw new Error('cancelled');
+    if (FN.beforeFrame) await FN.beforeFrame(i / FPS);
     drawFrame(g, W, H, i / FPS); await vs.add(i / FPS, 1 / FPS);
     if (i % 15 === 0) { $('prog').value = i / N; setStatus(`render ${Math.round(i / N * 100)}%`); }
   }
