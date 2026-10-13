@@ -1,10 +1,11 @@
 // Stage 10/12 module: R2 library browser (Music / BG / Logo / SE), background image + VIDEO, logo, music mix.
+// If the MAIN input is a video file: its picture becomes the background, its sound the main audio, and BG selection is locked.
 // Talks to the Worker (/api/library, /api/asset). Uses hooks in window.FN.
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
 function mk(tag, props = {}, kids = []) { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e; }
 const TYPES = ['Music', 'BG', 'Logo', 'SE'];
-const IMG = /\.(png|jpe?g|webp|gif|avif)$/i, VID = /\.(mp4|webm|mov|m4v)$/i;
+const IMG = /\.(png|jpe?g|webp|gif|avif)$/i, VID = /\.(mp4|webm|mov|m4v|mkv)$/i;
 const assetUrl = (type, name) => `/api/asset/${type}/${name.split('/').map(encodeURIComponent).join('/')}`;
 const db2g = (db) => Math.pow(10, db / 20);
 const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
@@ -26,12 +27,20 @@ const tabs = mk('div', { className: 'row' }), listEl = mk('div'), ctl = mk('div'
 prev.style.width = '100%'; prev.style.marginTop = '8px';
 listEl.style.maxHeight = '220px'; listEl.style.overflow = 'auto'; listEl.style.marginTop = '8px';
 card.append(tabs, listEl, prev, ctl);
-let cur = 'Music';
+let cur = 'Music', lockBg = false;
 const tabBtns = {};
 TYPES.forEach((t) => { const b = mk('button', { textContent: t, onclick: () => show(t, false) }); tabBtns[t] = b; tabs.append(b); });
 tabs.append(mk('button', { textContent: '↻ Refresh', onclick: () => show(cur, true) }));
 
+function setLock(v) {
+  lockBg = v; tabBtns.BG.disabled = v;
+  tabBtns.BG.title = v ? 'Video ဖိုင်ကို ပင်မ input အဖြစ် သုံးထားလို့ BG ရွေးလို့မရပါ' : '';
+  tabBtns.BG.style.opacity = v ? 0.45 : 1;
+  if (v && cur === 'BG') show('Music', false);
+}
+
 async function show(type, force) {
+  if (type === 'BG' && lockBg) { FN.setStatus('ပင်မ input က Video ဖြစ်နေလို့ BG ရွေးလို့မရပါ (Video ရဲ့ ပုံကို သုံးထားပါတယ်)'); return; }
   cur = type; TYPES.forEach((t) => { tabBtns[t].style.borderColor = t === type ? 'var(--ac)' : ''; });
   listEl.textContent = 'စာရင်းယူနေပါတယ်...';
   try {
@@ -65,6 +74,7 @@ ctl.append('Music dB', volIn, mk('label', {}, [loopCb, ' loop']), ' BG', bgMode,
 const load = async (type, name) => { const r = await fetch(assetUrl(type, name)); if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`); return r; };
 async function choose(type, it) {
   try {
+    if (type === 'BG' && lockBg) { FN.setStatus('ပင်မ input က Video ဖြစ်နေလို့ BG ရွေးလို့မရပါ'); return; }
     FN.setStatus(`${it.name} ဒေါင်းနေပါတယ်...`);
     if (type === 'Music') { await loadMusic(it.name); P().media.music = `Music/${it.name}`; }
     else if (type === 'BG') {
@@ -80,27 +90,32 @@ async function loadMusic(name) { musicBuf = await FN.ac.decodeAudioData(await (a
 async function loadBg(name) { dropVideo(); bgImg = await createImageBitmap(await (await load('BG', name)).blob()); bgCache = null; }
 async function loadLogo(name) { logoImg = await createImageBitmap(await (await load('Logo', name)).blob()); }
 
-// ---------- Video BG: <video> for preview (streams with Range), Mediabunny CanvasSink for exact export frames ----------
+// ---------- Video as picture: <video> for preview, Mediabunny CanvasSink for exact export frames ----------
+// source is either an R2 BG video (url) or the local main-input video file (file).
 function dropVideo() {
   if (!bgVideo) return;
   try { bgVideo.el.pause(); bgVideo.el.removeAttribute('src'); bgVideo.el.load(); } catch {}
+  if (bgVideo.local) { try { URL.revokeObjectURL(bgVideo.url); } catch {} }
   try { bgVideo.input?.dispose?.(); } catch {}
   bgVideo = null;
 }
-async function loadBgVideo(name) {
+async function openVideo(url, name, file) {
   dropVideo(); bgImg = null; bgCache = null;
   const el = mk('video', { muted: true, loop: true, playsInline: true, preload: 'auto' });
-  el.muted = true; el.src = assetUrl('BG', name);
+  el.muted = true; el.src = url;
   await new Promise((res, rej) => { el.onloadeddata = res; el.onerror = () => rej(new Error('Video ဖွင့်မရပါ (codec မပံ့ပိုးနိုင်)')); });
   el.addEventListener('seeked', () => FN.redraw());
-  bgVideo = { el, name, url: assetUrl('BG', name), frame: null, sinkP: null, sink: null, input: null, vdur: el.duration, useEl: false };
+  bgVideo = { el, name, url, file: file || null, local: !!file, frame: null, sinkP: null, sink: null, input: null, vdur: el.duration, useEl: false };
   el.currentTime = 0;
 }
+const loadBgVideo = (name) => openVideo(assetUrl('BG', name), name, null);
+
 let mbP;
 const mediabunny = () => (mbP = mbP || import('https://cdn.jsdelivr.net/npm/mediabunny@1/+esm'));
 async function initSink(v) {
   const mb = await mediabunny();
-  v.input = new mb.Input({ source: new mb.UrlSource(new URL(v.url, location.href).href), formats: mb.ALL_FORMATS });
+  const source = v.file ? new mb.BlobSource(v.file) : new mb.UrlSource(new URL(v.url, location.href).href);
+  v.input = new mb.Input({ source, formats: mb.ALL_FORMATS });
   const track = await v.input.getPrimaryVideoTrack();
   if (!track) throw new Error('video track မတွေ့');
   if (track.canDecode && !(await track.canDecode())) throw new Error('codec decode မရ');
@@ -126,9 +141,27 @@ FN.beforeFrame = async (t) => {
   v.el.pause(); await seekTo(v.el, tl); v.frame = null;
 };
 
+// ---------- main input is a VIDEO: use its picture as BG (BG selection locked) ----------
+$('file').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const isVid = f.type.startsWith('video/') || VID.test(f.name);
+  const md = P().media;
+  if (isVid) {
+    md.mainIsVideo = true; setLock(true);
+    try { await openVideo(URL.createObjectURL(f), f.name, f); FN.setStatus('Video ရဲ့ ပုံကို BG အဖြစ်၊ အသံကို ပင်မအသံအဖြစ် သုံးပါမယ်'); }
+    catch (err) { FN.setStatus('Video ပုံဖွင့်မရပါ: ' + err.message); }
+  } else {
+    md.mainIsVideo = false; setLock(false);
+    if (bgVideo?.local) dropVideo();
+    try { if (md.bg && !bgImg && !bgVideo) { const n = md.bg.replace(/^BG\//, ''); if (VID.test(n)) await loadBgVideo(n); else await loadBg(n); } } catch {}
+  }
+  FN.save(); FN.redraw();
+});
+
 function clearAll() {
-  musicBuf = bgImg = logoImg = bgCache = null; dropVideo();
-  const p = P(); delete p.media.music; delete p.media.bg; delete p.logo; stopM(); FN.save(); FN.redraw(); FN.setStatus('ဖယ်ရှားပြီး');
+  musicBuf = logoImg = null; const p = P(); delete p.media.music; delete p.logo;
+  if (!lockBg) { bgImg = bgCache = null; dropVideo(); delete p.media.bg; }   // main video's picture stays
+  stopM(); FN.save(); FN.redraw(); FN.setStatus('ဖယ်ရှားပြီး');
 }
 
 // ---------- settings -> project ----------
@@ -167,10 +200,10 @@ FN.drawBackground = (c, W, H, t) => {
     const v = bgVideo, el = v.el;
     if (isExport && v.frame) drawSrc(c, W, H, v.frame, v.frame.width, v.frame.height, mode, true);
     else if (el.videoWidth && el.readyState >= 2) {
-      if (!isExport) {                       // preview: keep the <video> in step with the timeline
-        const tl = el.duration > 0 ? t % el.duration : t;
+      if (!isExport) {                       // preview: keep the <video> in step with the timeline (tighter for main video)
+        const tl = el.duration > 0 ? t % el.duration : t, tol = v.local ? 0.12 : 0.25;
         if (el.paused) { if (Math.abs(el.currentTime - tl) > 0.04) el.currentTime = tl; }
-        else if (Math.abs(el.currentTime - tl) > 0.25) el.currentTime = tl;
+        else if (Math.abs(el.currentTime - tl) > tol) el.currentTime = tl;
       }
       drawSrc(c, W, H, el, el.videoWidth, el.videoHeight, mode, true);
     }
@@ -183,7 +216,7 @@ FN.drawBackground = (c, W, H, t) => {
   }
 };
 
-// ---------- music + video BG: preview in sync with the main clock ----------
+// ---------- music + video picture: preview in sync with the main clock ----------
 let mSrc = null, mGain = null;
 function stopM() { if (mSrc) { try { mSrc.stop(); } catch {} mSrc.disconnect(); mSrc = null; } }
 FN.onPlay.push((t) => {
@@ -213,9 +246,10 @@ async function restore() {
   volIn.value = md.musicDb ?? -18; loopCb.checked = md.musicLoop ?? true; bgMode.value = md.bgMode || 'cover';
   if (p.logo) { logoPos.value = p.logo.pos || 'tr'; logoSize.value = p.logo.sizePct || 12; logoOp.value = p.logo.opacity ?? 0.9; }
   musicBuf = bgImg = logoImg = bgCache = null; dropVideo();
+  setLock(!!md.mainIsVideo);                 // main video file must be chosen again; BG stays locked meanwhile
   try {
     if (md.music) await loadMusic(md.music.replace(/^Music\//, ''));
-    if (md.bg) { const n = md.bg.replace(/^BG\//, ''); if (VID.test(n)) await loadBgVideo(n); else await loadBg(n); }
+    if (md.bg && !md.mainIsVideo) { const n = md.bg.replace(/^BG\//, ''); if (VID.test(n)) await loadBgVideo(n); else await loadBg(n); }
     if (p.logo?.path) await loadLogo(p.logo.path.replace(/^Logo\//, ''));
   } catch { /* R2 not reachable yet: ignore */ }
   FN.redraw();
