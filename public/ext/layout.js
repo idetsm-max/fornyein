@@ -1,7 +1,9 @@
-// Layout module (loaded LAST): turns the app into a step-by-step editor.
-//   Left : sticky preview + waveform/transport.      Right: one step at a time (wizard), each part in its own panel.
-// It does not rebuild any feature: it moves the cards that the other modules created into the right step,
-// so every handler / id keeps working. Steps: 1 အသံ · 2 စာသား · 3 ချိန်ကိုက် · 4 စာတန်းပုံစံ · 5 နောက်ခံ · 6 အသံ/Music · 7 ထုတ်မယ်
+// Layout module (loaded LAST): CapCut-style single-screen editor. The page itself never scrolls.
+//   Top bar: brand · frame size · status · project · EXPORT
+//   Middle : tool rail | tool panel (one step at a time) | PREVIEW | subtitle list
+//   Bottom : TIMELINE (transport, Tap-sync, split/merge, undo, waveform with subtitle blocks)
+// It does not rebuild any feature: it moves the elements the other modules created into the right place,
+// so every handler / id keeps working.
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
 function mk(tag, props = {}, kids = []) { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e; }
@@ -9,35 +11,51 @@ const short = (s) => (s || '').replace(/^(local:|Music\/|BG\/|Logo\/)/, '');
 
 // ---------- design ----------
 document.head.append(mk('style', { textContent: `
-:root{--bg:#0d1017;--card:#161b26;--line:#283044;--tx:#e9edf6;--mut:#8b96b0;--ac:#5b9dff;--ac2:#7c6cff;--ok:#3ddc84}
-body{background:radial-gradient(1100px 520px at 85% -10%,#1b2342 0,transparent 60%),var(--bg);color:var(--tx);min-height:100vh}
-.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 20px;background:rgba(13,16,23,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.brand{font-weight:700;font-size:18px;letter-spacing:.3px;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
-.grow{flex:1}
-.stepnav{display:flex;gap:8px;padding:12px 20px;overflow:auto;border-bottom:1px solid var(--line)}
-.stepnav button{display:flex;align-items:center;gap:8px;white-space:nowrap;border-radius:999px;padding:7px 14px 7px 8px}
-.stepnav .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#0e121a;font-size:12px;border:1px solid var(--line)}
-.stepnav button.on{background:linear-gradient(135deg,var(--ac),var(--ac2));border-color:transparent;color:#fff}
-.stepnav button.on .n{background:rgba(255,255,255,.22);border-color:transparent}
-.stepnav button.done:not(.on) .n{background:var(--ok);color:#06210f;border-color:transparent}
-.workspace{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;padding:18px 20px;align-items:start}
-.previewcol{position:sticky;top:70px}
-@media(max-width:1000px){.workspace{grid-template-columns:1fr}.previewcol{position:static}}
+:root{--bg:#0b0e14;--bg2:#10141d;--card:#161b26;--line:#262e42;--tx:#e9edf6;--mut:#8b96b0;--ac:#5b9dff;--ac2:#7c6cff;--ok:#3ddc84}
+html,body{height:100%;overflow:hidden;margin:0}
+body{background:var(--bg);color:var(--tx)}
+.app{height:100vh;height:100dvh;display:grid;grid-template-rows:52px minmax(0,1fr) 224px}
+.topbar{display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg2);border-bottom:1px solid var(--line);min-width:0}
+.brand{font-weight:700;font-size:17px;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+.grow{flex:1;min-width:0}
+.topbar #status{color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.topbar select{max-width:170px}
+.mid{display:grid;grid-template-columns:68px minmax(300px,350px) minmax(0,1fr) minmax(250px,310px);min-height:0}
+.rail{display:flex;flex-direction:column;gap:6px;padding:8px 6px;background:var(--bg2);border-right:1px solid var(--line);overflow:auto}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:10px;border:1px solid transparent;background:transparent;font-size:11px;color:var(--mut);position:relative}
+.rail button .ic{font-size:20px;line-height:1}
+.rail button.on{background:#1b2336;color:#fff;border-color:var(--ac)}
+.rail button.done::after{content:'';position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.leftpanel{overflow:auto;padding:14px;background:var(--bg2);border-right:1px solid var(--line);min-height:0}
 .panel{display:none}.panel.on{display:block}
-.panel h2{margin:2px 0 6px;font-size:21px}
-.panel .desc{color:var(--mut);font-size:14px;line-height:1.7;margin-bottom:14px}
-.panel .card,.previewcol .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
-.panelnav{display:flex;justify-content:space-between;gap:10px;margin-top:4px}
+.panel h2{margin:0 0 4px;font-size:18px}
+.panel .desc{color:var(--mut);font-size:13px;line-height:1.7;margin-bottom:12px}
+.panel .card,.inspector .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 12px}
+.panelnav{position:sticky;bottom:-14px;display:flex;justify-content:space-between;gap:8px;padding:10px 0 2px;background:linear-gradient(transparent,var(--bg2) 28%)}
+.stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;min-height:0;padding:14px;background:radial-gradient(800px 400px at 50% 40%,#151b2b,#0a0d13)}
+.stage canvas#cv{flex:none;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.55)}
+.inspector{overflow:auto;padding:12px;background:var(--bg2);border-left:1px solid var(--line);min-height:0}
+.inspector #list{max-height:none}
+.tl{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px;padding:8px 14px 8px;background:var(--bg2);border-top:1px solid var(--line);min-height:0}
+.tl .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tl .bar .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+.tl .row{margin:0}
+.tl canvas#wf{width:100%;height:100%;min-height:0;border-radius:8px;border:1px solid var(--line)}
+.tl .hint{color:var(--mut);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 button,select,input,textarea{border-radius:8px}
-button{background:#1d2434;border:1px solid var(--line);padding:7px 12px;color:var(--tx)}
+button{background:#1d2434;border:1px solid var(--line);padding:6px 11px;color:var(--tx)}
 button:hover:not(:disabled){border-color:var(--ac)}
 button.pri,.bigbtn{background:linear-gradient(135deg,var(--ac),var(--ac2));border-color:transparent;color:#fff}
-.bigbtn{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:12px;font-weight:600;cursor:pointer;font-size:15px}
-.btnlike{border:1px solid var(--line);padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--tx);background:#1d2434}
-#export{padding:12px 22px;font-size:16px;font-weight:600}
-.check{display:grid;grid-template-columns:22px 1fr;gap:4px 8px;align-items:center;font-size:14px}
+.bigbtn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:12px;font-weight:600;cursor:pointer;font-size:14px}
+.btnlike{border:1px solid var(--line);padding:6px 11px;border-radius:8px;cursor:pointer;color:var(--tx);background:#1d2434;font-size:13px;white-space:nowrap}
+#export{padding:8px 18px;font-weight:600}
+.check{display:grid;grid-template-columns:22px 1fr;gap:4px 8px;align-items:center;font-size:14px;margin-bottom:10px}
 .check .ok{color:var(--ok)}.check .no{color:#f5b83d}
-#list{max-height:380px}
+@media(max-width:900px){
+  html,body{overflow:auto}.app{height:auto;display:block}.mid{display:block}
+  .rail{flex-direction:row;overflow:auto}.rail button{min-width:62px}
+  .leftpanel,.inspector{max-height:none}.stage{height:56vw;min-height:240px}.tl{height:230px}
+}
 ` }));
 
 // ---------- grab the pieces the other modules created ----------
@@ -48,67 +66,95 @@ const previewCard = $('cv').closest('.card'), timelineCard = byText('Timeline �
 const effectsCard = byText('Effect / Animation / Preset'), creditsCard = byText('Credits'), mixerCard = cards.find((c) => c.textContent.includes('Audio Mixer'));
 const musicCard = $('card-music'), bgCard = $('card-bg'), logoCard = $('card-logo');
 const srtBtn = [...document.querySelectorAll('button')].find((b) => b.textContent === 'SRT export');
+const safeLbl = [...document.querySelectorAll('label')].find((l) => l.textContent.includes('Safe area'));
 const card = (title, ...kids) => { const c = mk('div', { className: 'card' }); if (title) c.append(mk('b', { textContent: title })); kids.forEach((k) => c.append(k)); return c; };
 const row = (...kids) => mk('div', { className: 'row' }, kids);
 
 // ---------- cards that are new / re-assembled ----------
-// step 1: file chooser + frame size
 const fileLbl = $('file').closest('label'); fileLbl.childNodes[0].textContent = '';
 fileLbl.classList.add('bigbtn'); fileLbl.prepend(mk('span', { textContent: '📂 ဖိုင်ရွေးမယ် (Audio / Video)' })); $('file').style.display = 'none';
 const fileInfo = mk('span', { className: 'mut' });
-const inputCard = card('ကဗျာဖတ်သံ', row(fileLbl, fileInfo),
-  mk('div', { className: 'mut', style: 'margin-top:10px;line-height:1.7', textContent: 'Audio ရွေးရင် နောက်ခံကို အောက်ပိုင်းမှာ သီးသန့်ရွေးပါမယ်။ Video ရွေးရင် Video ထဲက ပုံကို နောက်ခံ၊ အသံကို ပင်မအသံအဖြစ် သုံးပြီး နောက်ခံ ရွေးခွင့်ကို ပိတ်ထားပါမယ်။' }));
-const sizeCard = card('Frame size (Output)', row('Aspect / Size', $('size')),
-  mk('div', { className: 'mut', style: 'margin-top:8px', textContent: '16:9 = YouTube၊ 9:16 = TikTok/Reels/Shorts၊ 1:1 = Facebook/Instagram။ Aspect တစ်ခုချင်းစီအတွက် စာတန်းနေရာကို သီးသန့်မှတ်ပါတယ်။' }));
-// step 4: style (the font/size/position row + colour row that used to sit under the text box)
+const inputCard = card('ကဗျာဖတ်သံ', row(fileLbl), row(fileInfo),
+  mk('div', { className: 'mut', style: 'margin-top:10px;line-height:1.7;font-size:13px', textContent: 'Audio ရွေးရင် နောက်ခံကို "နောက်ခံ" တန်းမှာ သီးသန့်ရွေးပါမယ်။ Video ရွေးရင် Video ထဲက ပုံကို နောက်ခံ၊ အသံကို ပင်မအသံအဖြစ် သုံးပြီး နောက်ခံ ရွေးခွင့်ကို ပိတ်ထားပါမယ်။ Frame size ကို အပေါ်ဆုံး bar မှာ ရွေးပါ။' }));
 const styleCard = card('စာတန်း ပုံစံ', $('fsz').closest('.row'), $('extra'));
-// step 7: export
 const checkBox = mk('div', { className: 'check' });
-const exportRow = row($('export'), $('cancel'), $('prog'));
-const exportCard = card('စစ်ပြီး ထုတ်မယ်', checkBox, exportRow, row(...(srtBtn ? [srtBtn] : []), mk('span', { className: 'mut', textContent: 'SRT = စာတန်းဖိုင် (YouTube/VLC အတွက်)' })));
+const exportCard = card('စစ်ပြီး ထုတ်မယ်', checkBox,
+  row(...(srtBtn ? [srtBtn] : []), mk('span', { className: 'mut', textContent: 'SRT = စာတန်းဖိုင် (YouTube/VLC အတွက်)' })),
+  mk('div', { className: 'mut', style: 'margin-top:10px;font-size:13px;line-height:1.7', textContent: 'MP4 ထုတ်ခလုတ်က အပေါ်ဆုံး bar ညာဘက်မှာ ရှိပါတယ်။ ထုတ်နေတုန်း tab ကို မပိတ်ပါနဲ့။' }));
 
-// ---------- steps ----------
+// ---------- tool steps (left rail + panel) ----------
 const STEPS = [
-  { name: 'အသံ / Video', title: 'ကဗျာဖတ်သံ ရွေးပါ', desc: 'ကဗျာဖတ်သံ (Audio) သို့ Video ဖိုင်ကို ရွေးပါ၊ ပြီးတော့ Frame size ရွေးပါ။', els: [inputCard, sizeCard] },
-  { name: 'စာသား', title: 'စာသား ထည့်ပါ', desc: 'ကဗျာစာသား paste လုပ်ပါ (Zawgyi ဆိုရင် Unicode ပြောင်းပေးပါမယ်)၊ ပြီးရင် "စာတန်းခွဲမယ်" နှိပ်ပါ။', els: [textCard] },
-  { name: 'ချိန်ကိုက်', title: 'စာတန်းနဲ့ အသံ ချိန်ကိုက်ပါ', desc: 'Tap-sync နဲ့ ဖတ်သံကို လိုက်နှိပ်ပါ၊ ပြီးရင် ညာဘက် waveform ပေါ်မှာ အပြာတန်းတွေကို ဆွဲပြင်ပါ။ Space = Play။', els: [timelineCard, listCard] },
-  { name: 'စာတန်းပုံစံ', title: 'စာတန်း ပုံစံ', desc: 'Font၊ အရွယ်၊ အရောင်၊ နေရာ (Preview ပေါ်မှာ ဆွဲရွှေ့လို့ရ)၊ Effect၊ Animation၊ Preset ရွေးပါ။', els: [styleCard, effectsCard] },
-  { name: 'နောက်ခံ', title: 'နောက်ခံ / Logo / Credits', desc: 'နောက်ခံပုံ/Video၊ Logo၊ စာရေးသူ/ဖတ်သူ နာမည်တွေ ထည့်ပါ။ Library (R2) ကိုယ်ပိုင်ဖိုင် နှစ်မျိုးလုံးရပါတယ်။', els: [bgCard, logoCard, creditsCard] },
-  { name: 'အသံ / Music', title: 'အသံ + Background Music', desc: 'Background Music ထည့်ပါ (Library သို့ ကိုယ်ပိုင်ဖိုင်)၊ ဖတ်သံ Effect၊ Ducking၊ SE ကို ညှိပါ။', els: [musicCard, mixerCard] },
-  { name: 'ထုတ်မယ်', title: 'MP4 ထုတ်မယ်', desc: 'အားလုံးစစ်ပြီး MP4 ထုတ်ပါ။ ထုတ်နေတုန်း tab ကို မပိတ်ပါနဲ့။', els: [exportCard] },
+  { ic: '🎵', name: 'အသံ', title: '၁. ကဗျာဖတ်သံ', desc: 'ကဗျာဖတ်သံ (Audio) သို့ Video ဖိုင်ကို ရွေးပါ။', els: [inputCard] },
+  { ic: '✍️', name: 'စာသား', title: '၂. စာသား', desc: 'ကဗျာစာသား paste လုပ်ပြီး "စာတန်းခွဲမယ်" နှိပ်ပါ (Zawgyi ဆိုရင် Unicode ပြောင်းပေးပါမယ်)။ ပြီးရင် အောက်က Timeline မှာ Tap-sync နဲ့ ချိန်ကိုက်ပါ။', els: [textCard] },
+  { ic: '🎨', name: 'ပုံစံ', title: '၃. စာတန်း ပုံစံ', desc: 'Font၊ အရွယ်၊ အရောင်၊ နေရာ (Preview ပေါ်မှာ ဆွဲရွှေ့လို့ရ)၊ Effect၊ Animation၊ Preset။', els: [styleCard, effectsCard] },
+  { ic: '🖼', name: 'နောက်ခံ', title: '၄. နောက်ခံ / Logo / Credits', desc: 'နောက်ခံပုံ/Video၊ Logo၊ စာရေးသူ/ဖတ်သူ နာမည်။ Library (R2) သို့ ကိုယ်ပိုင်ဖိုင်။', els: [bgCard, logoCard, creditsCard] },
+  { ic: '🎚', name: 'Music', title: '၅. အသံ + Background Music', desc: 'Background Music (Library သို့ ကိုယ်ပိုင်ဖိုင်)၊ ဖတ်သံ Effect၊ Ducking၊ SE။', els: [musicCard, mixerCard] },
+  { ic: '📤', name: 'ထုတ်', title: '၆. ထုတ်မယ်', desc: 'အားလုံးစစ်ပြီး MP4 ထုတ်ပါ။', els: [exportCard] },
 ];
 const visited = new Set();
-const nav = mk('nav', { className: 'stepnav' }), panelCol = mk('div'), navBtns = [], panels = [];
+const rail = mk('nav', { className: 'rail' }), leftPanel = mk('div', { className: 'leftpanel' }), railBtns = [], panels = [];
 STEPS.forEach((s, i) => {
-  const b = mk('button', { onclick: () => go(i) }, [mk('span', { className: 'n', textContent: i + 1 }), s.name]); navBtns.push(b); nav.append(b);
-  const p = mk('section', { className: 'panel' }, [mk('h2', { textContent: `${i + 1}. ${s.title}` }), mk('div', { className: 'desc', textContent: s.desc }), ...s.els.filter(Boolean)]);
-  const foot = mk('div', { className: 'panelnav' }, [
+  railBtns.push(mk('button', { onclick: () => go(i), title: s.title }, [mk('span', { className: 'ic', textContent: s.ic }), s.name])); rail.append(railBtns[i]);
+  const p = mk('section', { className: 'panel' }, [mk('h2', { textContent: s.title }), mk('div', { className: 'desc', textContent: s.desc }), ...s.els.filter(Boolean)]);
+  p.append(mk('div', { className: 'panelnav' }, [
     i > 0 ? mk('button', { textContent: '← ' + STEPS[i - 1].name, onclick: () => go(i - 1) }) : mk('span'),
-    i < STEPS.length - 1 ? mk('button', { className: 'pri', textContent: 'နောက်တစ်ဆင့်: ' + STEPS[i + 1].name + ' →', onclick: () => go(i + 1) }) : mk('span'),
-  ]);
-  p.append(foot); panels.push(p); panelCol.append(p);
+    i < STEPS.length - 1 ? mk('button', { className: 'pri', textContent: STEPS[i + 1].name + ' →', onclick: () => go(i + 1) }) : mk('span'),
+  ]));
+  panels.push(p); leftPanel.append(p);
 });
 function go(i) {
-  panels.forEach((p, j) => p.classList.toggle('on', j === i)); navBtns.forEach((b, j) => b.classList.toggle('on', j === i));
-  visited.add(i); location.hash = 'step' + (i + 1); refresh();
+  panels.forEach((p, j) => p.classList.toggle('on', j === i)); railBtns.forEach((b, j) => b.classList.toggle('on', j === i));
+  visited.add(i); location.hash = 'step' + (i + 1); leftPanel.scrollTop = 0; refresh();
 }
 
-// ---------- top bar + preview column ----------
+// ---------- top bar ----------
 const importLbl = $('loadJson').closest('label'); importLbl.childNodes[0].textContent = 'Project import'; importLbl.classList.add('btnlike'); $('loadJson').style.display = 'none';
-const top = mk('header', { className: 'topbar' }, [mk('span', { className: 'brand', textContent: 'For Nyein' }), mk('span', { className: 'grow' }), $('saveJson'), importLbl, $('status')]);
-const previewCol = mk('div', { className: 'previewcol' }, [previewCard]);
-const ws = mk('div', { className: 'workspace' }, [previewCol, panelCol]);
-document.body.prepend(mk('div', {}, [top, nav, ws]));
-oldHeader.remove(); oldMain.remove();
-$('status').style.cssText = 'color:var(--mut);font-size:13px;max-width:46ch';
+$('saveJson').classList.add('btnlike');
+const top = mk('header', { className: 'topbar' }, [mk('span', { className: 'brand', textContent: 'For Nyein' }), $('size'), mk('span', { className: 'grow' }), $('status'), $('saveJson'), importLbl, $('export'), $('cancel'), $('prog')]);
+$('prog').style.width = '110px';
 
-// ---------- live state: step ticks, file info, readiness list ----------
+// ---------- preview stage (keeps the same element so the safe-area overlay + drag-to-position still work) ----------
+const playRow = $('play').closest('.row'), hintDiv = $('wf').nextElementSibling;
+const stage = previewCard; stage.className = 'stage'; stage.style.padding = ''; // card -> stage
+[...stage.children].forEach((c) => { if (c !== $('cv') && !c.contains?.($('cv')) && !c.classList?.contains('mut') && c.tagName !== 'DIV') { /* keep overlays */ } });
+
+// ---------- timeline (bottom) ----------
+const tlTools = timelineCard.querySelector('.row'), tlSettings = $('lead').closest('.row');
+tlSettings.classList.remove('mut');
+const bar = mk('div', { className: 'bar' }, [$('play'), $('time'), ...(safeLbl ? [safeLbl] : []), mk('span', { className: 'sep' }), ...[...tlTools.children], mk('span', { className: 'sep' }), tlSettings]);
+const hint = mk('div', { className: 'hint', textContent: 'Space = Play · T = Tap-sync (စာကြောင်းတစ်ကြောင်း ဖတ်နေစဉ် နှိပ်ထား) · A = audition · S/M = split/merge · Del · ←/→ = ၁၀ms (Shift ၁၀၀ms၊ Alt = အဆုံး) · Ctrl+Z/Y · အပြာတန်း ဆွဲရွှေ့/အစွန်းဆွဲ' });
+const timeline = mk('div', { className: 'tl' }, [bar, $('wf'), hint]);
+playRow.remove(); hintDiv?.remove();
+
+// ---------- subtitle list (right inspector) ----------
+const inspector = mk('aside', { className: 'inspector' }, [listCard]);
+
+// ---------- assemble ----------
+const mid = mk('div', { className: 'mid' }, [rail, leftPanel, stage, inspector]);
+document.body.prepend(mk('div', { className: 'app' }, [top, mid, timeline]));
+oldHeader.remove(); oldMain.remove();
+
+// ---------- fit the preview + waveform to the space (the page itself never scrolls) ----------
+function fit() {
+  const cv = FN.cv, cs = getComputedStyle(stage);
+  const w = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  if (w > 20 && h > 20) {
+    const ar = cv.width / cv.height; let cw = w, ch = w / ar; if (ch > h) { ch = h; cw = h * ar; }
+    cv.style.width = Math.floor(cw) + 'px'; cv.style.height = Math.floor(ch) + 'px';
+  }
+  const wf = $('wf'), ww = Math.round(wf.clientWidth);
+  if (ww > 50 && wf.width !== ww) { wf.width = ww; FN.redraw(); }
+}
+new ResizeObserver(fit).observe(stage); new ResizeObserver(fit).observe(timeline);
+window.addEventListener('resize', fit); setInterval(fit, 400);
+
+// ---------- live state: ticks, file info, readiness list ----------
 function refresh() {
   const p = P(), md = p.media || {}, subs = p.subtitles.length, cr = p.credits || {};
   fileInfo.textContent = FN.audio ? `${short(md.main) || 'ဖိုင်'} · ${FN.audio.duration.toFixed(1)} s${md.mainIsVideo ? ' · Video' : ''}` : (md.main ? `${short(md.main)} — ဖိုင်ကို ပြန်ရွေးပါ` : 'မရွေးရသေးပါ');
-  const done = [!!FN.audio, subs > 0, visited.has(2) && subs > 0, visited.has(3), visited.has(4), visited.has(5), false];
-  navBtns.forEach((b, i) => b.classList.toggle('done', done[i]));
-  if (panels[6].classList.contains('on')) {
+  const done = [!!FN.audio, subs > 0, visited.has(2), visited.has(3), visited.has(4), false];
+  railBtns.forEach((b, i) => b.classList.toggle('done', done[i]));
+  if (panels[5].classList.contains('on')) {
     const items = [
       [!!FN.audio, 'အသံ', FN.audio ? FN.audio.duration.toFixed(1) + ' s' + (md.mainIsVideo ? ' (Video)' : '') : 'မရွေးရသေး'],
       [subs > 0, 'စာတန်း', subs ? subs + ' ကြောင်း' : 'မရှိသေး'],
@@ -124,5 +170,5 @@ function refresh() {
 setInterval(refresh, 500);
 
 const start = parseInt((location.hash.match(/step(\d)/) || [])[1], 10);
-go(start >= 1 && start <= 7 ? start - 1 : 0);
-FN.redraw();
+go(start >= 1 && start <= STEPS.length ? start - 1 : 0);
+fit(); FN.redraw();
