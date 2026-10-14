@@ -74,7 +74,8 @@ const top = safe('topbar', () => {
 
 // ---------- preview (fixed frame; the same element is kept so the safe-area overlay + drag-to-position still work) ----------
 const stage = previewCard;
-safe('stage', () => { const pr = $('play').closest('.row'), hd = $('wf').nextElementSibling; stage.dataset.pr = '1'; stage._rm = [pr, hd]; });
+stage.classList.remove('card'); stage.classList.add('stage'); stage.style.padding = '';
+safe('stage', () => { stage._rm = [$('play').closest('.row'), $('wf').nextElementSibling]; });
 const center = mk('div', { className: 'center' }, [stage]);
 
 // ---------- timeline (bottom) ----------
@@ -84,7 +85,7 @@ safe('timeline', () => {
   const bar = mk('div', { className: 'bar' }, [$('play'), $('time'), ...(safeLbl ? [safeLbl] : []), mk('span', { className: 'sep' }), ...[...tools.children], mk('span', { className: 'sep' }), settings]);
   const hint = mk('div', { className: 'hint', textContent: 'Space = Play · T = Tap-sync (စာကြောင်းတစ်ကြောင်း ဖတ်နေစဉ် နှိပ်ထား) · A = audition · S/M = split/merge · Del · ←/→ = ၁၀ms (Shift ၁၀၀ms၊ Alt = အဆုံး) · R/V/L = review/verify/lock · Ctrl+Z/Y' });
   timeline.append(bar, $('wf'), hint);
-  stage._rm.forEach((e) => e && e.remove());
+  (stage._rm || []).forEach((e) => e && e.remove());
 });
 
 // ---------- assemble ----------
@@ -107,8 +108,9 @@ body{background:var(--bg);color:var(--tx)}
 .side{display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0;background:var(--bg2)}
 .mid>.side:first-child{border-right:1px solid var(--line)}.mid>.side:last-child{border-left:1px solid var(--line)}
 .tabs{display:flex;gap:4px;padding:8px 8px 0;border-bottom:1px solid var(--line);overflow-x:auto}
-.tabs button{display:flex;align-items:center;gap:6px;white-space:nowrap;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--mut);padding:8px 11px}
+.tabs button{display:flex;align-items:center;gap:6px;white-space:nowrap;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--mut);padding:8px 11px;position:relative}
 .tabs button.on{background:var(--card);color:#fff;border-color:var(--line);box-shadow:inset 0 2px 0 var(--ac)}
+.tabs button.done::after{content:'';position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--ok)}
 .pbody{overflow:auto;padding:12px;min-height:0}
 .pane{display:none}.pane.on{display:block}
 .pbody .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 12px}
