@@ -1,7 +1,9 @@
 // Assets module: separate cards for Background music, Background (photo/video) and Logo.
-// Each can come from the private R2 library OR from the user's own computer.
+// Each can come from the private R2 library (shown as small tiles with a thumbnail) OR from the user's own computer.
 // If the MAIN input is a video file: its picture becomes the background, its sound the main audio, and BG selection is locked.
-// Music playback / mixing lives in audio.js (Audio Engine); this module only loads the chosen buffer (FN.music.buf).
+// The picture of a main video moves together with the main voice clip (audioOffset).
+// Music playback / mixing lives in audio.js (Audio Engine); this module only loads the chosen buffer (FN.music.buf)
+// and tells the timeline what to draw (FN.info).
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
 function mk(tag, props = {}, kids = []) { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e; }
@@ -10,6 +12,7 @@ const assetUrl = (type, name) => `/api/asset/${type}/${name.split('/').map(encod
 const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 const isLocal = (s) => typeof s === 'string' && s.startsWith('local:');
 const shortName = (s) => (s || '').replace(/^(local:|Music\/|BG\/|Logo\/)/, '');
+const offT = () => P().audioOffset || 0;
 
 // ---------- R2 list (cached in memory) ----------
 const cache = {};
@@ -27,21 +30,32 @@ function makeCard(id, title, sub) {
   if (sub) c.append(mk('div', { className: 'mut', textContent: sub, style: 'margin:4px 0 8px;line-height:1.6' }));
   return c;
 }
-function r2Box(type, onUse, prevAudio) {
-  const box = mk('div'); box.style.maxHeight = '190px'; box.style.overflow = 'auto';
+// small tiles: thumbnail (image / first video frame / music icon) + name. Click a tile = use it.
+function r2Box(type, onUse, prevAudio, isUsed) {
+  const box = mk('div'), tiles = [];
+  box.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;max-height:230px;overflow:auto;scrollbar-width:none';
+  box.mark = () => tiles.forEach(([name, t]) => { t.style.borderColor = isUsed && isUsed(name) ? 'var(--ac)' : 'var(--line)'; });
   async function refresh(force) {
-    box.textContent = 'စာရင်းယူနေပါတယ်...';
+    box.textContent = 'စာရင်းယူနေပါတယ်...'; tiles.length = 0;
     try {
       const items = await list(type, force); box.textContent = '';
       if (!items.length) { box.append(mk('div', { className: 'mut', textContent: `${type}/ ထဲမှာ ဖိုင်မရှိသေးပါ` })); return; }
       for (const it of items) {
-        const row = mk('div', { className: 'row' }); row.style.marginTop = '4px';
-        const nm = mk('span', { textContent: `${it.name} · ${fmtSize(it.size)}` }); nm.style.flex = '1'; nm.style.wordBreak = 'break-all';
-        row.append(nm);
-        if (prevAudio) row.append(mk('button', { textContent: '▶', title: 'နားထောင်', onclick: () => { prevAudio.src = assetUrl(type, it.name); prevAudio.play().catch(() => {}); } }));
-        row.append(mk('button', { textContent: 'သုံး', onclick: () => onUse(it) }));
-        box.append(row);
+        const tile = mk('div', { title: `${it.name} · ${fmtSize(it.size)}` });
+        tile.style.cssText = 'position:relative;border:1px solid var(--line);border-radius:10px;background:#0e121a;overflow:hidden;cursor:pointer';
+        const thumb = mk('div'); thumb.style.cssText = 'height:62px;display:grid;place-items:center;font-size:26px;background:#121827;overflow:hidden';
+        if (IMG.test(it.name)) { const im = mk('img', { loading: 'lazy', decoding: 'async', src: assetUrl(type, it.name) }); im.style.cssText = 'width:100%;height:100%;object-fit:cover'; thumb.append(im); }
+        else if (VID.test(it.name)) { const v = mk('video', { muted: true, playsInline: true, preload: 'metadata', src: assetUrl(type, it.name) + '#t=0.5' }); v.muted = true; v.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none'; thumb.append(v); }
+        else thumb.textContent = '🎶';
+        const nm = mk('div', { textContent: it.name }); nm.style.cssText = 'padding:4px 6px;font-size:11px;line-height:1.3;height:30px;overflow:hidden;word-break:break-all';
+        tile.append(thumb, nm);
+        if (prevAudio) {
+          const pb = mk('button', { textContent: '▶', title: 'နားထောင်', onclick: (e) => { e.stopPropagation(); prevAudio.src = assetUrl(type, it.name); prevAudio.play().catch(() => {}); } });
+          pb.style.cssText = 'position:absolute;top:4px;right:4px;padding:1px 6px;font-size:11px'; tile.append(pb);
+        }
+        tile.onclick = () => onUse(it); tiles.push([it.name, tile]); box.append(tile);
       }
+      box.mark();
     } catch (e) { box.textContent = 'စာရင်းမရပါ: ' + e.message; }
   }
   return { box, refresh };
@@ -54,13 +68,13 @@ function uploader(label, accept, onFile) {
 const section = (t) => mk('div', { className: 'mut', textContent: t, style: 'margin-top:10px;font-weight:600' });
 
 // ---------- state ----------
-let musicBuf = null, bgImg = null, bgVideo = null, logoImg = null, bgCache = null, lockBg = false;
+let musicBuf = null, bgImg = null, bgVideo = null, logoImg = null, bgCache = null, lockBg = false, isPlaying = false;
 FN.music = { get buf() { return musicBuf; } };
 
 // ================= Background music =================
-const musicCard = makeCard('card-music', 'Background Music', 'Library (R2) ကနေ ရွေးမယ်၊ ဒါမှမဟုတ် ကိုယ့်ကွန်ပျူတာထဲက ဖိုင်ကို ထည့်မယ်။ Volume/Ducking ကို အောက်က Audio Mixer မှာ ညှိပါ။');
+const musicCard = makeCard('card-music', 'Background Music', 'Library (R2) ကနေ ရွေးမယ် (အကွက်လေးကို နှိပ်)၊ ဒါမှမဟုတ် ကိုယ့်ကွန်ပျူတာထဲက ဖိုင်ကို ထည့်မယ်။ Volume/Ducking ကို "အသံ" tab ထဲက Mixer မှာ ညှိပါ။');
 const musicCur = mk('div', { className: 'row' }), musicPrev = mk('audio', { controls: true }); musicPrev.style.width = '100%'; musicPrev.style.marginTop = '8px';
-const musicList = r2Box('Music', (it) => pickMusic(it), musicPrev);
+const musicList = r2Box('Music', (it) => pickMusic(it), musicPrev, (n) => P().media?.music === 'Music/' + n);
 musicCard.append(musicCur, section('ကိုယ်ပိုင်ဖိုင်'), mk('div', { className: 'row' }, [uploader('Music ဖိုင်ရွေး', 'audio/*', pickMusicFile)]),
   section('Library (R2)'), mk('div', { className: 'row' }, [mk('button', { textContent: '↻ Refresh', onclick: () => musicList.refresh(true) })]), musicList.box, musicPrev);
 function curLine(el, label, name, onClear) {
@@ -68,11 +82,18 @@ function curLine(el, label, name, onClear) {
   if (!name) { el.append(mk('span', { className: 'mut', textContent: `${label}: မရွေးရသေးပါ` })); return; }
   el.append(mk('span', { textContent: `${label}: ${shortName(name)}${isLocal(name) ? ' (ကိုယ်ပိုင်)' : ''}` }), mk('button', { textContent: 'ဖယ်ရှား', onclick: onClear }));
 }
+// tell the timeline what is on its Video / Music lanes
+function syncInfo() {
+  const md = P().media || {};
+  FN.info.video = bgVideo ? { name: shortName(bgVideo.name), dur: bgVideo.vdur || bgVideo.el.duration || 0, isMain: bgVideo.isMain } : (bgImg ? { name: shortName(md.bg), dur: 0, isMain: false } : null);
+  FN.info.music = musicBuf ? { name: shortName(md.music), dur: musicBuf.duration } : null;
+}
 const refreshCur = () => {
   const md = P().media || {}, L = P().logo;
   curLine(musicCur, 'သုံးနေတာ', md.music, () => { musicBuf = null; delete P().media.music; afterChange(); });
   curLine(bgCur, 'သုံးနေတာ', md.mainIsVideo ? null : md.bg, () => { if (lockBg) return; bgImg = bgCache = null; dropVideo(); delete P().media.bg; afterChange(); });
   curLine(logoCur, 'သုံးနေတာ', L?.path, () => { logoImg = null; delete P().logo; afterChange(); });
+  musicList.box.mark(); bgList.box.mark(); logoList.box.mark(); syncInfo();
 };
 function afterChange() { refreshCur(); FN.audioChanged?.(); FN.save(); FN.redraw(); }
 async function pickMusic(it) {
@@ -85,11 +106,11 @@ async function pickMusicFile(f) {
 }
 
 // ================= Background (photo / video) =================
-const bgCard = makeCard('card-bg', 'နောက်ခံ (Photo / Video)', 'Library (R2) ကနေ ရွေးမယ်၊ ဒါမှမဟုတ် ကိုယ့်ကွန်ပျူတာထဲက ပုံ/Video ကို ထည့်မယ်။');
+const bgCard = makeCard('card-bg', 'နောက်ခံ (Photo / Video)', 'Library (R2) ကနေ ရွေးမယ် (အကွက်လေးကို နှိပ်)၊ ဒါမှမဟုတ် ကိုယ့်ကွန်ပျူတာထဲက ပုံ/Video ကို ထည့်မယ်။');
 const bgCur = mk('div', { className: 'row' }), bgLockMsg = mk('div', { className: 'mut', textContent: 'ပင်မ input က Video ဖြစ်နေလို့ Video ရဲ့ ပုံကို နောက်ခံအဖြစ် သုံးထားပါတယ်၊ ဒီမှာ ရွေးလို့မရပါ။' });
 bgLockMsg.style.cssText = 'display:none;padding:8px;border:1px dashed var(--line);border-radius:8px;margin-bottom:8px';
 const bgMode = mk('select'); [['cover', 'Cover (ဖြတ်ယူ)'], ['contain', 'Contain + blur']].forEach(([v, l]) => bgMode.add(new Option(l, v)));
-const bgList = r2Box('BG', (it) => pickBg(it));
+const bgList = r2Box('BG', (it) => pickBg(it), null, (n) => P().media?.bg === 'BG/' + n);
 const bgBody = mk('div'); bgBody.append(bgCur, section('ကိုယ်ပိုင်ဖိုင်'), mk('div', { className: 'row' }, [uploader('ပုံ/Video ရွေး', 'image/*,video/*', pickBgFile)]),
   section('Library (R2)'), mk('div', { className: 'row' }, [mk('button', { textContent: '↻ Refresh', onclick: () => bgList.refresh(true) })]), bgList.box);
 bgCard.append(bgLockMsg, bgBody, mk('div', { className: 'row' }, [mk('label', { className: 'mut' }, ['ပြပုံ ', bgMode])]));
@@ -117,7 +138,7 @@ const logoCur = mk('div', { className: 'row' });
 const logoPos = mk('select'); [['tr', 'ညာပေါ်'], ['tl', 'ဘယ်ပေါ်'], ['br', 'ညာအောက်'], ['bl', 'ဘယ်အောက်']].forEach(([v, l]) => logoPos.add(new Option(l, v)));
 const logoSize = mk('input', { type: 'number', min: 3, max: 50, step: 1, value: 12 }); logoSize.style.width = '60px';
 const logoOp = mk('input', { type: 'number', min: 0.1, max: 1, step: 0.1, value: 0.9 }); logoOp.style.width = '60px';
-const logoList = r2Box('Logo', (it) => pickLogo(it));
+const logoList = r2Box('Logo', (it) => pickLogo(it), null, (n) => P().logo?.path === 'Logo/' + n);
 logoCard.append(logoCur, section('ကိုယ်ပိုင်ဖိုင်'), mk('div', { className: 'row' }, [uploader('Logo ပုံရွေး', 'image/*', pickLogoFile)]),
   section('Library (R2)'), mk('div', { className: 'row' }, [mk('button', { textContent: '↻ Refresh', onclick: () => logoList.refresh(true) })]), logoList.box,
   mk('div', { className: 'row mut' }, ['နေရာ', logoPos, 'အရွယ် %', logoSize, 'opacity', logoOp]));
@@ -171,9 +192,10 @@ const seekTo = (el, t) => new Promise((res) => {
   const h = () => { el.removeEventListener('seeked', h); res(); };
   el.addEventListener('seeked', h); el.currentTime = t;
 });
+const vt = (v, t) => (v.isMain ? Math.max(0, t - offT()) : t);          // a main video moves together with the voice clip
 FN.beforeFrame = async (t) => {            // export: called before every frame (t = exact timeline time)
   const v = bgVideo; if (!v) return;
-  const tl = v.vdur > 0 ? t % v.vdur : t;
+  const tv = vt(v, t), tl = v.vdur > 0 ? tv % v.vdur : tv;
   if (!v.useEl) {
     try {
       v.sinkP = v.sinkP || initSink(v); await v.sinkP;
@@ -200,7 +222,6 @@ $('file').addEventListener('change', async (e) => {
   refreshCur(); FN.save(); FN.redraw();
 });
 
-// ---------- settings -> project ----------
 // ---------- background + logo (called by drawFrame for every frame) ----------
 let smallCv = null;
 function drawSrc(c, W, H, s, iw, ih, mode, live) {
@@ -231,8 +252,10 @@ FN.drawBackground = (c, W, H, t) => {
     if (isExport && v.frame) drawSrc(c, W, H, v.frame, v.frame.width, v.frame.height, mode, true);
     else if (el.videoWidth && el.readyState >= 2) {
       if (!isExport) {                       // preview: keep the <video> in step with the timeline (tighter for main video)
-        const tl = el.duration > 0 ? t % el.duration : t, tol = v.isMain ? 0.12 : 0.25;
-        if (el.paused) { if (Math.abs(el.currentTime - tl) > 0.04) el.currentTime = tl; }
+        const tv = vt(v, t), tl = el.duration > 0 ? tv % el.duration : tv, tol = v.isMain ? 0.12 : 0.25, waiting = v.isMain && t < offT();
+        if (waiting) { if (!el.paused) el.pause(); if (el.currentTime > 0.04) el.currentTime = 0; }          // before the voice clip starts: hold the first frame
+        else if (v.isMain && isPlaying && el.paused) el.play().catch(() => {});
+        else if (el.paused) { if (Math.abs(el.currentTime - tl) > 0.04) el.currentTime = tl; }
         else if (Math.abs(el.currentTime - tl) > tol) el.currentTime = tl;
       }
       drawSrc(c, W, H, el, el.videoWidth, el.videoHeight, mode, true);
@@ -247,16 +270,19 @@ FN.drawBackground = (c, W, H, t) => {
 };
 
 // ---------- video picture follows play / pause ----------
-FN.onPlay.push((t) => { if (bgVideo) { const el = bgVideo.el; if (el.duration > 0) el.currentTime = t % el.duration; el.play().catch(() => {}); } });
-FN.onPause.push(() => { if (bgVideo) bgVideo.el.pause(); });
+FN.onPlay.push((t) => {
+  isPlaying = true;
+  if (bgVideo) { const el = bgVideo.el, tv = vt(bgVideo, t); if (el.duration > 0) el.currentTime = tv % el.duration; if (!(bgVideo.isMain && t < offT())) el.play().catch(() => {}); }
+});
+FN.onPause.push(() => { isPlaying = false; if (bgVideo) bgVideo.el.pause(); });
 
 // ---------- export: reset video state, then hand the main audio to the Audio Engine (audio.js) ----------
-FN.mixExport = async (main) => {
+FN.mixExport = async (main, off, total) => {
   if (bgVideo) { bgVideo.el.pause(); bgVideo.useEl = false; bgVideo.frame = null; }
-  return FN.audioMix ? await FN.audioMix(main) : main;
+  return FN.audioMix ? await FN.audioMix(main, off, total) : main;
 };
 
-// ---------- restore from project (also after import) ----------
+// ---------- restore from project (also after import / "ပြီးခဲ့တဲ့ project ပြန်ယူ") ----------
 async function restore() {
   const p = P(), md = p.media || {};
   bgMode.value = md.bgMode || 'cover';
