@@ -20,9 +20,10 @@ const playRow = playBtn.closest('.row'), wfHint = wfEl.nextElementSibling;
 const oldHeader = document.querySelector('header'), oldMain = document.querySelector('main');
 const cards = [...document.querySelectorAll('.card')];
 const byText = (s) => cards.find((c) => c.textContent.trim().startsWith(s));
+const byTitle = (s) => cards.find((c) => { const b = c.querySelector('b'); return b && b.textContent.trim() === s; });   // exact first-heading match
 const previewCard = cvEl.closest('.card') || cvEl.parentElement;
 const timelineCard = byText('Timeline ကိရိယာ'), textCard = $('txt').closest('.card'), listCard = $('list').closest('.card');
-const effectsCard = byText('Effect / Animation / Preset'), creditsCard = byText('Credits'), mixerCard = cards.find((c) => c.textContent.includes('Audio Mixer'));
+const effectsCard = byText('Effect / Animation / Preset'), creditsCard = byText('Credits'), mixerCard = byTitle('Audio Mixer');
 const musicCard = $('card-music'), bgCard = $('card-bg'), logoCard = $('card-logo');
 const srtBtn = [...document.querySelectorAll('button')].find((b) => b.textContent === 'SRT export');
 const safeLbl = [...document.querySelectorAll('label')].find((l) => l.textContent.includes('Safe area'));
@@ -30,6 +31,8 @@ const tlTools = timelineCard && timelineCard.querySelector('.row'), tlSettings =
 const fileLbl = $('file').closest('label'), importLbl = $('loadJson').closest('label');
 const card = (title, ...kids) => { const c = mk('div', { className: 'card' }); if (title) c.append(mk('b', { textContent: title })); kids.forEach((k) => k && c.append(k)); return c; };
 const row = (...kids) => mk('div', { className: 'row' }, kids);
+[['effects', effectsCard], ['credits', creditsCard], ['mixer', mixerCard], ['music', musicCard], ['background', bgCard], ['logo', logoCard], ['text', textCard], ['list', listCard], ['timeline', timelineCard]]
+  .forEach(([n, c]) => { if (!c) errs.push(n + ' card မတွေ့'); });
 
 // ---------- cards that are new / re-assembled ----------
 const fileInfo = mk('span', { className: 'mut' });
