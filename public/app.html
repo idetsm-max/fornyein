@@ -48,8 +48,8 @@
         <button id="cancel" hidden>Cancel</button>
         <progress id="prog" value="0" max="1" hidden></progress>
       </div>
-      <canvas id="wf" width="1000" height="120" style="margin-top:10px;cursor:pointer;touch-action:none"></canvas>
-      <div class="mut" style="margin-top:4px">Waveform ကိုနှိပ်ရင် ရွှေ့။ အောက်ခြေ အပြာတန်းကို ဆွဲရွှေ့၊ ဘေးအစွန်းကိုဆွဲရင် အစ/အဆုံး ပြင်။</div>
+      <canvas id="wf" width="1000" height="150" style="margin-top:10px;cursor:pointer;touch-action:none"></canvas>
+      <div class="mut" style="margin-top:4px">Timeline: Video / ကဗျာဖတ်သံ (ဆွဲရွှေ့လို့ရ) / စာတန်း / Music</div>
     </div>
     <div class="card" style="margin-top:14px">
       <b>Timeline ကိရိယာ</b>
@@ -105,11 +105,11 @@ const SIZES = {
 };
 const defaults = () => ({
   version: 1, output: { size: '16:9 · 1280×720', fps: FPS },
-  media: { main: null }, audioOffset: 0, calibMs: 0, leadMs: 100, tailMs: 200,
+  media: { main: null }, audioOffset: 0, followSubs: true, calibMs: 0, leadMs: 100, tailMs: 200,
   style: { font: 'Noto Sans Myanmar', sizePct: 6, yPct: 80 },
   subtitles: [],
 });
-let P = defaults();
+let P = defaults();                     // a NEW session always starts empty (the previous project is offered, never loaded by itself)
 let audio = null;                       // main AudioBuffer, decoded once
 const ac = new AudioContext({ sampleRate: 48000 });
 const cv = $('cv'), cx = cv.getContext('2d'), wf = $('wf'), wx = wf.getContext('2d');
@@ -128,15 +128,23 @@ const kvSet = async (k, v) => { const d = await dbp; return new Promise((res, re
 const kvGet = async (k) => { const d = await dbp; return new Promise((res, rej) => {
   const q = d.transaction('kv').objectStore('kv').get(k);
   q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); };
-let saveTimer;
+let saveTimer, lastSaved = null, prevKept = false;     // lastSaved = the project from the previous session (offered, not loaded)
 const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(async () => {
-  try { await kvSet('project', P); setStatus('autosave ✓'); } catch { setStatus('autosave မရ'); } }, 500); };
+  try { if (!prevKept && lastSaved) await kvSet('project_prev', lastSaved); prevKept = true; await kvSet('project', P); setStatus('autosave ✓'); }
+  catch { setStatus('autosave မရ'); } }, 500); };
+function restoreLast() {
+  if (!lastSaved) return;
+  P = { ...defaults(), ...lastSaved }; lastSaved = null; hist = []; fut = []; sel = -1; audio = null; applyUI(); save();
+  setStatus('ပြီးခဲ့တဲ့ project ပြန်ယူပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)');
+}
 
-// ---------- Undo / Redo (snapshots of subtitles) ----------
+// ---------- Undo / Redo (snapshots of subtitles + main audio offset) ----------
 let hist = [], fut = [], sel = -1;
-const snap = () => { hist.push(JSON.stringify(P.subtitles)); if (hist.length > 100) hist.shift(); fut = []; };
-function undo() { if (!hist.length) return; fut.push(JSON.stringify(P.subtitles)); P.subtitles = JSON.parse(hist.pop()); sel = -1; changed(); }
-function redo() { if (!fut.length) return; hist.push(JSON.stringify(P.subtitles)); P.subtitles = JSON.parse(fut.pop()); sel = -1; changed(); }
+const snapState = () => JSON.stringify({ s: P.subtitles, o: P.audioOffset || 0 });
+const applyState = (js) => { const st = JSON.parse(js); P.subtitles = st.s; P.audioOffset = st.o; };
+const snap = () => { hist.push(snapState()); if (hist.length > 100) hist.shift(); fut = []; };
+function undo() { if (!hist.length) return; fut.push(snapState()); applyState(hist.pop()); sel = -1; changed(); }
+function redo() { if (!fut.length) return; hist.push(snapState()); applyState(fut.pop()); sel = -1; changed(); }
 const changed = () => { renderList(); save(); redraw(); };
 
 // ---------- Myanmar helpers ----------
@@ -169,10 +177,13 @@ function wrap(c, text, maxW) {
 const FN = window.FN = {
   get P() { return P; }, get audio() { return audio; }, ac, cv, wrap, syllables, setStatus,
   redraw: () => redraw(), save: () => save(), changed: () => changed(), snap: () => snap(),
+  get hasLast() { return !!lastSaved; }, restoreLast: () => restoreLast(),
+  duration: () => duration(),
+  info: { video: null, music: null },   // set by modules for the timeline lanes: {name, dur, isMain?}
   drawSubtitle: null,    // (ctx, W, H, subtitle, t) — replaces the subtitle renderer
   drawBackground: null,  // (ctx, W, H, t) — background / logo, called every frame before subtitles
   beforeFrame: null,     // async (t) — awaited before each exported frame (e.g. video BG decode)
-  mixExport: null,       // async (mainAudioBuffer) => AudioBuffer — final mix for export
+  mixExport: null,       // async (mainAudioBuffer, offsetSeconds, totalSeconds) => AudioBuffer — final mix for export
   onPlay: [], onPause: [], // callbacks: onPlay(startPos) / onPause()
 };
 
@@ -192,7 +203,8 @@ function drawFrame(c, W, H, t) {
   const s = P.subtitles.find((x) => t >= x.start && t < x.end);
   if (s) (FN.drawSubtitle || defaultSubtitle)(c, W, H, s, t);
 }
-const duration = () => audio ? audio.duration : Math.max(10, ...P.subtitles.map((s) => s.end));
+// timeline length = where the main voice starts + its length
+const duration = () => audio ? (P.audioOffset || 0) + audio.duration : Math.max(10, ...P.subtitles.map((s) => s.end));
 
 // ---------- playback (audio clock is master) ----------
 let playing = false, src = null, startAC = 0, startPos = 0, tpos = 0, rangeEnd = null;
@@ -201,10 +213,12 @@ function play(from, to) {
   if (!audio) { setStatus('အသံဖိုင် အရင်ရွေးပါ'); return; }
   if (playing) pause();
   ac.resume(); if (from !== undefined) tpos = Math.max(0, from);
-  if (tpos >= audio.duration - 0.05) tpos = 0;
+  if (tpos >= duration() - 0.05) tpos = 0;
   rangeEnd = to ?? null;
+  const ta = tpos - (P.audioOffset || 0);                      // position inside the voice file (negative = voice starts later)
   src = ac.createBufferSource(); src.buffer = audio; src.connect(ac.destination);
-  src.start(0, tpos); startAC = ac.currentTime; startPos = tpos; playing = true;
+  if (ta >= 0) src.start(0, ta); else src.start(ac.currentTime - ta);
+  startAC = ac.currentTime; startPos = tpos; playing = true;
   FN.onPlay.forEach((f) => f(startPos));
   $('play').textContent = '⏸ Pause'; loop();
 }
@@ -218,7 +232,7 @@ let tapMode = false, tapIdx = 0, tapHeld = false;
 function loop() {
   if (!playing) return;
   const t = nowT();
-  if (t >= audio.duration || (rangeEnd !== null && t >= rangeEnd)) { pause(); if (rangeEnd === null) tpos = 0; rangeEnd = null; endTap(); }
+  if (t >= duration() || (rangeEnd !== null && t >= rangeEnd)) { pause(); if (rangeEnd === null) tpos = 0; rangeEnd = null; endTap(); }
   if (tapHeld) { const s = P.subtitles[tapIdx]; if (s) s.end = r2(Math.max(s.start + 0.1, t + P.tailMs / 1000)); }
   redraw(); if (playing) requestAnimationFrame(loop);
 }
@@ -249,45 +263,112 @@ function redraw() {
   $('time').textContent = `${t.toFixed(2)} / ${duration().toFixed(2)}`;
   drawWave(t);
 }
-const STRIP = 34;
+
+// ---------- timeline lanes: ruler · Video/BG · main voice · subtitles · Music (+SE) ----------
+let frozenD = null;                                   // time scale is frozen while the voice clip is dragged
+const viewD = () => frozenD ?? duration();
+const LH = { ruler: 14, video: 18, subs: 28, music: 18, gap: 3 };
+function lanes(h) {
+  const o = {}; let y = 0;
+  o.ruler = [y, LH.ruler]; y += LH.ruler + LH.gap;
+  o.video = [y, LH.video]; y += LH.video + LH.gap;
+  const voc = Math.max(28, h - (LH.ruler + LH.video + LH.subs + LH.music + LH.gap * 4));
+  o.vocal = [y, voc]; y += voc + LH.gap;
+  o.subs = [y, LH.subs]; y += LH.subs + LH.gap;
+  o.music = [y, LH.music];
+  return o;
+}
+let pkKey = '', pkVal = null;
+function peaks(n) {
+  if (!audio || n < 1) return null;
+  const key = audio.length + '|' + n; if (key === pkKey) return pkVal;
+  const d = audio.getChannelData(0), step = Math.max(1, Math.floor(d.length / n)), out = new Float32Array(n);
+  for (let x = 0; x < n; x++) { let m = 0; for (let i = x * step; i < (x + 1) * step && i < d.length; i += 8) m = Math.max(m, Math.abs(d[i])); out[x] = m; }
+  pkKey = key; pkVal = out; return out;
+}
+const fmtT = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function rr(x, y, w, h, r, fill) { wx.fillStyle = fill; wx.beginPath(); if (wx.roundRect) wx.roundRect(x, y, Math.max(1, w), h, r); else wx.rect(x, y, Math.max(1, w), h); wx.fill(); }
 function drawWave(t) {
   const w = wf.width, h = wf.height; wx.fillStyle = '#0e121a'; wx.fillRect(0, 0, w, h);
-  const D = duration(), wh = h - STRIP - 6;
+  const D = viewD(), ln = lanes(h), X = (s) => s / D * w, off = P.audioOffset || 0, info = FN.info || {};
+  const text = (s, x, y, x0, x1, color) => { wx.save(); wx.beginPath(); wx.rect(x0, y - 12, Math.max(0, x1 - x0), 16); wx.clip(); wx.fillStyle = color || '#dfe6f5'; wx.font = '11px system-ui'; wx.fillText(s, x, y); wx.restore(); };
+  // ruler
+  const stp = [1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s / D * w >= 70) || 300;
+  wx.fillStyle = '#6f7a96'; wx.font = '10px system-ui';
+  for (let s = 0; s <= D; s += stp) { const x = X(s); wx.fillRect(x, ln.ruler[0] + 10, 1, 4); wx.fillText(fmtT(s), x + 3, ln.ruler[0] + 10); }
+  // video / background lane
+  const [vy, vh] = ln.video;
+  if (info.video) {
+    const x0 = info.video.isMain ? X(off) : 0, x1 = info.video.isMain ? X(off + (info.video.dur || (audio ? audio.duration : D))) : w;
+    rr(x0, vy, x1 - x0, vh, 5, '#2c4a78'); text('🎞 ' + info.video.name, x0 + 6, vy + 13, x0, x1);
+  } else text('🎞 နောက်ခံ မရှိ', 6, vy + 13, 0, w, '#4a5470');
+  // main voice lane (the clip can be dragged)
+  const [oy, oh] = ln.vocal;
   if (audio) {
-    const d = audio.getChannelData(0), step = Math.floor(d.length / w) || 1; wx.fillStyle = '#5b9dff';
-    for (let x = 0; x < w; x++) { let m = 0; for (let i = x * step; i < (x + 1) * step && i < d.length; i += 8) m = Math.max(m, Math.abs(d[i]));
-      const bh = m * wh; wx.fillRect(x, wh / 2 - bh / 2, 1, Math.max(1, bh)); }
-  }
+    const x0 = X(off), cw = Math.max(1, Math.round(X(audio.duration)));
+    rr(x0, oy, cw, oh, 6, '#122e4d');
+    const pk = peaks(cw); wx.fillStyle = '#5b9dff';
+    if (pk) for (let x = 0; x < cw; x++) { const bh = pk[x] * (oh - 6); wx.fillRect(x0 + x, oy + oh / 2 - bh / 2, 1, Math.max(1, bh)); }
+    text('🎙 ' + ((P.media.main || '').replace(/^local:/, '') || 'ကဗျာဖတ်သံ') + (off ? `  (+${off.toFixed(2)}s)` : ''), x0 + 6, oy + 12, x0, x0 + cw);
+  } else text('🎙 ကဗျာဖတ်သံ မရွေးရသေး', 6, oy + 16, 0, w, '#4a5470');
+  // subtitle lane
+  const [sy, sh] = ln.subs;
   P.subtitles.forEach((s, i) => {
-    const x = s.start / D * w, bw = Math.max(2, (s.end - s.start) / D * w - 1);
-    wx.fillStyle = i === sel ? '#ffb02e' : (i % 2 ? '#2f6fd0' : '#3f84f0'); wx.fillRect(x, h - STRIP, bw, STRIP - 4);
-    if (bw > 14) { wx.fillStyle = '#fff'; wx.font = '12px system-ui'; wx.fillText(String(i + 1), x + 3, h - STRIP + 14); }
+    const x = X(s.start), bw = Math.max(2, X(s.end - s.start) - 1);
+    rr(x, sy, bw, sh, 5, i === sel ? '#ffb02e' : (i % 2 ? '#2f6fd0' : '#3f84f0'));
+    if (bw > 14) text(String(i + 1), x + 4, sy + 17, x, x + bw, '#fff');
   });
+  // music lane (+ SE markers)
+  const [my, mh] = ln.music;
+  if (info.music) {
+    rr(0, my, w, mh, 5, '#4b3a7a'); const md = info.music.dur || 0;
+    if (md > 0 && D > md) { wx.fillStyle = 'rgba(255,255,255,.18)'; for (let s = md; s < D; s += md) wx.fillRect(X(s), my, 1, mh); }
+    text('🎶 ' + info.music.name, 6, my + 13, 0, w);
+  } else text('🎶 Music မရှိ', 6, my + 13, 0, w, '#4a5470');
+  for (const se of (P.audio && P.audio.se) || []) { const x = X(se.t), bw = Math.max(5, X(0.6)); rr(x, my, bw, mh, 3, '#d4527f'); text('SE', x + 2, my + 13, x, x + bw, '#fff'); }
+  // playhead
   wx.fillStyle = '#ff5b6e'; wx.fillRect(t / D * w, 0, 2, h);
 }
-// ---- drag blocks on the timeline ----
+// ---- pointer: drag subtitle blocks, drag the voice clip, click = seek ----
 let drag = null;
 const wpos = (e) => { const r = wf.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * wf.width, y: (e.clientY - r.top) / r.height * wf.height }; };
 wf.onpointerdown = (e) => {
-  const { x, y } = wpos(e), D = duration(), t = x / wf.width * D;
-  if (y > wf.height - STRIP - 2) {
+  const { x, y } = wpos(e), D = viewD(), t = x / wf.width * D, ln = lanes(wf.height);
+  const inLane = (k) => y >= ln[k][0] - 2 && y <= ln[k][0] + ln[k][1] + 2;
+  if (inLane('subs')) {
     const i = P.subtitles.findIndex((s) => t >= s.start - 4 / wf.width * D && t <= s.end + 4 / wf.width * D);
     if (i >= 0) {
       const s = P.subtitles[i], th = 8 / wf.width * D; sel = i; snap();
-      drag = { i, mode: Math.abs(t - s.start) < th ? 'l' : Math.abs(t - s.end) < th ? 'r' : 'm', off: t - s.start, len: s.end - s.start };
+      drag = { kind: 'sub', i, mode: Math.abs(t - s.start) < th ? 'l' : Math.abs(t - s.end) < th ? 'r' : 'm', off: t - s.start, len: s.end - s.start };
       wf.setPointerCapture(e.pointerId); renderList(); redraw(); return;
+    }
+  } else if (audio && inLane('vocal')) {
+    const off = P.audioOffset || 0;
+    if (t >= off && t <= off + audio.duration) {
+      snap(); frozenD = duration() + 20; drag = { kind: 'main', start: t, off0: off, last: off };
+      wf.setPointerCapture(e.pointerId); wf.style.cursor = 'grabbing'; redraw(); return;
     }
   }
   seek(t);
 };
 wf.onpointermove = (e) => {
-  if (!drag) return; const D = duration(), t = wpos(e).x / wf.width * D, s = P.subtitles[drag.i];
+  if (!drag) return; const D = viewD(), t = wpos(e).x / wf.width * D;
+  if (drag.kind === 'main') {
+    const nt = r2(Math.min(Math.max(0, drag.off0 + (t - drag.start)), D - audio.duration)), delta = r2(nt - drag.last);
+    if (delta) {
+      P.audioOffset = nt; drag.last = nt;
+      if (P.followSubs !== false) for (const s of P.subtitles) { s.start = r2(Math.max(0, s.start + delta)); s.end = r2(Math.max(s.start + 0.05, s.end + delta)); }
+      P.subtitles.forEach((_, i) => syncRow(i)); save();
+    }
+    redraw(); return;
+  }
+  const s = P.subtitles[drag.i];
   if (drag.mode === 'l') s.start = r2(Math.max(0, Math.min(t, s.end - 0.05)));
   else if (drag.mode === 'r') s.end = r2(Math.max(t, s.start + 0.05));
   else { s.start = r2(Math.max(0, t - drag.off)); s.end = r2(s.start + drag.len); }
   syncRow(drag.i); save(); redraw();
 };
-wf.onpointerup = () => { drag = null; };
+wf.onpointerup = () => { if (drag && drag.kind === 'main') { frozenD = null; wf.style.cursor = 'pointer'; if (playing) { const t = nowT(); seek(t); } redraw(); } drag = null; };
 $('play').onclick = () => playing ? pause() : play();
 
 // ---------- subtitles ----------
@@ -297,9 +378,9 @@ function splitText(txt) {
 }
 $('split').onclick = () => {
   const parts = splitText($('txt').value); if (!parts.length) return; snap();
-  const D = duration(), tot = parts.reduce((a, p) => a + weight(p), 0); let acc = 0;
-  P.subtitles = parts.map((text) => { const start = acc / tot * D; acc += weight(text);
-    return { text, start: r2(start), end: r2(acc / tot * D), locked: false, confidence: 0 }; });
+  const off = P.audioOffset || 0, D = audio ? audio.duration : Math.max(10, duration()), tot = parts.reduce((a, p) => a + weight(p), 0); let acc = 0;
+  P.subtitles = parts.map((text) => { const start = off + acc / tot * D; acc += weight(text);
+    return { text, start: r2(start), end: r2(off + acc / tot * D), locked: false, confidence: 0 }; });
   sel = -1; changed();
   setStatus('ယာယီ ချိန်ခွဲပြီး — Tap-sync နဲ့ အသံကိုက်အောင် လုပ်ပါ');
 };
@@ -340,7 +421,7 @@ $('calib').oninput = () => { P.calibMs = +$('calib').value || 0; save(); redraw(
 // ---------- audio load (decode once) ----------
 $('file').onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return; setStatus('decode လုပ်နေပါတယ်...');
-  try { audio = await ac.decodeAudioData(await f.arrayBuffer()); P.media.main = 'local:' + f.name;
+  try { audio = await ac.decodeAudioData(await f.arrayBuffer()); P.media.main = 'local:' + f.name; P.audioOffset = 0; pkKey = '';
     tpos = 0; setStatus(`${f.name} — ${audio.duration.toFixed(1)} s`); save(); redraw();
   } catch (err) { setStatus('အသံဖတ်မရပါ: ' + err.message); }
 };
@@ -362,18 +443,18 @@ $('saveJson').onclick = () => { const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(P, null, 2)], { type: 'application/json' }));
   a.download = 'project.json'; a.click(); };
 $('loadJson').onchange = async (e) => { const f = e.target.files[0]; if (!f) return;
-  try { P = { ...defaults(), ...JSON.parse(await f.text()) }; hist = []; fut = []; sel = -1; applyUI(); save(); setStatus('project ဖွင့်ပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)'); }
+  try { P = { ...defaults(), ...JSON.parse(await f.text()) }; hist = []; fut = []; sel = -1; audio = null; applyUI(); save(); setStatus('project ဖွင့်ပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)'); }
   catch { setStatus('project ဖိုင်ဖတ်မရပါ'); } };
 
 // ---------- export ----------
 let cancelFlag = false; $('cancel').onclick = () => { cancelFlag = true; };
 async function render(audioCodec) {
   const [W, H] = SIZES[P.output.size], c = document.createElement('canvas'); c.width = W; c.height = H;
-  const g = c.getContext('2d'), N = Math.ceil(audio.duration * FPS);
+  const off = P.audioOffset || 0, total = duration(), g = c.getContext('2d'), N = Math.ceil(total * FPS);
   const out = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
   const vs = new CanvasSource(c, { codec: 'avc', bitrate: QUALITY_HIGH }); out.addVideoTrack(vs, { frameRate: FPS });
   const as = new AudioBufferSource({ codec: audioCodec, bitrate: QUALITY_HIGH }); out.addAudioTrack(as);
-  const mixed = FN.mixExport ? await FN.mixExport(audio) : audio;   // music / effects mixed by modules
+  const mixed = FN.mixExport ? await FN.mixExport(audio, off, total) : audio;   // voice offset, music, effects, SE mixed by modules
   await out.start(); await as.add(mixed);
   for (let i = 0; i < N; i++) {
     if (cancelFlag) throw new Error('cancelled');
@@ -421,10 +502,11 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => { if (e.code === 'KeyT') tapUp(); });
 
-// ---------- boot ----------
-(async () => { try { const s = await kvGet('project'); if (s) P = { ...defaults(), ...s }; } catch {}
+// ---------- boot: always start with an EMPTY project; the last session's project is only offered (FN.hasLast / FN.restoreLast) ----------
+(async () => {
+  try { const s = await kvGet('project'); if (s && ((s.subtitles && s.subtitles.length) || (s.media && s.media.main))) lastSaved = s; } catch {}
   try { await document.fonts.load(`40px "${P.style.font}"`, 'မြန်မာ'); } catch {}
-  applyUI(); setStatus(P.subtitles.length ? 'project ပြန်ယူပြီး (အသံဖိုင်ကို ပြန်ရွေးပါ)' : '');
+  applyUI(); setStatus(lastSaved ? 'Project အသစ် — ပြီးခဲ့တဲ့ project ကို ပြန်ယူလို့ရပါတယ်' : '');
   try { await import('/ext/style.js'); } catch (e) { console.warn('ext/style.js', e); setStatus('style module မတင်နိုင်ပါ: ' + e.message); } })();
 </script>
 </body>
