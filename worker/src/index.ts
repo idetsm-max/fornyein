@@ -1,8 +1,11 @@
 // Cloudflare Worker: private R2 -> JSON list + raw streamed assets (Range supported).
-// Put Cloudflare Access in front of the route; no auth code here.
+// Cloudflare Access protects the hostname at the edge. When ACCESS_TEAM_DOMAIN and ACCESS_AUD are set (wrangler.jsonc vars),
+// this Worker also verifies the Access JWT (Cf-Access-Jwt-Assertion) on every /api/* request, so a request that bypasses Access is refused.
 
 interface Env {
   BUCKET?: R2Bucket;
+  ACCESS_TEAM_DOMAIN?: string;   // e.g. your-team.cloudflareaccess.com
+  ACCESS_AUD?: string;           // Application Audience (AUD) tag of the Access application
 }
 
 const TYPES = new Set(["Music", "BG", "Logo", "SE", "Presets", "IR", "Textures"]);
@@ -13,6 +16,42 @@ const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-cache", ...extra },
   });
+
+// ---------- Cloudflare Access JWT check ----------
+const b64u = (s: string): Uint8Array => {
+  s = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+};
+let jwks: { keys: any[] } | null = null;
+let jwksAt = 0;
+async function accessOk(request: Request, env: Env): Promise<boolean> {
+  if (!env.ACCESS_AUD || !env.ACCESS_TEAM_DOMAIN) return true;          // not configured yet: rely on the edge policy only
+  const token = request.headers.get("Cf-Access-Jwt-Assertion");
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    const dec = new TextDecoder();
+    const header = JSON.parse(dec.decode(b64u(parts[0])));
+    const payload = JSON.parse(dec.decode(b64u(parts[1])));
+    if (!jwks || Date.now() - jwksAt > 3600_000 || !jwks.keys.some((k) => k.kid === header.kid)) {
+      const r = await fetch(`https://${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`);
+      if (!r.ok) return false;
+      jwks = (await r.json()) as { keys: any[] };
+      jwksAt = Date.now();
+    }
+    const jwk = jwks!.keys.find((k) => k.kid === header.kid);
+    if (!jwk) return false;
+    const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64u(parts[2]), new TextEncoder().encode(parts[0] + "." + parts[1]));
+    if (!valid) return false;
+    const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    return aud.includes(env.ACCESS_AUD) && payload.exp * 1000 > Date.now() && payload.iss === `https://${env.ACCESS_TEAM_DOMAIN}`;
+  } catch {
+    return false;
+  }
+}
 
 async function listPrefix(bucket: R2Bucket, prefix?: string, max = 5000): Promise<R2Object[]> {
   const out: R2Object[] = [];
@@ -30,8 +69,9 @@ export default {
     const url = new URL(request.url);
     const parts = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
     if (parts[0] !== "api") return json({ error: "not found" }, 404);
+    if (!(await accessOk(request, env))) return json({ error: "forbidden" }, 403);
 
-    if (parts[1] === "health") return json({ ok: true, r2: !!env.BUCKET });
+    if (parts[1] === "health") return json({ ok: true, r2: !!env.BUCKET, accessCheck: !!(env.ACCESS_AUD && env.ACCESS_TEAM_DOMAIN) });
     const bucket = env.BUCKET;
     if (!bucket) return json({ error: "R2 not configured" }, 503);
 
@@ -62,7 +102,7 @@ export default {
       const name = parts.slice(3).join("/");
       if (!TYPES.has(type) || name.includes("..")) return json({ error: "bad path" }, 400);
       let key = `${type}/${name}`;
-      let probe = await bucket.head(key);
+      const probe = await bucket.head(key);
       if (!probe) {
         const want = key.toLowerCase();
         const hit = (await listPrefix(bucket)).find((o) => o.key.toLowerCase() === want);

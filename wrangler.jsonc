@@ -9,5 +9,11 @@
   },
   "r2_buckets": [
     { "binding": "BUCKET", "bucket_name": "fornyein-assets" }
-  ]
+  ],
+  // Cloudflare Access JWT check. These are NOT secrets (team domain + policy audience id).
+  // The check stays off until ACCESS_AUD is filled in.
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "calm-scene-5980.cloudflareaccess.com",
+    "ACCESS_AUD": ""
+  }
 }
