@@ -1,9 +1,9 @@
 // Layout module (loaded LAST): CapCut-style single-screen editor. The page itself never scrolls and no scrollbars are shown.
-//   Top bar  : brand · frame size · status · project · EXPORT
+//   Top bar  : brand · frame size · status · (↩ last project) · project · EXPORT
 //   Upper row: LEFT  = TOOLS   (audio, text + subtitle list, music, background/logo)
 //              CENTER= PREVIEW in a fixed frame (the frame never changes size, only the picture inside is letter-boxed)
 //              RIGHT = EFFECTS (style, effects/animation/presets, audio effects, credits, export)
-//   Bottom   : TIMELINE (transport, Tap-sync, auto-draft, split/merge, undo, waveform with subtitle blocks)
+//   Bottom   : TIMELINE lanes (Video · main voice [drag to move] · subtitles · Music/SE) + transport / tools
 // It moves the elements the other modules created into place, so every handler / id keeps working.
 // Every step is wrapped: if one piece fails the rest still works and a red banner says which one.
 const FN = window.FN, $ = (id) => document.getElementById(id);
@@ -40,7 +40,7 @@ const inputCard = safe('inputCard', () => {
   if (fileLbl.childNodes[0] && fileLbl.childNodes[0].nodeType === 3) fileLbl.childNodes[0].textContent = '';
   fileLbl.classList.add('bigbtn'); fileLbl.prepend(mk('span', { textContent: '📂 ဖိုင်ရွေးမယ် (Audio / Video)' })); $('file').style.display = 'none';
   return card('ကဗျာဖတ်သံ', row(fileLbl), row(fileInfo),
-    mk('div', { className: 'mut', style: 'margin-top:10px;line-height:1.7;font-size:13px', textContent: 'Audio ရွေးရင် နောက်ခံကို "နောက်ခံ" tab မှာ သီးသန့်ရွေးပါမယ်။ Video ရွေးရင် Video ထဲက ပုံကို နောက်ခံ၊ အသံကို ပင်မအသံအဖြစ် သုံးပြီး နောက်ခံ ရွေးခွင့်ကို ပိတ်ထားပါမယ်။ Frame size ကို အပေါ်ဆုံး bar မှာ ရွေးပါ။' }));
+    mk('div', { className: 'mut', style: 'margin-top:10px;line-height:1.7;font-size:13px', textContent: 'Audio ရွေးရင် နောက်ခံကို "နောက်ခံ" tab မှာ သီးသန့်ရွေးပါမယ်။ Video ရွေးရင် Video ထဲက ပုံကို နောက်ခံ၊ အသံကို ပင်မအသံအဖြစ် သုံးပြီး နောက်ခံ ရွေးခွင့်ကို ပိတ်ထားပါမယ်။ ကဗျာဖတ်သံကို Timeline ပေါ်မှာ ဆွဲရွှေ့လို့ရပါတယ် (Title card အတွက် နေရာချန်ဖို့)။ Frame size ကို အပေါ်ဆုံး bar မှာ ရွေးပါ။' }));
 });
 const styleCard = safe('styleCard', () => card('စာတန်း ပုံစံ', $('fsz').closest('.row'), $('extra')));
 const checkBox = mk('div', { className: 'check' });
@@ -72,19 +72,24 @@ const right = group('EFFECTS', [
 ]);
 
 // ---------- top bar ----------
+const restoreBtn = mk('button', { className: 'btnlike', textContent: '↩ ပြီးခဲ့တဲ့ project ပြန်ယူ', title: 'နောက်ဆုံး autosave သိမ်းထားတဲ့ project ကို ပြန်ဖွင့်မယ် (အသံဖိုင်ကိုတော့ ပြန်ရွေးရမယ်)', onclick: () => FN.restoreLast() });
+restoreBtn.style.display = 'none';
 const top = safe('topbar', () => {
   if (importLbl.childNodes[0] && importLbl.childNodes[0].nodeType === 3) importLbl.childNodes[0].textContent = 'Project import';
   importLbl.classList.add('btnlike'); $('loadJson').style.display = 'none'; $('saveJson').classList.add('btnlike'); $('prog').style.width = '110px';
-  return mk('header', { className: 'topbar' }, [mk('span', { className: 'brand', textContent: 'For Nyein' }), $('size'), mk('span', { className: 'grow' }), $('status'), $('saveJson'), importLbl, $('export'), $('cancel'), $('prog')]);
+  return mk('header', { className: 'topbar' }, [mk('span', { className: 'brand', textContent: 'For Nyein' }), $('size'), mk('span', { className: 'grow' }), $('status'), restoreBtn, $('saveJson'), importLbl, $('export'), $('cancel'), $('prog')]);
 }) || mk('header', { className: 'topbar' }, [mk('span', { className: 'brand', textContent: 'For Nyein' })]);
 
 // ---------- timeline (bottom) ----------
 const timeline = mk('div', { className: 'tl' });
+const followCb = mk('input', { type: 'checkbox', checked: true });
+followCb.onchange = () => { P().followSubs = followCb.checked; FN.save(); };
+const followLbl = mk('label', { className: 'mut', title: 'ကဗျာဖတ်သံကို Timeline ပေါ်မှာ ရွှေ့ရင် စာတန်းတွေ ပါလိုက်မယ်' }, [followCb, ' စာတန်းပါလိုက်']);
 safe('timeline', () => {
   tlSettings.classList.remove('mut');
   const settings = mk('details', { className: 'tlset' }, [mk('summary', { textContent: '⚙ ချိန်ညှိ' }), tlSettings]);
-  const bar = mk('div', { className: 'bar' }, [playBtn, timeEl, safeLbl, mk('span', { className: 'sep' }), ...(tlTools ? [...tlTools.children] : []), mk('span', { className: 'sep' }), settings]);
-  const hint = mk('div', { className: 'hint', textContent: 'Space = Play · T = Tap-sync (စာကြောင်းတစ်ကြောင်း ဖတ်နေစဉ် နှိပ်ထား) · A = audition · S/M = split/merge · Del · ←/→ = ၁၀ms (Shift ၁၀၀ms၊ Alt = အဆုံး) · R/V/L = review/verify/lock · Ctrl+Z/Y' });
+  const bar = mk('div', { className: 'bar' }, [playBtn, timeEl, safeLbl, mk('span', { className: 'sep' }), ...(tlTools ? [...tlTools.children] : []), mk('span', { className: 'sep' }), followLbl, settings]);
+  const hint = mk('div', { className: 'hint', textContent: 'Space = Play · ကဗျာဖတ်သံ (အပြာ) ကို ဆွဲရွှေ့လို့ရ · T = Tap-sync (စာကြောင်းတစ်ကြောင်း ဖတ်နေစဉ် နှိပ်ထား) · A = audition · S/M = split/merge · Del · ←/→ = ၁၀ms · R/V/L = review/verify/lock · Ctrl+Z/Y' });
   timeline.append(bar, wfEl, hint);
 });
 
@@ -103,11 +108,11 @@ document.head.append(mk('style', { textContent: `
 :root{--bg:#0b0e14;--bg2:#10141d;--card:#161b26;--line:#262e42;--tx:#e9edf6;--mut:#8b96b0;--ac:#5b9dff;--ac2:#7c6cff;--ok:#3ddc84}
 html,body{height:100%;overflow:hidden;margin:0}
 body{background:var(--bg);color:var(--tx)}
-.app{height:100vh;height:100dvh;display:grid;grid-template-rows:52px minmax(0,1fr) 232px}
+.app{height:100vh;height:100dvh;display:grid;grid-template-rows:52px minmax(0,1fr) 268px}
 .topbar{display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg2);border-bottom:1px solid var(--line);min-width:0}
 .brand{font-weight:700;font-size:17px;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
 .grow{flex:1;min-width:0}
-.topbar #status{color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30vw}
+.topbar #status{color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:26vw}
 .topbar select{max-width:170px}
 .mid{display:grid;grid-template-columns:clamp(300px,25vw,400px) minmax(0,1fr) clamp(300px,27vw,420px);min-height:0}
 .side{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:0;background:var(--bg2)}
@@ -125,7 +130,7 @@ body{background:var(--bg);color:var(--tx)}
 .center{min-width:0;min-height:0;padding:12px;display:flex}
 .stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;min-height:0;padding:12px;border:1px solid var(--line);border-radius:14px;background:radial-gradient(800px 400px at 50% 40%,#151b2b,#0a0d13)}
 .stage canvas#cv{flex:none;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.55)}
-.tl{display:grid;grid-template-rows:auto minmax(80px,1fr) auto;gap:6px;padding:8px 14px;background:var(--bg2);border-top:1px solid var(--line);min-height:0}
+.tl{display:grid;grid-template-rows:auto minmax(110px,1fr) auto;gap:6px;padding:8px 14px;background:var(--bg2);border-top:1px solid var(--line);min-height:0}
 .tl .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative}
 .tl .bar .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
 .tl .row{margin:0}
@@ -149,11 +154,11 @@ button.pri,.bigbtn{background:linear-gradient(135deg,var(--ac),var(--ac2));borde
 .lbanner{position:fixed;left:0;right:0;top:0;z-index:99;background:#7a1f2b;color:#fff;font:12px/1.5 system-ui;padding:6px 12px}
 @media(max-width:900px){
   html,body{overflow:auto}.app{height:auto;display:block}.mid{display:block}.side{max-height:70vh}
-  .stage{height:56vw;min-height:240px}.center{padding:8px}.tl{height:240px}
+  .stage{height:56vw;min-height:240px}.center{padding:8px}.tl{height:290px}
 }
 ` }));
 
-// ---------- fit the preview + waveform to the space ----------
+// ---------- fit the preview + timeline canvas to the space ----------
 function fit() {
   const cs = getComputedStyle(stage);
   const w = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
@@ -161,8 +166,10 @@ function fit() {
     const ar = cvEl.width / cvEl.height; let cw = w, ch = w / ar; if (ch > h) { ch = h; cw = h * ar; }
     cvEl.style.width = Math.floor(cw) + 'px'; cvEl.style.height = Math.floor(ch) + 'px';
   }
-  const ww = Math.round(wfEl.clientWidth);
-  if (ww > 50 && wfEl.width !== ww) { wfEl.width = ww; FN.redraw(); }
+  const ww = Math.round(wfEl.clientWidth), wh = Math.round(wfEl.clientHeight); let ch2 = false;
+  if (ww > 50 && wfEl.width !== ww) { wfEl.width = ww; ch2 = true; }
+  if (wh > 60 && wfEl.height !== wh) { wfEl.height = wh; ch2 = true; }
+  if (ch2) FN.redraw();
 }
 safe('observers', () => { new ResizeObserver(() => safe('fit', fit)).observe(stage); new ResizeObserver(() => safe('fit', fit)).observe(timeline); window.addEventListener('resize', () => safe('fit', fit)); setInterval(() => safe('fit', fit), 400); });
 
@@ -170,7 +177,9 @@ safe('observers', () => { new ResizeObserver(() => safe('fit', fit)).observe(sta
 function refresh() {
   safe('refresh', () => {
     const p = P(), md = p.media || {}, subs = p.subtitles.length, cr = p.credits || {};
-    fileInfo.textContent = FN.audio ? `${short(md.main) || 'ဖိုင်'} · ${FN.audio.duration.toFixed(1)} s${md.mainIsVideo ? ' · Video' : ''}` : (md.main ? `${short(md.main)} — ဖိုင်ကို ပြန်ရွေးပါ` : 'မရွေးရသေးပါ');
+    restoreBtn.style.display = FN.hasLast ? '' : 'none';
+    followCb.checked = p.followSubs !== false;
+    fileInfo.textContent = FN.audio ? `${short(md.main) || 'ဖိုင်'} · ${FN.audio.duration.toFixed(1)} s${md.mainIsVideo ? ' · Video' : ''}${p.audioOffset ? ' · စတင်ချိန် +' + p.audioOffset.toFixed(2) + ' s' : ''}` : (md.main ? `${short(md.main)} — ဖိုင်ကို ပြန်ရွေးပါ` : 'မရွေးရသေးပါ');
     const dl = [!!FN.audio, subs > 0, !!md.music, !!(md.bg || md.mainIsVideo)];
     left.btns.forEach((b, i) => b.classList.toggle('done', dl[i]));
     if (right.panes[4].classList.contains('on')) {
