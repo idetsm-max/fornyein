@@ -2,12 +2,14 @@
 // ONE graph builder (buildBus) is used for the live preview (AudioContext) AND for export (OfflineAudioContext),
 // so what you hear = what is exported.
 // Signal path per track: input -> HPF -> EQ(low/mid/high) -> compressor -> reverb(wet/dry) -> echo -> volume -> pan -> master -> limiter.
+// The main voice may start later on the timeline (P.audioOffset): ducking, music and SE all follow timeline time.
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P, ac = FN.ac;
 const db2g = (db) => Math.pow(10, db / 20);
 const fmt = (x) => (Number.isInteger(x) ? String(x) : String(Math.round(x * 100) / 100));
 function mk(tag, props = {}, kids = []) { const e = Object.assign(document.createElement(tag), props); kids.forEach((k) => e.append(k)); return e; }
 const assetUrl = (type, name) => `/api/asset/${type}/${name.split('/').map(encodeURIComponent).join('/')}`;
+const offT = () => P().audioOffset || 0;
 
 // ---------- settings (stored in the project: P.audio) ----------
 const FXD = { hp: 0, low: 0, mid: 0, high: 0, comp: 0, compT: -24, compR: 3, rev: 0, decay: 1.8, pre: 0.02, damp: 0.5, echo: 0, echoT: 0.3, echoFb: 0.35 };
@@ -87,7 +89,7 @@ function buildBus(ctx, dest, { bypass = false, meter = false } = {}) {
   return { mainIn: m.input, musicIn: duck, duck, fade, seIn: se, master, an, teardown() { master.disconnect(); lim.disconnect(); if (an) an.disconnect(); } };
 }
 
-// ---------- ducking: music goes down while the voice is speaking (offline RMS analysis) ----------
+// ---------- ducking: music goes down while the voice is speaking (offline RMS analysis, in VOICE-FILE time) ----------
 const STEP = 0.05;
 let duckKey = '', duckVal = null;
 function duckCurve(main, d) {
@@ -104,6 +106,7 @@ function duckCurve(main, d) {
   }
   duckKey = key; duckVal = out; return out;
 }
+// fromT = position inside the voice file; when = context time at which that position starts to play
 function applyDuck(b, main, fromT, when) {
   b.duck.gain.cancelScheduledValues(0); b.duck.gain.value = 1;
   const d = A().duck; if (!d.on || !main) return;
@@ -134,11 +137,11 @@ function stopExtras() {
   seSrcs.forEach((s) => { try { s.stop(); } catch {} s.disconnect(); }); seSrcs = [];
 }
 function startExtras(t) {
-  stopExtras(); const a = A(), mb = FN.music?.buf;
+  stopExtras(); const a = A(), mb = FN.music?.buf, off = offT();
   if (mb) {
     const s = ac.createBufferSource(); s.buffer = mb; s.loop = a.music.loop; s.connect(bus.musicIn);
-    const off = a.music.loop ? t % mb.duration : t; if (off < mb.duration) { s.start(0, off); mSrc = s; }
-    applyDuck(bus, FN.audio, t, ac.currentTime);
+    const o = a.music.loop ? t % mb.duration : t; if (o < mb.duration) { s.start(0, o); mSrc = s; }
+    applyDuck(bus, FN.audio, Math.max(0, t - off), ac.currentTime + Math.max(0, off - t));
   }
   for (const se of a.se) {
     const buf = seBufs.get(se.name); if (!buf || se.t < t) continue;
@@ -156,14 +159,15 @@ FN.onPause.push(() => { playing = false; stopExtras(); });
 FN.audioChanged = () => { if (playing) startExtras(curT()); };
 
 // ---------- export mix (same buildBus on an OfflineAudioContext) ----------
-FN.audioMix = async (main) => {
-  const a = A(), ctx = new OfflineAudioContext(2, main.length, main.sampleRate), b = buildBus(ctx, ctx.destination);
-  const ms = ctx.createBufferSource(); ms.buffer = main; ms.connect(b.mainIn); ms.start(0);
+// main = the voice file, off = where it starts on the timeline, total = timeline length (all in seconds)
+FN.audioMix = async (main, off = 0, total = off + main.duration) => {
+  const a = A(), sr = main.sampleRate, ctx = new OfflineAudioContext(2, Math.ceil(total * sr), sr), b = buildBus(ctx, ctx.destination);
+  const ms = ctx.createBufferSource(); ms.buffer = main; ms.connect(b.mainIn); ms.start(off);
   const mb = FN.music?.buf;
   if (mb) {
     const s = ctx.createBufferSource(); s.buffer = mb; s.loop = a.music.loop; s.connect(b.musicIn); s.start(0);
-    applyDuck(b, main, 0, 0);
-    const D = main.duration; b.fade.gain.setValueAtTime(1, Math.max(0, D - 2)); b.fade.gain.linearRampToValueAtTime(0, D);   // music fades out over the last 2 s
+    applyDuck(b, main, 0, off);
+    b.fade.gain.setValueAtTime(1, Math.max(0, total - 2)); b.fade.gain.linearRampToValueAtTime(0, total);   // music fades out over the last 2 s
   }
   for (const se of a.se) {
     const buf = await seBuf(se.name); if (!buf) continue;
@@ -245,14 +249,14 @@ function buildUI() {
   tIn.style.width = '70px'; dIn.style.width = '60px';
   fetch('/api/library/SE', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).then((l) => { sel.textContent = ''; l.forEach((x) => sel.add(new Option(x.name, x.name))); if (!l.length) sel.add(new Option('(SE/ ထဲမှာ ဖိုင်မရှိ)', '')); }).catch(() => {});
   add.append(sel, mk('span', { className: 'mut', textContent: 'အချိန် s' }), tIn, mk('span', { className: 'mut', textContent: 'dB' }), dIn,
-    mk('button', { textContent: '＋ ထည့်', onclick: async () => { if (!sel.value) return; A().se.push({ name: sel.value, t: +tIn.value || 0, vol: +dIn.value || 0 }); await seBuf(sel.value); buildUI(); changed(); } }));
+    mk('button', { textContent: '＋ ထည့်', onclick: async () => { if (!sel.value) return; A().se.push({ name: sel.value, t: +tIn.value || 0, vol: +dIn.value || 0 }); await seBuf(sel.value); buildUI(); changed(); FN.redraw(); } }));
   se.append(add);
   a.se.forEach((x, i) => {
     const r = mk('div', { className: 'row' }), ti = mk('input', { type: 'number', min: 0, step: 0.1, value: x.t }), di = mk('input', { type: 'number', min: -40, max: 6, step: 1, value: x.vol || 0 });
     ti.style.width = '70px'; di.style.width = '60px';
-    ti.oninput = () => { A().se[i].t = +ti.value || 0; changed(); }; di.oninput = () => { A().se[i].vol = +di.value || 0; changed(); };
+    ti.oninput = () => { A().se[i].t = +ti.value || 0; changed(); FN.redraw(); }; di.oninput = () => { A().se[i].vol = +di.value || 0; changed(); };
     r.append(mk('span', { textContent: x.name }), ti, mk('span', { className: 'mut', textContent: 's' }), di, mk('span', { className: 'mut', textContent: 'dB' }),
-      mk('button', { textContent: '✕', onclick: () => { A().se.splice(i, 1); buildUI(); changed(); } }));
+      mk('button', { textContent: '✕', onclick: () => { A().se.splice(i, 1); buildUI(); changed(); FN.redraw(); } }));
     se.append(r);
   });
   card.append(se, mk('div', { className: 'mut', style: 'margin-top:8px', textContent: 'Reverb/Echo အမြီးကို video အဆုံးမှာ ဖြတ်ထားပါတယ် (video ကြာချိန်မတိုးပါ)။ Effect အားလုံးက Preview နဲ့ Export တူပါတယ်။' }));
