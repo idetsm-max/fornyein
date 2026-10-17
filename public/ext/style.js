@@ -1,4 +1,5 @@
-// Stage 5 module: fonts (GitHub), colors, per-aspect text position, Zawgyi -> Unicode.
+// Stage 5 module: fonts (R2 Fonts/ folder, GitHub /fonts, or a file from the user's computer), colors, stroke on/off,
+// per-aspect text position, Zawgyi -> Unicode.
 // Loaded by app.html via import('/ext/style.js'); talks to the app through window.FN.
 // Also loads every module listed in /ext/modules.json (e.g. effects.js).
 const FN = window.FN, $ = (id) => document.getElementById(id);
@@ -10,14 +11,17 @@ function mk(tag, props = {}, kids = []) {
 }
 const extra = $('extra');
 
-// ---------- 1. Fonts: system fallback + files listed in /fonts/fonts.json ----------
+// ---------- 1. Fonts ----------
+//   a) system fallback   b) /fonts/fonts.json (files in the GitHub repo, PUBLIC)   c) every font file in the private R2 folder  Fonts/
+//   d) a font file picked from the user's own computer (only for the current session)
 const fontSel = mk('select', { id: 'fontSel', title: 'Font' });
 const families = new Set();
 function addFamily(name, label) { if (families.has(name)) return; families.add(name); fontSel.add(new Option(label || name, name)); }
+const FONT_RE = /\.(ttf|otf|woff2?)$/i;
 
 async function loadFonts() {
   addFamily('Noto Sans Myanmar', 'Noto Sans Myanmar (စနစ်ထဲက)');
-  let list = [], missing = [];
+  let list = [];
   try { list = (await (await fetch('/fonts/fonts.json')).json()).fonts || []; } catch {}
   for (const f of list) {
     try {
@@ -26,9 +30,18 @@ async function loadFonts() {
       families.delete(f.family);
       for (const o of [...fontSel.options]) if (o.value === f.family) o.remove();
       addFamily(f.family, f.name + (f.myanmarFull === false ? ' (မြန်မာစာ မပြည့်စုံ)' : ''));
-    } catch { missing.push(f.file); }
+    } catch { /* file not in the repo: skipped */ }
   }
-  if (missing.length) console.info('Font file မတွေ့တာ:', missing);
+  let r2 = [];
+  try { const r = await fetch('/api/library/Fonts', { cache: 'no-store' }); if (r.ok) r2 = await r.json(); } catch {}
+  for (const it of r2) {
+    if (!FONT_RE.test(it.name)) continue;
+    const fam = it.name.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
+    try {
+      const ff = new FontFace(fam, `url(/api/asset/Fonts/${it.name.split('/').map(encodeURIComponent).join('/')})`);
+      await ff.load(); document.fonts.add(ff); addFamily(fam, fam + ' (R2)');
+    } catch { console.info('R2 font load မရ:', it.name); }
+  }
   const cur = P().style.font;
   if (cur && !families.has(cur)) addFamily(cur);
   fontSel.value = cur || 'Noto Sans Myanmar';
@@ -42,13 +55,37 @@ $('font').style.display = 'none';
 $('font').before(fontSel);
 FN.fontSel = fontSel;
 
-// ---------- 2. Colors ----------
+// ---------- 2. Colors + stroke on/off ----------
 const st = () => P().style;
-const fill = mk('input', { type: 'color', value: st().fill || '#ffffff', title: 'စာအရောင်' });
+const fill = mk('input', { type: 'color', value: st().fill || '#ffffff', title: 'စာအရောင် (စာတန်းအားလုံး — တစ်ကြောင်းချင်းစီကို "ပုံစံ" tab ထဲက "ရွေးထားတဲ့ စာတန်း" မှာ ပြောင်းလို့ရ)' });
 const stroke = mk('input', { type: 'color', value: st().stroke || '#000000', title: 'အနားကွပ်အရောင်' });
+const strokeCb = mk('input', { type: 'checkbox', checked: st().strokeOn !== false, title: 'Stroke (အနားကွပ်) ပါ/မပါ' });
 fill.oninput = () => { st().fill = fill.value; FN.save(); FN.redraw(); };
 stroke.oninput = () => { st().stroke = stroke.value; FN.save(); FN.redraw(); };
-extra.append(mk('span', { className: 'mut', textContent: 'စာ' }), fill, mk('span', { className: 'mut', textContent: 'အနား' }), stroke);
+strokeCb.onchange = () => { st().strokeOn = strokeCb.checked; FN.save(); FN.redraw(); };
+extra.append(mk('span', { className: 'mut', textContent: 'စာ' }), fill, mk('span', { className: 'mut', textContent: 'အနား' }), stroke, mk('label', { className: 'mut' }, [strokeCb, ' Stroke ပါ']));
+
+// font file from the user's own computer
+const fontFile = mk('input', { type: 'file', accept: '.ttf,.otf,.woff,.woff2' });
+fontFile.onchange = async () => {
+  const f = fontFile.files[0]; if (!f) return;
+  const fam = f.name.replace(/\.[^.]+$/, '');
+  try {
+    const ff = new FontFace(fam, await f.arrayBuffer()); await ff.load(); document.fonts.add(ff);
+    addFamily(fam, fam + ' (ကိုယ်ပိုင်)'); fontSel.value = fam; st().font = fam; FN.save(); FN.redraw();
+    FN.setStatus(`${fam} font ကို သုံးပြီး (ဒီ session မှာပဲ — အမြဲသုံးမယ်ဆိုရင် R2 ရဲ့ Fonts/ folder ထဲ တင်ပါ)`);
+  } catch (e) { FN.setStatus('Font ဖွင့်မရပါ: ' + e.message); }
+  fontFile.value = '';
+};
+extra.append(mk('label', { className: 'mut', title: 'ကိုယ့်ကွန်ပျူတာထဲက font ဖိုင် (.ttf/.otf)' }, ['Font ဖိုင်ထည့် ', fontFile]));
+
+// keep the controls in step when a whole project is loaded / restored
+let lastP = P();
+setInterval(() => {
+  if (P() === lastP) return; lastP = P();
+  fill.value = st().fill || '#ffffff'; stroke.value = st().stroke || '#000000'; strokeCb.checked = st().strokeOn !== false;
+  if (st().font && !families.has(st().font)) addFamily(st().font); fontSel.value = st().font || 'Noto Sans Myanmar';
+}, 500);
 
 // ---------- 3. Position stored per aspect ratio, drag on the preview ----------
 const key = () => P().output.size.split(' ')[0];
@@ -67,7 +104,7 @@ FN.drawSubtitle = (c, W, H, s) => {
   c.lineWidth = fs / 7; c.strokeStyle = S.stroke || '#000'; c.fillStyle = S.fill || '#fff';
   const maxW = Math.min(W * 0.9, 2 * Math.min(cx, W - cx));
   const lines = FN.wrap(c, s.text, maxW), lh = fs * 1.5, y0 = H * L.y / 100 - ((lines.length - 1) * lh) / 2;
-  lines.forEach((l, i) => { c.strokeText(l, cx, y0 + i * lh); c.fillText(l, cx, y0 + i * lh); });
+  lines.forEach((l, i) => { if (S.strokeOn !== false) c.strokeText(l, cx, y0 + i * lh); c.fillText(l, cx, y0 + i * lh); });
 };
 
 let dragging = false;
