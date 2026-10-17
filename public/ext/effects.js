@@ -1,5 +1,8 @@
 // Stage 9 module: 15 Canvas-2D text effects, in/out animations, presets.
 // Replaces FN.drawSubtitle. Deterministic: output depends only on (t, params) — no Math.random.
+// Per-subtitle overrides (set by substyle.js):  s.style = {fill, fill2, k, stroke, strokeOn}   s.anim = {in, out, dur}
+//   fill / fill2 : first part / second part of the line in two different colours (k = how many WORDS use `fill`)
+//   strokeOn     : false = no outline for that subtitle (global default: P.style.strokeOn !== false)
 const FN = window.FN, $ = (id) => document.getElementById(id);
 const P = () => FN.P;
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -15,6 +18,7 @@ const FXLIST = [
 ];
 const ANIMS_IN = [['none', 'None'], ['fade', 'Fade'], ['slideUp', 'Slide ↑'], ['slideDown', 'Slide ↓'], ['slideLeft', 'Slide ←'], ['slideRight', 'Slide →'], ['zoom', 'Zoom'], ['pop', 'Pop'], ['blur', 'Blur'], ['typewriter', 'Typewriter'], ['word', 'Word reveal']];
 const ANIMS_OUT = ANIMS_IN.filter(([k]) => !['typewriter', 'word'].includes(k));
+window.FN_ANIMS = { in: ANIMS_IN, out: ANIMS_OUT };   // reused by substyle.js
 
 // ---------- animation state ----------
 function applyAnim(kind, pr, dir, fs, st) {
@@ -32,15 +36,32 @@ function applyAnim(kind, pr, dir, fs, st) {
   }
 }
 
+// split one line into coloured pieces: the first k WORDS use c1, the rest c2 (state carries over wrapped lines)
+function lineSegs(line, st, k, c1, c2) {
+  const out = [];
+  for (const g of seg.segment(line)) {
+    let col = st.last;
+    if (g.isWordLike) { col = st.n < k ? c1 : c2; st.n++; st.last = col; }
+    if (out.length && out[out.length - 1].fill === col) out[out.length - 1].text += g.segment; else out.push({ text: g.segment, fill: col });
+  }
+  return out;
+}
+
 // ---------- one text line, all effect passes ----------
-function paintLine(c, txt, x, y, w, fs, t, S, I) {
-  const fill = S.fill || '#ffffff', stroke = S.stroke || '#000000', glowC = S.glow || '#8fd0ff';
+function paintLine(c, txt, x, y, w, fs, t, S, I, segs) {
+  const fill = S.fill || '#ffffff', stroke = S.stroke || '#000000', glowC = S.glow || '#8fd0ff', noStroke = S.strokeOn === false;
   const ga = c.globalAlpha, wave = I('wave');
   const fl = I('flicker'), flk = fl && rnd(Math.floor(t * 18)) > 1 - 0.3 * fl ? 0.35 : 1;
   c.globalAlpha = ga * flk;
-  // per-syllable drawing only for Wave (position by measureText of the prefix)
-  const put = (kind, dx = 0, dy = 0) => {
-    if (!wave) { kind === 'fill' ? c.fillText(txt, x + dx, y + dy) : c.strokeText(txt, x + dx, y + dy); return; }
+  // draw helper. Wave = per-syllable positions; two-colour = per-piece fills (main fill pass only)
+  const put = (kind, dx = 0, dy = 0, useSeg = false) => {
+    if (!wave) {
+      if (useSeg && segs && kind === 'fill') {
+        let pre = ''; for (const sg of segs) { const ox = c.measureText(pre).width; c.fillStyle = sg.fill; c.fillText(sg.text, x + ox + dx, y + dy); pre += sg.text; }
+        return;
+      }
+      kind === 'fill' ? c.fillText(txt, x + dx, y + dy) : c.strokeText(txt, x + dx, y + dy); return;
+    }
     let pre = ''; FN.syllables(txt).forEach((u, k) => {
       const ox = c.measureText(pre).width, oy = Math.sin(t * 2 * Math.PI * 1.1 + k * 0.7) * fs * 0.12 * wave;
       kind === 'fill' ? c.fillText(u, x + ox + dx, y + oy + dy) : c.strokeText(u, x + ox + dx, y + oy + dy); pre += u;
@@ -71,21 +92,24 @@ function paintLine(c, txt, x, y, w, fs, t, S, I) {
   // neon halo
   const nn = I('neon');
   if (nn) { c.shadowColor = glowC; c.fillStyle = fill; for (const b of [0.9, 0.45, 0.2]) { c.shadowBlur = fs * b * nn; put('fill'); } c.shadowBlur = 0; }
-  // outline (+ soft shadow)
+  // soft shadow (carried by the outline pass; by the fill pass when the outline is switched off)
   const sd = I('shadow');
   if (sd) { c.shadowColor = 'rgba(0,0,0,.75)'; c.shadowBlur = fs * 0.2 * sd; c.shadowOffsetY = fs * 0.04 * sd; }
-  put('stroke'); c.shadowBlur = 0; c.shadowOffsetY = 0;
+  if (!noStroke) { put('stroke'); c.shadowBlur = 0; c.shadowOffsetY = 0; }
   // glow
   const gw = I('glow');
   if (gw) { c.shadowColor = glowC; c.shadowBlur = fs * 0.7 * gw; c.fillStyle = fill; put('fill'); put('fill'); c.shadowBlur = 0; }
-  // main fill
-  c.fillStyle = fillStyle(); put('fill');
-  c.globalAlpha = ga;
+  // main fill (plain colour: every coloured piece; gradient / gold / shimmer: one style)
+  const fst = fillStyle();
+  if (typeof fst === 'string' && segs) put('fill', 0, 0, true); else { c.fillStyle = fst; put('fill'); }
+  c.shadowBlur = 0; c.shadowOffsetY = 0; c.globalAlpha = ga;
 }
 
 FN.drawSubtitle = (c, W, H, s, t) => {
-  const p = P(), S = p.style, L = FN.layout(), fs = Math.round(H * S.sizePct / 100), cx = W * L.x / 100, cy = H * L.y / 100;
-  const fx = p.fx || [], an = p.anim || { in: 'fade', out: 'fade', dur: 0.3 };
+  const p = P(), ss = s.style || {};
+  const S = { ...p.style, ...(ss.fill ? { fill: ss.fill } : {}), ...(ss.stroke ? { stroke: ss.stroke } : {}), ...(ss.strokeOn !== undefined ? { strokeOn: ss.strokeOn } : {}) };
+  const L = FN.layout(), fs = Math.round(H * S.sizePct / 100), cx = W * L.x / 100, cy = H * L.y / 100;
+  const fx = s.fx || p.fx || [], an = { in: 'fade', out: 'fade', dur: 0.3, ...(p.anim || {}), ...(s.anim || {}) };
   const I = (id) => { const e = fx.find((q) => q.id === id); return e ? e.intensity : 0; };
   c.font = `${fs}px "${S.font}", sans-serif`; c.textBaseline = 'middle'; c.textAlign = 'left'; c.lineJoin = 'round';
   const maxW = Math.min(W * 0.9, 2 * Math.min(cx, W - cx));
@@ -105,6 +129,8 @@ FN.drawSubtitle = (c, W, H, s, t) => {
     const n = lines.reduce((a, l) => a + unitsOf(l).length, 0), tw = Math.min(dur * 0.7, n * (st.reveal === 'word' ? 0.25 : 0.07));
     left = Math.floor(clamp(lt / Math.max(tw, 0.01)) * n) + (lt > 0 ? 1 : 0);
   }
+  // two-colour text: first k words = fill, the rest = fill2
+  const two = !!ss.fill2, words = [...seg.segment(s.text)].filter((g) => g.isWordLike).length, kk = ss.k ?? Math.ceil(words / 2), cst = { n: 0, last: S.fill || '#ffffff' };
   c.save();
   c.globalAlpha *= clamp(st.alpha);
   if (st.blur > 0.5) c.filter = `blur(${st.blur.toFixed(1)}px)`;
@@ -119,7 +145,7 @@ FN.drawSubtitle = (c, W, H, s, t) => {
     const y = y0 + i * lh, w = c.measureText(line).width, x = cx - w / 2;
     let txt = line;
     if (st.reveal) { const u = unitsOf(line), k = Math.min(u.length, Math.max(0, left)); left -= k; txt = u.slice(0, k).join(''); }
-    if (txt) paintLine(c, txt, x, y, w, fs, t, S, I);
+    if (txt) paintLine(c, txt, x, y, w, fs, t, S, I, two ? lineSegs(txt, cst, kk, S.fill || '#ffffff', ss.fill2) : null);
   });
   c.restore();
 };
@@ -141,7 +167,7 @@ card.append(mk('b', { textContent: 'Effect / Animation / Preset' }));
 const presetRow = mk('div', { className: 'row' }); card.append(presetRow);
 const animRow = mk('div', { className: 'row mut' }); card.append(animRow);
 const fxGrid = mk('div', { className: 'row' }); fxGrid.style.display = 'grid'; fxGrid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(230px,1fr))'; card.append(fxGrid);
-card.append(mk('div', { className: 'mut', style: 'margin-top:8px', textContent: '⚠ = မြန်မာစာနဲ့ စမ်းရန် (သရ/သတ် နေရာ မလွဲတာ ကိုယ်တိုင်စစ်ပါ)။ Effect တစ်ခုထက်မက ထပ်သုံးလို့ရပါတယ်၊ intensity slider ပါပါတယ်။ Preview နှေးရင် Glow/Neon/Shadow ကို ပိတ်ပါ။' }));
+card.append(mk('div', { className: 'mut', style: 'margin-top:8px', textContent: '⚠ = မြန်မာစာနဲ့ စမ်းရန် (သရ/သတ် နေရာ မလွဲတာ ကိုယ်တိုင်စစ်ပါ)။ Effect တစ်ခုထက်မက ထပ်သုံးလို့ရပါတယ်၊ intensity slider ပါပါတယ်။ Preview နှေးရင် Glow/Neon/Shadow ကို ပိတ်ပါ။ ဒီအပိုင်းက စာတန်းအားလုံးအတွက်ပါ — စာတန်းတစ်ကြောင်းချင်းစီ သီးသန့်ပြောင်းချင်ရင် "ပုံစံ" tab ထဲက "ရွေးထားတဲ့ စာတန်း" ကို သုံးပါ။' }));
 
 const rows = {};
 for (const [id, label, test] of FXLIST) {
