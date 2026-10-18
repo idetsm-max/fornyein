@@ -8,7 +8,8 @@ interface Env {
   ACCESS_AUD?: string;           // Application Audience (AUD) tag of the Access application
 }
 
-const TYPES = new Set(["Music", "BG", "Logo", "SE", "Presets", "IR", "Textures"]);
+// Fonts/ = font files (ttf/otf/woff/woff2). They stay in the PRIVATE bucket, so licensed fonts are never published in the public repo.
+const TYPES = new Set(["Music", "BG", "Logo", "SE", "Fonts", "Presets", "IR", "Textures"]);
 const PRESETS_KEY = "Presets/presets.json";
 
 const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =>
