@@ -10,10 +10,12 @@
   "r2_buckets": [
     { "binding": "BUCKET", "bucket_name": "fornyein-assets" }
   ],
-  // Cloudflare Access JWT check. These are NOT secrets (team domain + policy audience id).
-  // The check stays off until ACCESS_AUD is filled in.
+  // NOT secrets: Access team domain + policy audience id, and the public address of your Hugging Face Space.
+  // The Access check stays off until ACCESS_AUD is filled in.  ASR_URL = e.g. "https://your-name-fornyein-asr.hf.space"
+  // The shared key for the Space (ASR_KEY) is a SECRET: add it in the Cloudflare dashboard, never in this file.
   "vars": {
     "ACCESS_TEAM_DOMAIN": "calm-scene-5980.cloudflareaccess.com",
-    "ACCESS_AUD": ""
+    "ACCESS_AUD": "",
+    "ASR_URL": ""
   }
 }
