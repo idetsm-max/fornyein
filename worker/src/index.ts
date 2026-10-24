@@ -1,4 +1,4 @@
-// Cloudflare Worker: private R2 -> JSON list + raw streamed assets (Range supported).
+// Cloudflare Worker: private R2 -> JSON list + raw streamed assets (Range supported) + Auto-caption proxy to a Hugging Face Space.
 // Cloudflare Access protects the hostname at the edge. When ACCESS_TEAM_DOMAIN and ACCESS_AUD are set (wrangler.jsonc vars),
 // this Worker also verifies the Access JWT (Cf-Access-Jwt-Assertion) on every /api/* request, so a request that bypasses Access is refused.
 
@@ -6,6 +6,8 @@ interface Env {
   BUCKET?: R2Bucket;
   ACCESS_TEAM_DOMAIN?: string;   // e.g. your-team.cloudflareaccess.com
   ACCESS_AUD?: string;           // Application Audience (AUD) tag of the Access application
+  ASR_URL?: string;              // Hugging Face Space address, e.g. https://your-name-fornyein-asr.hf.space  (not secret)
+  ASR_KEY?: string;              // shared key the Space checks in the X-API-Key header  (set as a SECRET in the dashboard)
 }
 
 // Fonts/ = font files (ttf/otf/woff/woff2). They stay in the PRIVATE bucket, so licensed fonts are never published in the public repo.
@@ -72,7 +74,30 @@ export default {
     if (parts[0] !== "api") return json({ error: "not found" }, 404);
     if (!(await accessOk(request, env))) return json({ error: "forbidden" }, 403);
 
-    if (parts[1] === "health") return json({ ok: true, r2: !!env.BUCKET, accessCheck: !!(env.ACCESS_AUD && env.ACCESS_TEAM_DOMAIN) });
+    if (parts[1] === "health") return json({ ok: true, r2: !!env.BUCKET, accessCheck: !!(env.ACCESS_AUD && env.ACCESS_TEAM_DOMAIN), asr: !!env.ASR_URL });
+
+    // ---- Auto caption: forward ONE short 16 kHz mono WAV chunk to the Whisper server on Hugging Face ----
+    //   GET  /api/transcribe            -> wakes the Space / says whether it is ready
+    //   POST /api/transcribe?lang=my    -> { text }
+    if (parts[1] === "transcribe") {
+      if (!env.ASR_URL) return json({ error: "ASR_URL မသတ်မှတ်ရသေးပါ (Hugging Face Space လိပ်စာ)" }, 503);
+      const base = env.ASR_URL.replace(/\/+$/, "");
+      const headers: Record<string, string> = env.ASR_KEY ? { "x-api-key": env.ASR_KEY } : {};
+      try {
+        if (request.method === "GET") {
+          const r = await fetch(base + "/", { headers });
+          return json({ ready: r.ok, status: r.status });
+        }
+        if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
+        if (Number(request.headers.get("content-length") || 0) > 4 * 1024 * 1024) return json({ error: "chunk ကြီးလွန်းပါတယ် (4MB အောက်)" }, 413);
+        const lang = (url.searchParams.get("lang") || "my").replace(/[^a-z-]/gi, "").slice(0, 8) || "my";
+        const r = await fetch(`${base}/transcribe?lang=${lang}`, { method: "POST", headers: { ...headers, "content-type": "audio/wav" }, body: request.body });
+        return new Response(await r.text(), { status: r.status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+      } catch (e) {
+        return json({ error: "ASR server မခေါ်နိုင်ပါ: " + (e as Error).message }, 502);
+      }
+    }
+
     const bucket = env.BUCKET;
     if (!bucket) return json({ error: "R2 not configured" }, 503);
 
