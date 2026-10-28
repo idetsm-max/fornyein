@@ -48,8 +48,7 @@
         <button id="cancel" hidden>Cancel</button>
         <progress id="prog" value="0" max="1" hidden></progress>
       </div>
-      <canvas id="wf" width="1000" height="150" style="margin-top:10px;cursor:pointer;touch-action:none"></canvas>
-      <div class="mut" style="margin-top:4px">Timeline: Video / ကဗျာဖတ်သံ (ဆွဲရွှေ့လို့ရ၊ Alt+ဆွဲ = ဖြတ်မယ့်အပိုင်း ရွေး) / စာတန်း / Music</div>
+      <canvas id="wf" width="1000" height="200" style="margin-top:10px;touch-action:none"></canvas>
     </div>
     <div class="card" style="margin-top:14px">
       <b>Timeline ကိရိယာ</b>
@@ -64,10 +63,6 @@
         ကြာထားမယ့် ms <input id="tail" type="number" value="200" style="width:70px">
         Preview ချိန်ညှိ ms <input id="calib" type="number" value="0" style="width:70px">
       </div>
-      <div class="mut" style="margin-top:8px;line-height:1.7">
-        <b>Tap-sync</b>: နှိပ်ပြီး အသံစဖွင့်ပါမယ်။ စာကြောင်းတစ်ကြောင်းစဖတ်ချိန် <kbd>T</kbd> ကိုနှိပ်ထားပြီး၊ ဖတ်ပြီးတာနဲ့ လွှတ်ပါ (စာတန်း ၁ ကြောင်း=နှိပ်တစ်ခါ)။<br>
-        <kbd>Space</kbd> play · <kbd>A</kbd> audition · <kbd>←/→</kbd> အစ ၁၀ms (Shift ၁၀၀ms၊ Alt=အဆုံး) · <kbd>S</kbd> split · <kbd>M</kbd> merge · <kbd>Del</kbd> · <kbd>Ctrl+Z/Y</kbd>
-      </div>
     </div>
   </section>
   <section>
@@ -76,7 +71,6 @@
       <textarea id="txt" placeholder="ကဗျာစာသား paste လုပ်ပါ။ စာကြောင်း ၂ ကြောင်းအထက်ရှိရင် တစ်ကြောင်း=တစ်တန်း၊ မရှိရင် ။ ၊ နဲ့ ခွဲပါမယ်။"></textarea>
       <div class="row">
         <button id="split">စာတန်းခွဲမယ်</button>
-        <span class="mut">အသံကြာချိန်ကို syllable အချိုးနဲ့ ယာယီခွဲပေးပါမယ်</span>
       </div>
       <div class="row">
         Font <input id="font" size="16">
@@ -130,7 +124,7 @@ function buildEdited(raw, keep) {
   }
   return out;
 }
-function rebuildAudio() { if (!rawAudio) return; audio = buildEdited(rawAudio, P.keep); pkKey = ''; }
+function rebuildAudio() { if (!rawAudio) return; audio = buildEdited(rawAudio, P.keep); bpKey = ''; }
 // edited-time -> raw-time (a main VIDEO would need this; cutting is disabled for video inputs)
 const rawTime = (te) => { if (!P.keep || !P.keep.length) return te; let pos = 0; for (const [a, b] of P.keep) { if (te <= pos + (b - a)) return a + (te - pos); pos += b - a; } return te; };
 
@@ -198,6 +192,7 @@ const FN = window.FN = {
   rebuildAudio: () => { rebuildAudio(); }, nowT: () => nowT(), play: (a, b) => play(a, b), rawTime,
   get hasLast() { return !!lastSaved; }, restoreLast: () => restoreLast(),
   duration: () => duration(),
+  get view() { return view; }, zoomBy: (f) => zoomBy(f), zoomFit: () => fitView(), setPps: (p) => setPps(p),   // timeline zoom (pixels per second)
   mark: null,            // {a, b} timeline range selected for cutting (drawn on the voice lane)
   info: { video: null, music: null },   // set by modules for the timeline lanes: {name, dur, isMain?}
   drawSubtitle: null,    // (ctx, W, H, subtitle, t) — replaces the subtitle renderer
@@ -246,7 +241,7 @@ function pause() {
   if (!playing) return; FN.onPause.forEach((f) => f()); tpos = nowT(); playing = false;
   src.onended = null; try { src.stop(); } catch {} $('play').textContent = '▶ Play';
 }
-function seek(t) { const was = playing; pause(); tpos = Math.max(0, Math.min(t, duration())); if (was) play(); redraw(); }
+function seek(t) { const was = playing; pause(); tpos = Math.max(0, Math.min(t, duration())); if (was) play(); showHead(tpos); redraw(); }
 // ---- Tap-sync (hold T while a line is being read) ----
 let tapMode = false, tapIdx = 0, tapHeld = false;
 function loop() {
@@ -254,6 +249,7 @@ function loop() {
   const t = nowT();
   if (t >= duration() || (rangeEnd !== null && t >= rangeEnd)) { pause(); if (rangeEnd === null) tpos = 0; rangeEnd = null; endTap(); }
   if (tapHeld) { const s = P.subtitles[tapIdx]; if (s) s.end = r2(Math.max(s.start + 0.1, t + P.tailMs / 1000)); }
+  if (!drag && performance.now() - lastScroll > 2500) { const px = X(t); if (px > wf.width - 40) { view.t0 = t - 0.12 * plotW() / view.pps; clampView(); } }   // the timeline follows the playhead
   redraw(); if (playing) requestAnimationFrame(loop);
 }
 function endTap() { if (tapMode) { tapMode = false; tapHeld = false; $('tap').classList.remove('rec'); $('tap').textContent = '⏺ Tap-sync'; renderList(); save(); } }
@@ -284,107 +280,172 @@ function redraw() {
   drawWave(t);
 }
 
-// ---------- timeline lanes: ruler · Video/BG · main voice · subtitles · Music (+SE) ----------
-let frozenD = null;                                   // time scale is frozen while the voice clip is dragged
-const viewD = () => frozenD ?? duration();
-const LH = { ruler: 14, video: 18, subs: 28, music: 18, gap: 3 };
+// ================= TIMELINE (CapCut style): zoom + horizontal scroll, track names on the left =================
+const GUT = 88;                                          // left gutter with the track names
+const view = { pps: 30, t0: 0 };                         // pixels per second · time at the left edge of the plot
+let lastScroll = 0, snapLine = null;
+const plotW = () => Math.max(60, wf.width - GUT);
+const minPps = () => plotW() / (duration() + 6);         // zoomed all the way out = the whole project is visible
+const maxT0 = () => Math.max(0, duration() + 6 - plotW() / view.pps);
+function clampView() { view.pps = Math.min(900, Math.max(minPps(), view.pps)); view.t0 = Math.min(maxT0(), Math.max(0, view.t0)); }
+const X = (s) => GUT + (s - view.t0) * view.pps, T = (x) => view.t0 + (x - GUT) / view.pps;
+function setPps(p, anchor) { const a = anchor ?? T(GUT + plotW() / 2), x = X(a); view.pps = p; clampView(); view.t0 = a - (x - GUT) / view.pps; clampView(); redraw(); }
+function zoomBy(f) { const t = nowT(), vis = t >= view.t0 && t <= T(wf.width); setPps(view.pps * f, vis ? t : undefined); }
+function fitView() { view.pps = minPps(); view.t0 = 0; clampView(); redraw(); }
+function showHead(t) { const px = X(t); if (px < GUT || px > wf.width - 20) { view.t0 = t - 0.15 * plotW() / view.pps; clampView(); } }
+
+const LH = { ruler: 22, video: 30, subs: 34, music: 28, gap: 4, vocalMin: 44 };
 function lanes(h) {
   const o = {}; let y = 0;
   o.ruler = [y, LH.ruler]; y += LH.ruler + LH.gap;
   o.video = [y, LH.video]; y += LH.video + LH.gap;
-  const voc = Math.max(28, h - (LH.ruler + LH.video + LH.subs + LH.music + LH.gap * 4));
+  const voc = Math.max(LH.vocalMin, h - (LH.ruler + LH.video + LH.subs + LH.music + LH.gap * 4));
   o.vocal = [y, voc]; y += voc + LH.gap;
   o.subs = [y, LH.subs]; y += LH.subs + LH.gap;
   o.music = [y, LH.music];
   return o;
 }
-let pkKey = '', pkVal = null;
-function peaks(n) {
-  if (!audio || n < 1) return null;
-  const key = audio.length + '|' + n; if (key === pkKey) return pkVal;
-  const d = audio.getChannelData(0), step = Math.max(1, Math.floor(d.length / n)), out = new Float32Array(n);
-  for (let x = 0; x < n; x++) { let m = 0; for (let i = x * step; i < (x + 1) * step && i < d.length; i += 8) m = Math.max(m, Math.abs(d[i])); out[x] = m; }
-  pkKey = key; pkVal = out; return out;
+// waveform: 100 peak values per second, computed once per voice buffer
+let bpKey = '', bpVal = null, bpGain = 1;
+function basePeaks() {
+  if (!audio) return null;
+  const key = audio.length + '|' + audio.sampleRate; if (key === bpKey) return bpVal;
+  const d = audio.getChannelData(0), win = Math.floor(audio.sampleRate / 100), n = Math.ceil(audio.duration * 100), out = new Float32Array(n); let mx = 0;
+  for (let i = 0; i < n; i++) { let m = 0; const s1 = Math.min(d.length, (i + 1) * win); for (let j = i * win; j < s1; j += 3) { const v = Math.abs(d[j]); if (v > m) m = v; } out[i] = m; if (m > mx) mx = m; }
+  bpKey = key; bpVal = out; bpGain = 0.95 / Math.max(0.05, mx); return out;
 }
-const fmtT = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 function rr(x, y, w, h, r, fill) { wx.fillStyle = fill; wx.beginPath(); if (wx.roundRect) wx.roundRect(x, y, Math.max(1, w), h, r); else wx.rect(x, y, Math.max(1, w), h); wx.fill(); }
+const MM = '"Noto Sans Myanmar", system-ui';
+function clipText(s, x, y, x0, x1, color, font) {
+  const a = Math.max(x0, GUT); if (x1 - a < 10) return;
+  wx.save(); wx.beginPath(); wx.rect(a, y - 15, x1 - a, 22); wx.clip(); wx.fillStyle = color || '#dfe6f5'; wx.font = font || `11px ${MM}`; wx.fillText(s, Math.max(x, GUT + 5), y); wx.restore();
+}
 function drawWave(t) {
-  const w = wf.width, h = wf.height; wx.fillStyle = '#0e121a'; wx.fillRect(0, 0, w, h);
-  const D = viewD(), ln = lanes(h), X = (s) => s / D * w, off = P.audioOffset || 0, info = FN.info || {};
-  const text = (s, x, y, x0, x1, color) => { wx.save(); wx.beginPath(); wx.rect(x0, y - 12, Math.max(0, x1 - x0), 16); wx.clip(); wx.fillStyle = color || '#dfe6f5'; wx.font = '11px system-ui'; wx.fillText(s, x, y); wx.restore(); };
+  const w = wf.width, h = wf.height; clampView();
+  wx.fillStyle = '#0b0e14'; wx.fillRect(0, 0, w, h);
+  const ln = lanes(h), D = duration(), off = P.audioOffset || 0, info = FN.info || {}, v1 = T(w);
+  wx.save(); wx.beginPath(); wx.rect(GUT, 0, w - GUT, h); wx.clip();
+  for (const k of ['video', 'vocal', 'subs', 'music']) { wx.fillStyle = '#10151f'; wx.fillRect(GUT, ln[k][0], w - GUT, ln[k][1]); }
+  const xe = X(D); if (xe < w) { wx.fillStyle = 'rgba(0,0,0,.4)'; wx.fillRect(Math.max(GUT, xe), 0, w, h); }       // empty area after the end
   // ruler
-  const stp = [1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s / D * w >= 70) || 300;
-  wx.fillStyle = '#6f7a96'; wx.font = '10px system-ui';
-  for (let s = 0; s <= D; s += stp) { const x = X(s); wx.fillRect(x, ln.ruler[0] + 10, 1, 4); wx.fillText(fmtT(s), x + 3, ln.ruler[0] + 10); }
+  const [ry, rh] = ln.ruler; wx.fillStyle = '#0e121a'; wx.fillRect(GUT, ry, w - GUT, rh);
+  const stp = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600].find((s) => s * view.pps >= 90) || 600;
+  wx.font = '10px system-ui';
+  for (let i = Math.floor(view.t0 / stp); i * stp <= v1; i++) {
+    const s = i * stp, x = X(s), m = Math.floor(s / 60), sec = s - m * 60;
+    wx.fillStyle = '#5a6683'; wx.fillRect(x, ry + rh - 9, 1, 9); wx.fillStyle = '#8b96b0';
+    wx.fillText(stp < 1 ? `${m}:${sec.toFixed(1).padStart(4, '0')}` : `${m}:${String(Math.floor(sec)).padStart(2, '0')}`, x + 3, ry + 11);
+    for (let k = 1; k < 5; k++) { wx.fillStyle = '#39425a'; wx.fillRect(X(s + stp * k / 5), ry + rh - 4, 1, 4); }
+  }
   // video / background lane
   const [vy, vh] = ln.video;
   if (info.video) {
-    const x0 = info.video.isMain ? X(off) : 0, x1 = info.video.isMain ? X(off + (info.video.dur || (audio ? audio.duration : D))) : w;
-    rr(x0, vy, x1 - x0, vh, 5, '#2c4a78'); text('🎞 ' + info.video.name, x0 + 6, vy + 13, x0, x1);
-  } else text('🎞 နောက်ခံ မရှိ', 6, vy + 13, 0, w, '#4a5470');
-  // main voice lane (the clip can be dragged; Alt+drag selects a range to cut)
+    const a = info.video.isMain ? off : 0, b = info.video.isMain ? off + (info.video.dur || (audio ? audio.duration : D)) : D;
+    rr(X(a), vy, X(b) - X(a), vh, 6, '#2c4a78'); clipText('🎞 ' + info.video.name, X(a) + 6, vy + vh / 2 + 4, X(a), X(b));
+  } else clipText('နောက်ခံ မရှိ', GUT + 8, vy + vh / 2 + 4, GUT, w, '#3a4560');
+  // main voice lane
   const [oy, oh] = ln.vocal;
   if (audio) {
-    const x0 = X(off), cw = Math.max(1, Math.round(X(audio.duration)));
-    rr(x0, oy, cw, oh, 6, '#122e4d');
-    const pk = peaks(cw); wx.fillStyle = '#5b9dff';
-    if (pk) for (let x = 0; x < cw; x++) { const bh = pk[x] * (oh - 6); wx.fillRect(x0 + x, oy + oh / 2 - bh / 2, 1, Math.max(1, bh)); }
+    const xa = X(off), xb = X(off + audio.duration);
+    rr(xa, oy, xb - xa, oh, 7, '#143357');
+    const bp = basePeaks();
+    if (bp) {
+      wx.fillStyle = '#6aa8ff'; const a = Math.max(GUT, Math.floor(xa)), b = Math.min(w, Math.ceil(xb));
+      for (let x = a; x < b; x++) {
+        const i0 = Math.max(0, Math.floor((T(x) - off) * 100)), i1 = Math.min(bp.length - 1, Math.max(i0, Math.floor((T(x + 1) - off) * 100))); let m = 0;
+        for (let i = i0; i <= i1; i++) if (bp[i] > m) m = bp[i];
+        const bh = Math.min(1, m * bpGain) * (oh - 12); wx.fillRect(x, oy + oh / 2 - bh / 2, 1, Math.max(1, bh));
+      }
+    }
+    wx.fillStyle = 'rgba(255,255,255,.4)'; wx.fillRect(xa + 1, oy + 6, 3, oh - 12); wx.fillRect(xb - 4, oy + 6, 3, oh - 12);     // clip edges
     const cuts = P.keep && P.keep.length > 1 ? ` ✂${P.keep.length - 1}` : '';
-    text('🎙 ' + ((P.media.main || '').replace(/^local:/, '') || 'ကဗျာဖတ်သံ') + (off ? `  (+${off.toFixed(2)}s)` : '') + cuts, x0 + 6, oy + 12, x0, x0 + cw);
+    clipText('🎙 ' + ((P.media.main || '').replace(/^local:/, '') || 'ကဗျာဖတ်သံ') + (off ? `  (+${off.toFixed(2)}s)` : '') + cuts, xa + 8, oy + 14, xa, xb, '#cfe2ff');
     const m = FN.mark;                                   // range selected for cutting
     if (m && m.a != null && m.b != null) {
-      const a = Math.min(m.a, m.b), b = Math.max(m.a, m.b), xa = X(a), xb = X(b);
-      wx.fillStyle = 'rgba(255,176,46,.30)'; wx.fillRect(xa, oy, Math.max(2, xb - xa), oh);
-      wx.fillStyle = '#ffb02e'; wx.fillRect(xa, oy, 2, oh); wx.fillRect(xb - 2, oy, 2, oh);
-      text(`✂ ${(b - a).toFixed(2)}s`, xa + 4, oy + oh - 4, xa, xb + 60, '#ffd27a');
+      const a = Math.min(m.a, m.b), b = Math.max(m.a, m.b), xm = X(a), xn = X(b);
+      wx.fillStyle = 'rgba(255,176,46,.30)'; wx.fillRect(xm, oy, Math.max(2, xn - xm), oh);
+      wx.fillStyle = '#ffb02e'; wx.fillRect(xm, oy, 2, oh); wx.fillRect(xn - 2, oy, 2, oh);
+      clipText(`✂ ${(b - a).toFixed(2)}s`, xm + 5, oy + oh - 6, xm, xn + 70, '#ffd27a');
     } else if (m && m.a != null) { wx.fillStyle = '#ffb02e'; wx.fillRect(X(m.a), oy, 2, oh); }
-  } else text('🎙 ကဗျာဖတ်သံ မရွေးရသေး', 6, oy + 16, 0, w, '#4a5470');
+  } else clipText('ကဗျာဖတ်သံ မရွေးရသေး', GUT + 8, oy + oh / 2 + 4, GUT, w, '#3a4560');
   // subtitle lane
   const [sy, sh] = ln.subs;
   P.subtitles.forEach((s, i) => {
-    const x = X(s.start), bw = Math.max(2, X(s.end - s.start) - 1);
-    rr(x, sy, bw, sh, 5, i === sel ? '#ffb02e' : (i % 2 ? '#2f6fd0' : '#3f84f0'));
-    if (bw > 14) text(String(i + 1), x + 4, sy + 17, x, x + bw, '#fff');
+    const x0 = X(s.start), x1 = X(s.end); if (x1 < GUT || x0 > w) return;
+    const col = i === sel ? '#ffb02e' : s.locked ? '#2f8f5b' : (i % 2 ? '#2f6fd0' : '#3f84f0');
+    rr(x0, sy, x1 - x0 - 1, sh, 6, col);
+    clipText(`${i + 1}  ${s.text}`, x0 + 6, sy + sh / 2 + 4, x0, x1 - 2, i === sel ? '#2a1c00' : '#fff');
+    if (i === sel) { wx.fillStyle = 'rgba(0,0,0,.35)'; wx.fillRect(x0 + 1, sy + 6, 3, sh - 12); wx.fillRect(x1 - 5, sy + 6, 3, sh - 12); }
+    const c = s.confidence || 0; if (c > 0 && c < 0.5 && !s.locked) { wx.fillStyle = '#ff5b6e'; wx.beginPath(); wx.arc(x1 - 7, sy + 7, 3, 0, 7); wx.fill(); }
   });
-  // music lane (+ SE markers)
+  // music lane (+ SE)
   const [my, mh] = ln.music;
   if (info.music) {
-    rr(0, my, w, mh, 5, '#4b3a7a'); const md = info.music.dur || 0;
-    if (md > 0 && D > md) { wx.fillStyle = 'rgba(255,255,255,.18)'; for (let s = md; s < D; s += md) wx.fillRect(X(s), my, 1, mh); }
-    text('🎶 ' + info.music.name, 6, my + 13, 0, w);
-  } else text('🎶 Music မရှိ', 6, my + 13, 0, w, '#4a5470');
-  for (const se of (P.audio && P.audio.se) || []) { const x = X(se.t), bw = Math.max(5, X(0.6)); rr(x, my, bw, mh, 3, '#d4527f'); text('SE', x + 2, my + 13, x, x + bw, '#fff'); }
-  // playhead
-  wx.fillStyle = '#ff5b6e'; wx.fillRect(t / D * w, 0, 2, h);
+    rr(X(0), my, X(D) - X(0), mh, 6, '#4b3a7a'); const md = info.music.dur || 0;
+    if (md > 0 && D > md) { wx.fillStyle = 'rgba(255,255,255,.22)'; for (let s = md; s < D; s += md) wx.fillRect(X(s), my + 3, 1, mh - 6); }
+    clipText('🎶 ' + info.music.name, X(0) + 6, my + mh / 2 + 4, X(0), X(D));
+  } else clipText('Music မရှိ', GUT + 8, my + mh / 2 + 4, GUT, w, '#3a4560');
+  for (const se of (P.audio && P.audio.se) || []) { const x = X(se.t), bw = Math.max(10, 0.6 * view.pps); rr(x, my + 2, bw, mh - 4, 4, '#d4527f'); clipText('SE', x + 3, my + mh / 2 + 4, x, x + bw, '#fff'); }
+  // snap guide + playhead
+  if (snapLine != null) { wx.fillStyle = 'rgba(255,255,255,.55)'; wx.fillRect(X(snapLine), ln.video[0], 1, h); }
+  const px = X(t); wx.fillStyle = '#ff5b6e'; wx.fillRect(px - 1, 0, 2, h);
+  wx.beginPath(); wx.moveTo(px - 6, 0); wx.lineTo(px + 6, 0); wx.lineTo(px, 9); wx.closePath(); wx.fill();
+  wx.restore();
+  // gutter (track names)
+  wx.fillStyle = '#10141d'; wx.fillRect(0, 0, GUT, h); wx.fillStyle = '#262e42'; wx.fillRect(GUT - 1, 0, 1, h);
+  wx.font = `11px ${MM}`; wx.fillStyle = '#8b96b0';
+  [['video', '🎞 Video'], ['vocal', '🎙 အသံ'], ['subs', '💬 စာတန်း'], ['music', '🎶 Music']].forEach(([k, name]) => wx.fillText(name, 10, ln[k][0] + ln[k][1] / 2 + 4));
+  wx.fillStyle = '#5a6683'; wx.font = '10px system-ui'; wx.fillText(`${Math.round(view.pps)} px/s`, 10, ry + 14);
 }
-// ---- pointer: drag subtitle blocks, drag the voice clip, Alt+drag = cut range, click = seek ----
+
+// ---- pointer: scrub on the ruler, drag subtitle blocks / the voice clip (with snapping), Alt+drag = cut range, wheel = scroll, Ctrl+wheel = zoom ----
 let drag = null;
 const wpos = (e) => { const r = wf.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * wf.width, y: (e.clientY - r.top) / r.height * wf.height }; };
+const laneAt = (y) => { const ln = lanes(wf.height); for (const k of ['ruler', 'video', 'vocal', 'subs', 'music']) if (y >= ln[k][0] - 2 && y <= ln[k][0] + ln[k][1] + 2) return k; return null; };
+const snapPoints = (skip) => { const pts = [0, nowT()], off = P.audioOffset || 0; if (skip !== 'voice') { if (audio) pts.push(off, off + audio.duration); P.subtitles.forEach((s, i) => { if (i !== skip) pts.push(s.start, s.end); }); } return pts; };
+const nearest = (t, pts) => { const th = 8 / view.pps; let best = null, bd = th; for (const p of pts) { const d = Math.abs(p - t); if (d < bd) { bd = d; best = p; } } return best; };
+const edgeScroll = (x) => { if (x > wf.width - 30) view.t0 += 14 / view.pps; else if (x < GUT + 30) view.t0 -= 14 / view.pps; clampView(); };
+
 wf.onpointerdown = (e) => {
-  const { x, y } = wpos(e), D = viewD(), t = x / wf.width * D, ln = lanes(wf.height);
-  const inLane = (k) => y >= ln[k][0] - 2 && y <= ln[k][0] + ln[k][1] + 2;
-  if (inLane('subs')) {
-    const i = P.subtitles.findIndex((s) => t >= s.start - 4 / wf.width * D && t <= s.end + 4 / wf.width * D);
+  const { x, y } = wpos(e); if (x < GUT) return;
+  const t = T(x), lane = laneAt(y), th = 7 / view.pps;
+  if (lane === 'ruler') { drag = { kind: 'scrub' }; wf.setPointerCapture(e.pointerId); seek(Math.max(0, t)); return; }
+  if (lane === 'subs') {
+    const i = P.subtitles.findIndex((s) => t >= s.start - th / 2 && t <= s.end + th / 2);
     if (i >= 0) {
-      const s = P.subtitles[i], th = 8 / wf.width * D; sel = i; snap();
+      const s = P.subtitles[i]; sel = i; snap();
       drag = { kind: 'sub', i, mode: Math.abs(t - s.start) < th ? 'l' : Math.abs(t - s.end) < th ? 'r' : 'm', off: t - s.start, len: s.end - s.start };
       wf.setPointerCapture(e.pointerId); renderList(); redraw(); return;
     }
-  } else if (audio && inLane('vocal')) {
+  } else if (audio && lane === 'vocal') {
     const off = P.audioOffset || 0;
     if (e.altKey) { drag = { kind: 'range', t0: t }; FN.mark = { a: t, b: t }; wf.setPointerCapture(e.pointerId); redraw(); return; }
     if (t >= off && t <= off + audio.duration) {
-      snap(); frozenD = duration() + 20; drag = { kind: 'main', start: t, off0: off, last: off };
+      snap(); drag = { kind: 'main', start: t, off0: off, last: off };
       wf.setPointerCapture(e.pointerId); wf.style.cursor = 'grabbing'; redraw(); return;
     }
   }
-  seek(t);
+  seek(Math.max(0, t));
 };
 wf.onpointermove = (e) => {
-  if (!drag) return; const D = viewD(), t = wpos(e).x / wf.width * D;
-  if (drag.kind === 'range') { FN.mark = { a: Math.min(drag.t0, t), b: Math.max(drag.t0, t) }; redraw(); return; }
+  const { x, y } = wpos(e), t = T(x);
+  if (!drag) {                                                  // hover cursor
+    let cur = 'default';
+    if (x >= GUT) {
+      cur = 'pointer'; const lane = laneAt(y), th = 7 / view.pps;
+      if (lane === 'ruler') cur = 'col-resize';
+      else if (lane === 'subs') { const s = P.subtitles.find((q) => t >= q.start - th / 2 && t <= q.end + th / 2); if (s) cur = (Math.abs(t - s.start) < th || Math.abs(t - s.end) < th) ? 'ew-resize' : 'grab'; }
+      else if (lane === 'vocal' && audio) { const off = P.audioOffset || 0; if (t >= off && t <= off + audio.duration) cur = e.altKey ? 'crosshair' : 'grab'; }
+    }
+    wf.style.cursor = cur; return;
+  }
+  if (drag.kind === 'scrub') { edgeScroll(x); seek(Math.max(0, T(x))); return; }
+  if (drag.kind === 'range') { edgeScroll(x); FN.mark = { a: Math.min(drag.t0, T(x)), b: Math.max(drag.t0, T(x)) }; redraw(); return; }
+  const snapOn = !e.shiftKey; snapLine = null; edgeScroll(x);
   if (drag.kind === 'main') {
-    const nt = r2(Math.min(Math.max(0, drag.off0 + (t - drag.start)), D - audio.duration)), delta = r2(nt - drag.last);
+    const dur = audio.duration, pts = snapPoints('voice'); let nt = drag.off0 + (T(x) - drag.start);
+    if (snapOn) { const a = nearest(nt, pts), b = nearest(nt + dur, pts), da = a != null ? a - nt : Infinity, db = b != null ? b - (nt + dur) : Infinity; if (a != null && Math.abs(da) <= Math.abs(db)) { nt += da; snapLine = a; } else if (b != null) { nt += db; snapLine = b; } }
+    nt = r2(Math.max(0, nt)); const delta = r2(nt - drag.last);
     if (delta) {
       P.audioOffset = nt; drag.last = nt;
       if (P.followSubs !== false) for (const s of P.subtitles) { s.start = r2(Math.max(0, s.start + delta)); s.end = r2(Math.max(s.start + 0.05, s.end + delta)); }
@@ -392,17 +453,26 @@ wf.onpointermove = (e) => {
     }
     redraw(); return;
   }
-  const s = P.subtitles[drag.i];
-  if (drag.mode === 'l') s.start = r2(Math.max(0, Math.min(t, s.end - 0.05)));
-  else if (drag.mode === 'r') s.end = r2(Math.max(t, s.start + 0.05));
-  else { s.start = r2(Math.max(0, t - drag.off)); s.end = r2(s.start + drag.len); }
+  const s = P.subtitles[drag.i], pts = snapPoints(drag.i), tt = T(x);
+  if (drag.mode === 'l') { let v = tt; const sn = snapOn ? nearest(v, pts) : null; if (sn != null) { v = sn; snapLine = sn; } s.start = r2(Math.max(0, Math.min(v, s.end - 0.05))); }
+  else if (drag.mode === 'r') { let v = tt; const sn = snapOn ? nearest(v, pts) : null; if (sn != null) { v = sn; snapLine = sn; } s.end = r2(Math.max(v, s.start + 0.05)); }
+  else {
+    let st = tt - drag.off;
+    if (snapOn) { const a = nearest(st, pts), b = nearest(st + drag.len, pts), da = a != null ? a - st : Infinity, db = b != null ? b - (st + drag.len) : Infinity; if (a != null && Math.abs(da) <= Math.abs(db)) { st += da; snapLine = a; } else if (b != null) { st += db; snapLine = b + 0; st = b - drag.len; snapLine = b; } }
+    st = Math.max(0, st); s.start = r2(st); s.end = r2(st + drag.len);
+  }
   syncRow(drag.i); save(); redraw();
 };
 wf.onpointerup = () => {
-  if (drag && drag.kind === 'main') { frozenD = null; wf.style.cursor = 'pointer'; if (playing) seek(nowT()); redraw(); }
-  if (drag && drag.kind === 'range' && FN.mark && Math.abs(FN.mark.b - FN.mark.a) < 0.05) { FN.mark = null; redraw(); }
-  drag = null;
+  if (drag && drag.kind === 'main') { wf.style.cursor = 'grab'; if (playing) seek(nowT()); }
+  if (drag && drag.kind === 'range' && FN.mark && Math.abs(FN.mark.b - FN.mark.a) < 0.05) FN.mark = null;
+  drag = null; snapLine = null; redraw();
 };
+wf.addEventListener('wheel', (e) => {
+  e.preventDefault(); lastScroll = performance.now(); const { x } = wpos(e);
+  if (e.ctrlKey || e.metaKey) setPps(view.pps * Math.exp(-e.deltaY * 0.0018), T(x));
+  else { view.t0 += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / view.pps; clampView(); redraw(); }
+}, { passive: false });
 $('play').onclick = () => playing ? pause() : play();
 
 // ---------- subtitles ----------
@@ -426,7 +496,7 @@ function renderList() {
     const r = document.createElement('div'); r.className = 'sub' + (i === sel ? ' sel' : '');
     r.innerHTML = `<span class="mut">${i + 1}</span><input data-k="text"><input type="number" step="0.01" data-k="start"><input type="number" step="0.01" data-k="end">`;
     const ins = r.querySelectorAll('input'); ins[0].value = s.text; ins[1].value = s.start; ins[2].value = s.end;
-    ins.forEach((el) => { el.onfocus = () => { sel = i; snap(); [...box.children].forEach((c, j) => c.classList.toggle('sel', j === i)); };
+    ins.forEach((el) => { el.onfocus = () => { sel = i; snap(); [...box.children].forEach((c, j) => c.classList.toggle('sel', j === i)); redraw(); };
       el.oninput = () => { const k = el.dataset.k; s[k] = k === 'text' ? el.value : parseFloat(el.value) || 0; save(); redraw(); }; });
     ins[0].onclick = () => seek(s.start + 0.01);
     box.appendChild(r);
@@ -460,8 +530,8 @@ $('file').onchange = async (e) => {
     const same = P.media.main === 'local:' + f.name && P.keepRaw && Math.abs(P.keepRaw - raw.duration) < 0.02;
     rawAudio = raw; P.media.main = 'local:' + f.name; P.keepRaw = raw.duration;
     if (!same) { P.keep = null; P.audioOffset = 0; }
-    audio = buildEdited(raw, P.keep); pkKey = ''; FN.mark = null;
-    tpos = 0; setStatus(`${f.name} — ${audio.duration.toFixed(1)} s`); save(); redraw();
+    audio = buildEdited(raw, P.keep); bpKey = ''; FN.mark = null;
+    tpos = 0; setStatus(`${f.name} — ${audio.duration.toFixed(1)} s`); save(); fitView();
   } catch (err) { setStatus('အသံဖတ်မရပါ: ' + err.message); }
 };
 
@@ -476,7 +546,7 @@ function applyUI() {
   $('size').value = P.output.size; $('font').value = P.style.font; $('fsz').value = P.style.sizePct;
   $('ypos').value = P.layout?.[P.output.size.split(' ')[0]]?.y ?? P.style.yPct;
   $('lead').value = P.leadMs; $('tail').value = P.tailMs; $('calib').value = P.calibMs;
-  renderList(); redraw();
+  renderList(); fitView();
 }
 $('saveJson').onclick = () => { const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(P, null, 2)], { type: 'application/json' }));
@@ -532,6 +602,8 @@ document.addEventListener('keydown', (e) => {
   else if (e.code === 'KeyS') splitAt();
   else if (e.code === 'KeyM') mergeNext();
   else if (e.code === 'Delete') delSel();
+  else if (e.code === 'Equal' || e.code === 'NumpadAdd') zoomBy(1.4);
+  else if (e.code === 'Minus' || e.code === 'NumpadSubtract') zoomBy(1 / 1.4);
   else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
     e.preventDefault(); const dir = e.code === 'ArrowLeft' ? -1 : 1, step = e.shiftKey ? 0.1 : 0.01, s = P.subtitles[sel];
     if (!s) { seek(nowT() + dir * 1); return; } snap();
