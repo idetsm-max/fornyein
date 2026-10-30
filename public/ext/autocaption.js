@@ -1,8 +1,10 @@
-// Auto caption module (CapCut-style "auto captions") using an open-source Whisper model that YOU host on Hugging Face.
+// Auto caption module (CapCut-style "auto captions") using an open-source Whisper model.
 //
-//   browser                         Cloudflare Worker                 Hugging Face Space (hf-space/)
-//   cut the voice at pauses  --->   /api/transcribe  (adds ASR_KEY) -->  Whisper  --->  { text }
-//   one 16 kHz WAV chunk per request  (so Whisper timestamps are never needed: the chunk times come from our own pause detector)
+//   browser: cut the voice at pauses -> one 16 kHz WAV chunk per request -> ASR server -> { text }
+//   The ASR server is the free server in local-asr/ running on YOUR computer (http://127.0.0.1:7860),
+//   or any server with the same two endpoints (GET / , POST /transcribe?lang=my). If the "ASR server" box is empty the
+//   request goes through the Cloudflare Worker (/api/transcribe) to the address configured there (ASR_URL).
+//   Whisper timestamps are never needed: the chunk times come from our own pause detector.
 //
 //   Mode A  "အသံကနေ စာတန်းထုတ်မယ်"      : every chunk becomes a subtitle line with the text Whisper heard.
 //   Mode B  "ကိုယ့်စာသားကို ချိန်ကိုက်မယ်" : you already pasted the poem. Whisper's (imperfect) text is only used to FIND WHERE each
@@ -16,6 +18,7 @@ const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clean = (s) => s.replace(/[\s၊။,.?!"'“”‘’\-–—()]/g, '');
 const sylOf = (s) => FN.syllables(clean(s));
+const store = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 
 // ---------- 1. cut the voice at pauses ----------
 function energyDb(buf) {
@@ -42,12 +45,12 @@ function chunkify(buf, sens, pauseMin) {
   let segs = runs(m).filter((r) => r[0] === 1).map(([, i, j]) => ({ a: i * hop, b: j * hop }));
   const MAXLEN = 25;
   for (let guard = 0; guard < 500; guard++) {                                                       // merge very short pieces into the nearer neighbour
-    const k = segs.findIndex((s, idx) => s.b - s.a < 1.0 && segs.length > 1);
+    const k = segs.findIndex((s) => s.b - s.a < 1.0 && !s.tiny && segs.length > 1);
     if (k < 0) break;
     const gl = k > 0 ? segs[k].a - segs[k - 1].b : Infinity, gr = k < segs.length - 1 ? segs[k + 1].a - segs[k].b : Infinity;
     const t = gl <= gr ? k - 1 : k + 1; if (t < 0 || t >= segs.length) break;
     const lo = Math.min(k, t), hi = Math.max(k, t);
-    if (segs[hi].b - segs[lo].a > MAXLEN) { segs[k] = { ...segs[k], tiny: true }; if (segs.every((s) => s.b - s.a >= 1.0 || s.tiny)) break; continue; }
+    if (segs[hi].b - segs[lo].a > MAXLEN) { segs[k] = { ...segs[k], tiny: true }; continue; }
     segs.splice(lo, 2, { a: segs[lo].a, b: segs[hi].b });
   }
   const out = [];
@@ -83,22 +86,36 @@ function wavChunk(buf, a, b) {
   return new Blob([dv], { type: 'audio/wav' });
 }
 
-// ---------- 3. talk to the Worker -> Hugging Face Space ----------
+// ---------- 3. talk to the ASR server (your computer, or the Worker -> remote server) ----------
+const srv = mk('input', { type: 'text', placeholder: 'http://127.0.0.1:7860', value: store.get('fn.asrUrl', 'http://127.0.0.1:7860'), title: 'အလွတ်ထားရင် Cloudflare Worker (ASR_URL) ကနေ သွားမယ်' });
+srv.style.width = '190px'; srv.oninput = () => store.set('fn.asrUrl', srv.value);
+const base = () => (srv.value || '').trim().replace(/\/+$/, '');
 async function wake(say) {
-  for (let i = 0; i < 40; i++) {
+  const b = base();
+  if (b) {                                                     // direct: local-asr/ on this computer
+    let lastErr = '';
+    for (let i = 0; i < 3; i++) {
+      try { const r = await fetch(b + '/', { cache: 'no-store' }); if (r.ok) { const j = await r.json().catch(() => ({})); say(`ASR server အဆင်သင့် — ${j.model || ''} · ${j.device || ''}`); return; } lastErr = 'HTTP ' + r.status; }
+      catch (e) { lastErr = e.message; }
+      await sleep(1500);
+    }
+    throw new Error(`ASR server ကို မချိတ်ဆက်နိုင်ပါ (${lastErr}) — start-windows.bat ကို run ထားလား၊ Chrome က "local network" ခွင့်ပြုချက် တောင်းရင် Allow လုပ်ပါ`);
+  }
+  for (let i = 0; i < 40; i++) {                               // through the Cloudflare Worker (remote server may be asleep)
     let j = {}, st = 0;
     try { const r = await fetch('/api/transcribe', { cache: 'no-store' }); st = r.status; j = await r.json().catch(() => ({})); } catch {}
     if (j.ready) return;
     if (st === 503 && j.error) throw new Error(j.error);
     if (st === 403) throw new Error('Cloudflare Access ကြောင့် ပိတ်ထားပါတယ် (login ပြန်ဝင်ပါ)');
-    say(`ASR server ကို နှိုးနေပါတယ် (${i * 5}s) — Hugging Face Space အိပ်နေရင် ၁–၃ မိနစ်ကြာနိုင်ပါတယ်...`); await sleep(5000);
+    say(`ASR server ကို နှိုးနေပါတယ် (${i * 5}s)...`); await sleep(5000);
   }
-  throw new Error('ASR server မနိုးပါ — Hugging Face Space ရဲ့ Logs ကို ကြည့်ပါ');
+  throw new Error('ASR server မနိုးပါ');
 }
 async function asr(blob, lang) {
+  const url = base() ? `${base()}/transcribe?lang=${encodeURIComponent(lang)}` : `/api/transcribe?lang=${encodeURIComponent(lang)}`;
   for (let tryNo = 0; ; tryNo++) {
     try {
-      const r = await fetch(`/api/transcribe?lang=${encodeURIComponent(lang)}`, { method: 'POST', headers: { 'content-type': 'audio/wav' }, body: blob });
+      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'audio/wav' }, body: blob });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || j.detail || 'HTTP ' + r.status);
       return j.text || '';
@@ -167,7 +184,7 @@ function applyB(chunks, off, lead, tail, dur) {
   if (!A.length) throw new Error('Whisper က စာသား မထုတ်ပေးနိုင်ပါ');
   const U = [], lines = [];
   subs.forEach((s) => { const sy = sylOf(s.text), u0 = U.length; U.push(...sy); lines.push({ u0, u1: U.length }); });
-  const { map, q } = align(U, A);
+  const { map, q } = align(U, A.map((x) => x.s));
   const L = lines.map((ln) => {
     let f = -1, l = -1, qs = 0; const cnt = Math.max(1, ln.u1 - ln.u0);
     for (let u = ln.u0; u < ln.u1; u++) { if (map[u] >= 0) { if (f < 0) f = map[u]; l = map[u]; } qs += q[u]; }
@@ -189,29 +206,30 @@ function applyB(chunks, off, lead, tail, dur) {
 }
 
 // ---------- 6. UI (top of the "စာသား" tab) ----------
-const card = mk('div', { className: 'card' }); card.append(mk('b', { textContent: '✨ Auto caption (Whisper — Hugging Face)' }));
-card.append(mk('div', { className: 'mut', style: 'margin:4px 0 8px;line-height:1.7', textContent: 'ကဗျာဖတ်သံကို ရပ်နားတဲ့နေရာတွေမှာ ဖြတ်ပြီး Whisper ကို တစ်ပိုင်းချင်း ပို့ပါတယ်။ (အသံ ဖိုင်ကို Hugging Face Space ဆီ ပို့ပါတယ်။) ① အသံကနေ စာသား ထုတ်ပေးမယ်၊ ဒါမှမဟုတ် ② ကိုယ်ထည့်ထားတဲ့ ကဗျာစာသားကို ဘယ်အချိန်မှာ ဖတ်လဲ ရှာပေးမယ် (စာသား မမှားဘူး၊ ဒီနည်းက ကဗျာအတွက် ပိုကောင်းပါတယ်)။' }));
-const lang = mk('select'); [['my', 'မြန်မာ'], ['en', 'English'], ['th', 'ไทย'], ['zh', '中文'], ['ja', '日本語'], ['ko', '한국어']].forEach(([v, l]) => lang.add(new Option(l, v)));
+const card = mk('div', { className: 'card' }); card.append(mk('b', { textContent: '✨ Auto caption' }));
+const lang = mk('select'); [['my', 'မြန်မာ'], ['en', 'English'], ['th', 'ไทย'], ['zh', '中文'], ['ja', '日本語'], ['ko', '한국어']].forEach(([v, l]) => lang.add(new Option(v === 'my' ? l : l, v)));
 const pauseIn = mk('input', { type: 'number', min: 0.15, max: 1.5, step: 0.05, value: 0.3 }); pauseIn.style.width = '64px';
+const bT = mk('button', { textContent: 'စစ်ကြည့်', title: 'ASR server ချိတ်မိမိ စစ်မယ်' });
 const bA = mk('button', { textContent: '① အသံကနေ စာတန်းထုတ်မယ်' }), bB = mk('button', { className: 'pri', textContent: '② ကိုယ့်စာသားကို ချိန်ကိုက်မယ်' });
 const note = mk('div', { className: 'mut', style: 'margin-top:8px;line-height:1.7' }), prog = mk('progress', { value: 0, max: 1 }); prog.style.cssText = 'width:100%;display:none;margin-top:6px';
-card.append(mk('div', { className: 'row' }, [mk('label', { className: 'mut' }, ['ဘာသာစကား ', lang]), mk('label', { className: 'mut', title: 'ဒီထက်ပိုရပ်ရင် စာကြောင်းအသစ်လို့ သတ်မှတ်မယ်' }, ['pause s ', pauseIn])]), mk('div', { className: 'row' }, [bA, bB]), prog, note);
-card.append(mk('details', { style: 'margin-top:8px' }, [mk('summary', { className: 'mut', textContent: 'စတင်အသုံးပြုနည်း (တစ်ကြိမ်ပဲ လိုပါတယ်)', style: 'cursor:pointer' }),
-  mk('div', { className: 'mut', style: 'line-height:1.8;margin-top:6px', innerHTML: '၁။ Hugging Face မှာ Space အသစ် (SDK = <b>Docker</b>) ဖန်တီးပြီး repo ထဲက <code>hf-space/</code> ဖိုင် ၄ ခုကို တင်ပါ။<br>၂။ Space → Settings → <b>Secret</b> <code>API_KEY</code> = ကိုယ့်ဘာသာ ရှည်ရှည် ကျပန်းစာလုံး။ (လိုရင် Variable <code>MODEL_ID</code> နဲ့ model ပြောင်းလို့ရ)<br>၃။ Cloudflare → fornyein → Settings → Variables: <code>ASR_URL</code> = Space လိပ်စာ (<code>https://….hf.space</code>)၊ <b>Secret</b> <code>ASR_KEY</code> = အပေါ်က API_KEY နဲ့ အတူတူ။<br>၄။ Space build ပြီးတာကို စောင့်ပြီး ဒီမှာ နှိပ်ပါ။' })]));
+card.append(mk('div', { className: 'row' }, [mk('label', { className: 'mut' }, ['ASR server ', srv]), bT]),
+  mk('div', { className: 'row' }, [mk('label', { className: 'mut' }, ['ဘာသာစကား ', lang]), mk('label', { className: 'mut', title: 'ဒီထက်ပိုရပ်ရင် စာကြောင်းအသစ်လို့ သတ်မှတ်မယ်' }, ['pause s ', pauseIn])]),
+  mk('div', { className: 'row' }, [bA, bB]), prog, note);
 const pane = document.querySelectorAll('.side')[0]?.querySelectorAll('.pane')[1] || document.querySelector('main > section:last-child');
 pane.prepend(card);
 
 let busy = false, cache = null;
 function say(msg, p) { note.textContent = msg; FN.setStatus(msg); if (p != null) { prog.style.display = ''; prog.value = p; } }
+bT.onclick = async () => { try { await wake(say); } catch (e) { say(e.message); } };
 async function run(mode) {
   if (busy) return;
   const buf = FN.audio, subs = P().subtitles;
   if (!buf) { say('အသံဖိုင် (သို့ အသံသွင်းထားတာ) အရင်လိုပါတယ်'); return; }
   if (mode === 'B' && !subs.length) { say('② အတွက် ကဗျာစာသား paste လုပ်ပြီး "စာတန်းခွဲမယ်" အရင်နှိပ်ပါ'); return; }
   if (mode === 'A' && subs.length && !confirm('ရှိပြီးသား စာတန်းတွေကို Whisper ရဲ့ စာသားနဲ့ အစားထိုးမလား? (Ctrl+Z နဲ့ ပြန်ရ)')) return;
-  busy = true; bA.disabled = bB.disabled = true; prog.style.display = 'none';
+  busy = true; bA.disabled = bB.disabled = bT.disabled = true; prog.style.display = 'none';
   try {
-    const sens = (P().vad?.sens ?? 40) / 100, pauseMin = +pauseIn.value || 0.3, key = [buf.length, buf.sampleRate, JSON.stringify(P().keep || null), lang.value, sens, pauseMin].join('|');
+    const sens = (P().vad?.sens ?? 40) / 100, pauseMin = +pauseIn.value || 0.3, key = [buf.length, buf.sampleRate, JSON.stringify(P().keep || null), lang.value, sens, pauseMin, base()].join('|');
     let chunks;
     if (cache && cache.key === key) { chunks = cache.chunks; say('အရင်ရလဒ်ကို ပြန်သုံးပါတယ် (Whisper ပြန်မခေါ်ပါဘူး)'); }
     else {
@@ -227,6 +245,6 @@ async function run(mode) {
     const low = P().subtitles.filter((s) => !s.locked && (s.confidence || 0) < 0.7).length;
     say(mode === 'A' ? `စာတန်း ${P().subtitles.length} ကြောင်း ထုတ်ပြီး — Whisper မှားနိုင်လို့ စာသားကို ဖတ်ပြီး ပြင်ပါ (R = ပြန်စစ်)` : `ချိန်ကိုက်ပြီး — ပြန်စစ်ရန် ${low} ကြောင်း (R နှိပ်ပါ)`);
   } catch (e) { say('မအောင်ပါ: ' + e.message); }
-  busy = false; bA.disabled = bB.disabled = false; setTimeout(() => { prog.style.display = 'none'; }, 1500);
+  busy = false; bA.disabled = bB.disabled = bT.disabled = false; setTimeout(() => { prog.style.display = 'none'; }, 1500);
 }
 bA.onclick = () => run('A'); bB.onclick = () => run('B');
