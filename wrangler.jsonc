@@ -1,5 +1,5 @@
 {
-  // Static app from ./public + API worker for /api/* with a private R2 bucket.
+  // Static app from ./public + API worker for /api/* with a private R2 bucket and Workers AI (auto caption).
   "name": "fornyein",
   "main": "worker/src/index.ts",
   "compatibility_date": "2026-10-01",
@@ -10,9 +10,10 @@
   "r2_buckets": [
     { "binding": "BUCKET", "bucket_name": "fornyein-assets" }
   ],
-  // NOT secrets: Access team domain + policy audience id, and the public address of your Hugging Face Space.
-  // The Access check stays off until ACCESS_AUD is filled in.  ASR_URL = e.g. "https://your-name-fornyein-asr.hf.space"
-  // The shared key for the Space (ASR_KEY) is a SECRET: add it in the Cloudflare dashboard, never in this file.
+  // Cloudflare Workers AI (Whisper) for Auto caption. Free allocation per day, then pay-as-you-go: check your plan.
+  "ai": { "binding": "AI" },
+  // NOT secrets: Access team domain + policy audience id. The Access check stays off until ACCESS_AUD is filled in.
+  // ASR_URL is OPTIONAL: leave it empty to use Workers AI; set it to use your own Whisper server instead.
   "vars": {
     "ACCESS_TEAM_DOMAIN": "calm-scene-5980.cloudflareaccess.com",
     "ACCESS_AUD": "",
