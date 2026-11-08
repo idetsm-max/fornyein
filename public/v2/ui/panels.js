@@ -6,12 +6,21 @@ import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
 import { addText, addLines, addMedia } from '../engine/actions.js';
 import { importFile } from '../engine/media.js';
+import { loadMedia } from '../engine/storage.js';
 
 // ---------------- left panel: Text tool (real) · Media (still a demo until phase 3) · empty state for the rest ----------------
 const DEMO_MEDIA = [
   ['sunset', 'video', '00:15'], ['night', 'video', '00:12'], ['forest', 'photo', ''], ['music', 'audio', '03:58'],
   ['city', 'video', '00:18'], ['sky', 'photo', ''], ['flower', 'photo', ''], ['sea', 'video', '00:14'],
 ];
+function MediaPreview({ media }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => { let u = ''; loadMedia(media.id).then((blob) => { if (blob) { u = URL.createObjectURL(blob); setUrl(u); } }); return () => { if (u) URL.revokeObjectURL(u); }; }, [media.id]);
+  if (!url) return html`<div class="media-preview"><small>Loading preview…</small></div>`;
+  if (media.kind === 'audio') return html`<div class="media-preview"><audio controls src=${url} /></div>`;
+  if (media.kind === 'video') return html`<div class="media-preview"><video controls muted src=${url} /></div>`;
+  return html`<div class="media-preview"><img src=${url} alt=${media.name} /></div>`;
+}
 function TextPanel({ store, transport }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const [poem, setPoem] = useState('');
@@ -29,7 +38,7 @@ function TextPanel({ store, transport }) {
   </section>`;
 }
 export function MediaPanel({ tool, store, transport }) {
-  const project = useStore(store, (s) => s.project), [tab, setTab] = useState('local'), [kind, setKind] = useState('all'), [grid, setGrid] = useState(true), [library, setLibrary] = useState([]), [recording, setRecording] = useState(false), input = useRef(), recorder = useRef(), chunks = useRef([]);
+  const project = useStore(store, (s) => s.project), [tab, setTab] = useState('local'), [kind, setKind] = useState('all'), [grid, setGrid] = useState(true), [library, setLibrary] = useState([]), [recording, setRecording] = useState(false), [preview, setPreview] = useState(null), input = useRef(), recorder = useRef(), chunks = useRef([]);
   const media = Object.values(project.media || {});
   useEffect(() => { if (tab !== 'library') return; fetch('/api/library/Music').then((r) => r.ok ? r.json() : []).then(setLibrary).catch(() => setLibrary([])); }, [tab]);
   if (tool === 'text') return html`<${TextPanel} store=${store} transport=${transport} />`;
@@ -40,19 +49,28 @@ export function MediaPanel({ tool, store, transport }) {
   const addLibrary = async (item) => { try { const name = item.name || item.key; const r = await fetch('/api/asset/Music/' + name.split('/').map(encodeURIComponent).join('/')); if (!r.ok) return; const blob = await r.blob(); const meta = await importFile(new File([blob], name.split('/').pop(), { type: blob.type })); addMedia(store, transport, meta); } catch (e) { console.error(e); } };
   const localTiles = media.filter((m) => kind === 'all' || (kind === 'audios' && m.kind === 'audio') || (kind === 'videos' && m.kind === 'video') || (kind === 'photos' && m.kind === 'image'));
   return html`<section class="panel media"><${Tabs} value=${tab} onChange=${setTab} tabs=${[['local', L('local'), H('local')], ['library', L('library'), H('library')], ['audio', L('audios'), H('audios')], ['record', L('record'), H('record')]]} /><div class="pbody">
-    ${tab === 'record' ? html`<button type="button" class=${cx('uploadbtn', recording && 'recording')} onClick=${startRecord}><${Icon} name="audio" size=${20} /><span>${recording ? 'Stop recording' : 'Record microphone'}</span></button><small class="muted">Microphone permission လိုအပ်ပါတယ်</small>` : tab === 'library' ? html`<div class="mgrid">${library.length ? library.map((x) => html`<button type="button" class="mtile add" onClick=${() => addLibrary(x)}><${Icon} name="audio" size=${24} /><span>${x.name || x.key}</span></button>`) : html`<div class="empty"><p>R2 Music library</p><small>Library မရရှိသေးပါ</small></div>`}</div>` : html`<button type="button" class="uploadbtn" title=${H('upload')} onClick=${() => input.current?.click()}><${Icon} name="upload" size=${20} /><span>${L('upload')}</span><${Icon} name="chevron" size=${14} /></button><input ref=${input} type="file" accept=${accept} multiple hidden onChange=${(e) => onFiles(e.target.files)} /><div class="filterrow"><${Select} value=${kind} onChange=${setKind} cls="compact" options=${[['all', L('all')], ['videos', L('videos')], ['photos', L('photos')], ['audios', L('audios')]]} /><div class="spacer"></div><${IconBtn} name="grid" active=${grid} title="Grid" onClick=${() => setGrid(true)} size=${17} /><${IconBtn} name="list" active=${!grid} title="List" onClick=${() => setGrid(false)} size=${17} /></div><div class=${cx('mgrid', !grid && 'list')}>${localTiles.map((m) => html`<button type="button" class=${cx('mtile', 'g-' + m.kind)} onClick=${() => { const c = project.tracks.flatMap((t) => t.clips).find((c) => c.mediaId === m.id); if (c) store.select(c.id); }}><span class="mnote"><${Icon} name=${m.kind === 'audio' ? 'audio' : m.kind === 'video' ? 'video' : 'image'} size=${26} /></span><span class="dur">${m.name}</span></button>`)}${!localTiles.length && html`<div class="empty"><p>Local media မရှိသေးပါ</p><small>Upload Media ကိုနှိပ်ပြီး ဖိုင်ရွေးပါ</small></div>`}</div>`}
+    ${tab === 'record' ? html`<button type="button" class=${cx('uploadbtn', recording && 'recording')} onClick=${startRecord}><${Icon} name="audio" size=${20} /><span>${recording ? 'Stop recording' : 'Record microphone'}</span></button><small class="muted">Microphone permission လိုအပ်ပါတယ်</small>` : tab === 'library' ? html`<div class="mgrid">${library.length ? library.map((x) => html`<button type="button" class="mtile add" onClick=${() => addLibrary(x)}><${Icon} name="audio" size=${24} /><span>${x.name || x.key}</span></button>`) : html`<div class="empty"><p>R2 Music library</p><small>Library မရရှိသေးပါ</small></div>`}</div>` : html`<button type="button" class="uploadbtn" title=${H('upload')} onClick=${() => input.current?.click()}><${Icon} name="upload" size=${20} /><span>${L('upload')}</span><${Icon} name="chevron" size=${14} /></button><input ref=${input} type="file" accept=${accept} multiple hidden onChange=${(e) => onFiles(e.target.files)} /><div class="filterrow"><${Select} value=${kind} onChange=${setKind} cls="compact" options=${[['all', L('all')], ['videos', L('videos')], ['photos', L('photos')], ['audios', L('audios')]]} /><div class="spacer"></div><${IconBtn} name="grid" active=${grid} title="Grid" onClick=${() => setGrid(true)} size=${17} /><${IconBtn} name="list" active=${!grid} title="List" onClick=${() => setGrid(false)} size=${17} /></div>${preview && html`<${MediaPreview} media=${preview} />`}<div class=${cx('mgrid', !grid && 'list')}>${localTiles.map((m) => html`<button type="button" class=${cx('mtile', 'g-' + m.kind, preview?.id === m.id && 'on')} onClick=${() => { setPreview(m); const c = project.tracks.flatMap((t) => t.clips).find((c) => c.mediaId === m.id); if (c) store.select(c.id); }}><span class="mnote"><${Icon} name=${m.kind === 'audio' ? 'audio' : m.kind === 'video' ? 'video' : 'image'} size=${26} /></span><span class="dur">${m.name}</span></button>`)}${!localTiles.length && html`<div class="empty"><p>Local media မရှိသေးပါ</p><small>Upload Media ကိုနှိပ်ပြီး ဖိုင်ရွေးပါ</small></div>`}</div>`}
   </div></section>`;
 }
 // ---------------- right panel (top): Inspector — edits the selected text clip ----------------
 export function Inspector({ store, fonts }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const [tab, setTab] = useState('text');
-  const found = sel ? findClip(project, sel) : null, c = found && found.clip.kind === 'text' ? found.clip : null;
+  const found = sel ? findClip(project, sel) : null, c = found ? found.clip : null;
   const [W] = RATIOS[project.size], [, H2] = RATIOS[project.size];
   const upd = (key, fn) => store.edit((d) => { const f = findClip(d, sel); if (f) fn(f.clip); }, { key: key + sel });
   const tabs = html`<${Tabs} value=${tab} onChange=${setTab} tabs=${[['text', L('tText'), H('tText')], ['anim', L('tAnimation'), H('tAnimation')], ['timing', L('tTiming'), H('tTiming')]]} />`;
   if (!c) return html`<aside class="panel inspector">${tabs}<div class="empty"><${Icon} name="text" size=${32} /><p>Select a text clip</p><small>Timeline မှာ စာတန်းတစ်ခု ရွေးပါ၊ ဒါမှမဟုတ် Text tool မှာ Add text နှိပ်ပါ</small></div></aside>`;
-  const s = c.style, fontOpts = fonts.includes(s.font) ? fonts : [s.font, ...fonts];
+  if (c.kind === 'audio') return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
+    <div class="audioins"><b>${c.name || project.media?.[c.mediaId]?.name || 'Audio clip'}</b><small>Audio clip settings</small></div>
+    <${Slider} label="Gain" tip="အသံအတိုးအကျယ်" value=${Math.round((c.gain ?? 1) * 100)} min=${0} max=${200} onChange=${(v) => upd('gain', (k) => { k.gain = v / 100; })} unit="%" />
+    <${Field} label="Fade in" tip="အသံဝင်ချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${c.fade?.in || 0} onInput=${(e) => upd('fadein', (k) => { k.fade = { ...(k.fade || {}), in: Math.max(0, +e.target.value || 0) }; })} /></label><//>
+    <${Field} label="Fade out" tip="အသံထွက်ချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${c.fade?.out || 0} onInput=${(e) => upd('fadeout', (k) => { k.fade = { ...(k.fade || {}), out: Math.max(0, +e.target.value || 0) }; })} /></label><//>
+    <${Field} label="Loop" tip="Music ကို ပြန်လည်ဖွင့်ရန်"><label class="switch"><input type="checkbox" checked=${!!c.loop} onChange=${() => upd('loop', (k) => { k.loop = !k.loop; })} /><i></i></label><//>
+    <${Field} label="Start" tip="စတင်ချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${+c.start.toFixed(2)} onInput=${(e) => upd('ast', (k) => { k.start = Math.max(0, +e.target.value || 0); })} /></label><//>
+    <${Field} label="Duration" tip="ကြာချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0.1" value=${+c.dur.toFixed(2)} onInput=${(e) => upd('adu', (k) => { k.dur = Math.max(0.1, +e.target.value || 0.1); })} /></label><//>
+  </div></aside>`;
+  const s = c.style || {}, fontOpts = fonts.includes(s.font) ? fonts : [s.font, ...fonts];
   return html`<aside class="panel inspector">${tabs}
     <div class="pbody scroll">
       ${tab === 'text' ? html`
