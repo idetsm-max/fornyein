@@ -25,7 +25,8 @@
 | **v1 (`/app`)** | အလုပ်လုပ်ပေမဲ့ patch တွေ ပေါင်းထားတဲ့ ကုဒ်။ **အဆင့် ၇ မှာ အစားထိုးပြီး ဖျက်မယ်။** အခုထိ ထိမထား |
 | **v2 Phase 0 (Shell)** | ✅ Deploy ပြီး (`/v2/`)၊ သင့် screenshot နဲ့ စစ်ပြီး — layout/အရောင် နမူနာနဲ့ ကိုက်၊ dark/light ရ |
 | **v2 Phase 1 (Engine core)** | ✅ GitHub `main` သို့ တင်ပြီး။ Project store/undo-redo, IndexedDB autosave, Canvas renderer, transport, Text tool, poem lines, Inspector, real Player/Timeline ပါဝင်။ Integration bug ပြင်ပြီး local JS syntax + headless Chromium boot smoke test အောင်မြင် |
-| **v2 Phase 2 (Timeline)** | ⚙️ လုပ်နေဆဲ — clip drag/move, edge trim, split, delete/ripple delete, snap toggle, Shift/Ctrl multi-select, keyboard shortcuts, zoom ပါဝင်။ Unit tests ၄/၄ နှင့် headless boot smoke test အောင်မြင်; user Chrome စစ်ဆေးရန် ကျန် |
+| **v2 Phase 2 (Timeline)** | ✅ clip drag/move, edge trim, split, delete/ripple delete, snap toggle, Shift/Ctrl multi-select, keyboard shortcuts, zoom ပါဝင်။ Unit tests ၄/၄ နှင့် headless boot smoke test အောင်မြင်; user စစ်ဆေးပြီး |
+| **v2 Phase 3 (Media + Audio)** | ⚙️ Local import → IndexedDB Blob, audio metadata/waveform, audio clip, R2 Music library UI, microphone recording UI နှင့် basic audio preview controller ထည့်ပြီး။ Syntax/unit/boot smoke test အောင်မြင်; user Chrome မှာ audio file နှင့် microphone စစ်ဆေးရန် ကျန် |
 | Auto caption (ASR) | ⏸ ရပ်ထား။ Cloudflare Workers AI Whisper က မြန်မာအတွက် သုံးမရ (တခြားစာလုံး ထွက်) |
 | Cloudflare Access | ⏸ မဖွင့်ရသေး (AUD tag မရှိသေး) — `/api/*` အားလုံး public |
 | `local-asr/` (ကိုယ့်ကွန်ပျူတာ Whisper server) | ပြင်ဆင်ထား၊ မစမ်းရသေး |

@@ -1,5 +1,5 @@
 // User actions shared by buttons, keyboard, canvas and Timeline.
-import { newTextClip, textTrack, findClip, uid, freeSlot, clipEnd } from './model.js';
+import { newTextClip, newAudioClip, textTrack, audioTrack, findClip, uid, freeSlot, clipEnd } from './model.js';
 const MIN_DUR = 0.1;
 const snapTime = (value, project, ignoreId, enabled = true) => {
   if (!enabled) return Math.max(0, value);
@@ -18,6 +18,12 @@ export function addLines(store, transport, lines, dur = 3) {
   let at = freeSlot(textTrack(store.get().project), transport.t, dur * list.length);
   const clips = list.map((text) => { const c = newTextClip(at, text, dur); at += dur; return c; });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start);
+}
+export function addMedia(store, transport, meta) {
+  const start = freeSlot(audioTrack(store.get().project), transport.t, meta.dur || 1);
+  store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; audioTrack(d).clips.push(newAudioClip(start, meta.id, meta.dur || 1, meta.name)); });
+  const clip = audioTrack(store.get().project).clips.at(-1); if (clip) { store.select(clip.id); transport.seek(start); }
+  return meta;
 }
 export function moveClip(store, id, start, { snap = true, key = 'move' } = {}) {
   store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked) return; f.clip.start = snapTime(start, d, id, snap); }, { key: `${key}:${id}` });

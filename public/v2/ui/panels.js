@@ -1,10 +1,11 @@
-import { html, useState } from './deps.js';
+import { html, useState, useEffect, useRef } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
-import { addText, addLines } from '../engine/actions.js';
+import { addText, addLines, addMedia } from '../engine/actions.js';
+import { importFile } from '../engine/media.js';
 
 // ---------------- left panel: Text tool (real) · Media (still a demo until phase 3) · empty state for the rest ----------------
 const DEMO_MEDIA = [
@@ -28,36 +29,20 @@ function TextPanel({ store, transport }) {
   </section>`;
 }
 export function MediaPanel({ tool, store, transport }) {
-  const [tab, setTab] = useState('local');
-  const [kind, setKind] = useState('all');
-  const [grid, setGrid] = useState(true);
-  const [pick, setPick] = useState(0);
+  const project = useStore(store, (s) => s.project), [tab, setTab] = useState('local'), [kind, setKind] = useState('all'), [grid, setGrid] = useState(true), [library, setLibrary] = useState([]), [recording, setRecording] = useState(false), input = useRef(), recorder = useRef(), chunks = useRef([]);
+  const media = Object.values(project.media || {});
+  useEffect(() => { if (tab !== 'library') return; fetch('/api/library/Music').then((r) => r.ok ? r.json() : []).then(setLibrary).catch(() => setLibrary([])); }, [tab]);
   if (tool === 'text') return html`<${TextPanel} store=${store} transport=${transport} />`;
-  if (tool !== 'media') {
-    return html`<section class="panel media"><div class="phead"><b>${L(tool)}</b></div>
-      <div class="empty"><${Icon} name=${tool} size=${34} /><p>${H(tool)}</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div></section>`;
-  }
-  const items = DEMO_MEDIA.filter((m) => kind === 'all' || (kind === 'videos' && m[1] === 'video') || (kind === 'photos' && m[1] === 'photo') || (kind === 'audios' && m[1] === 'audio'));
-  return html`<section class="panel media">
-    <${Tabs} value=${tab} onChange=${setTab} tabs=${[['local', L('local'), H('local')], ['library', L('library'), H('library')], ['audio', L('audios'), H('audios')], ['record', L('record'), H('record')]]} />
-    <div class="pbody">
-      <button type="button" class="uploadbtn" title=${H('upload')}><${Icon} name="upload" size=${20} /><span>${L('upload')}</span><${Icon} name="chevron" size=${14} /></button>
-      <div class="filterrow">
-        <${Select} value=${kind} onChange=${setKind} cls="compact" options=${[['all', L('all')], ['videos', L('videos')], ['photos', L('photos')], ['audios', L('audios')]]} />
-        <div class="spacer"></div>
-        <${IconBtn} name="grid" active=${grid} title="Grid" onClick=${() => setGrid(true)} size=${17} />
-        <${IconBtn} name="list" active=${!grid} title="List" onClick=${() => setGrid(false)} size=${17} />
-      </div>
-      <div class=${cx('mgrid', !grid && 'list')}>
-        ${items.map((m, i) => html`<button type="button" class=${cx('mtile', 'g-' + m[0], pick === i && 'on')} onClick=${() => setPick(i)}>
-          ${m[1] === 'audio' && html`<span class="mnote"><${Icon} name="audio" size=${26} /></span>`}
-          ${m[2] && html`<span class="dur">${m[1] === 'video' && html`<${Icon} name="video" size=${12} />`}${m[2]}</span>`}</button>`)}
-        <button type="button" class="mtile add" title=${H('addMore')}><${Icon} name="plus" size=${26} /><span>${L('addMore')}</span></button>
-      </div>
-    </div>
-  </section>`;
+  if (tool !== 'media') return html`<section class="panel media"><div class="phead"><b>${L(tool)}</b></div><div class="empty"><${Icon} name=${tool} size=${34} /><p>${H(tool)}</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div></section>`;
+  const accept = kind === 'audios' ? 'audio/*' : kind === 'videos' ? 'video/*' : kind === 'photos' ? 'image/*' : 'audio/*,video/*,image/*';
+  const onFiles = async (list) => { for (const file of [...list]) { try { const meta = await importFile(file); addMedia(store, transport, meta); } catch (e) { console.error(e); } } };
+  const startRecord = async () => { if (recording) { recorder.current?.stop(); return; } const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks.current = []; const r = new MediaRecorder(stream); recorder.current = r; r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data); r.onstop = async () => { stream.getTracks().forEach((t) => t.stop()); setRecording(false); const file = new File([new Blob(chunks.current, { type: r.mimeType || 'audio/webm' })], `recording-${Date.now()}.webm`, { type: r.mimeType || 'audio/webm' }); const meta = await importFile(file); addMedia(store, transport, meta); }; r.start(); setRecording(true); };
+  const addLibrary = async (item) => { try { const name = item.name || item.key; const r = await fetch('/api/asset/Music/' + name.split('/').map(encodeURIComponent).join('/')); if (!r.ok) return; const blob = await r.blob(); const meta = await importFile(new File([blob], name.split('/').pop(), { type: blob.type })); addMedia(store, transport, meta); } catch (e) { console.error(e); } };
+  const localTiles = media.filter((m) => kind === 'all' || (kind === 'audios' && m.kind === 'audio') || (kind === 'videos' && m.kind === 'video') || (kind === 'photos' && m.kind === 'image'));
+  return html`<section class="panel media"><${Tabs} value=${tab} onChange=${setTab} tabs=${[['local', L('local'), H('local')], ['library', L('library'), H('library')], ['audio', L('audios'), H('audios')], ['record', L('record'), H('record')]]} /><div class="pbody">
+    ${tab === 'record' ? html`<button type="button" class=${cx('uploadbtn', recording && 'recording')} onClick=${startRecord}><${Icon} name="audio" size=${20} /><span>${recording ? 'Stop recording' : 'Record microphone'}</span></button><small class="muted">Microphone permission လိုအပ်ပါတယ်</small>` : tab === 'library' ? html`<div class="mgrid">${library.length ? library.map((x) => html`<button type="button" class="mtile add" onClick=${() => addLibrary(x)}><${Icon} name="audio" size=${24} /><span>${x.name || x.key}</span></button>`) : html`<div class="empty"><p>R2 Music library</p><small>Library မရရှိသေးပါ</small></div>`}</div>` : html`<button type="button" class="uploadbtn" title=${H('upload')} onClick=${() => input.current?.click()}><${Icon} name="upload" size=${20} /><span>${L('upload')}</span><${Icon} name="chevron" size=${14} /></button><input ref=${input} type="file" accept=${accept} multiple hidden onChange=${(e) => onFiles(e.target.files)} /><div class="filterrow"><${Select} value=${kind} onChange=${setKind} cls="compact" options=${[['all', L('all')], ['videos', L('videos')], ['photos', L('photos')], ['audios', L('audios')]]} /><div class="spacer"></div><${IconBtn} name="grid" active=${grid} title="Grid" onClick=${() => setGrid(true)} size=${17} /><${IconBtn} name="list" active=${!grid} title="List" onClick=${() => setGrid(false)} size=${17} /></div><div class=${cx('mgrid', !grid && 'list')}>${localTiles.map((m) => html`<button type="button" class=${cx('mtile', 'g-' + m.kind)} onClick=${() => { const c = project.tracks.flatMap((t) => t.clips).find((c) => c.mediaId === m.id); if (c) store.select(c.id); }}><span class="mnote"><${Icon} name=${m.kind === 'audio' ? 'audio' : m.kind === 'video' ? 'video' : 'image'} size=${26} /></span><span class="dur">${m.name}</span></button>`)}${!localTiles.length && html`<div class="empty"><p>Local media မရှိသေးပါ</p><small>Upload Media ကိုနှိပ်ပြီး ဖိုင်ရွေးပါ</small></div>`}</div>`}
+  </div></section>`;
 }
-
 // ---------------- right panel (top): Inspector — edits the selected text clip ----------------
 export function Inspector({ store, fonts }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);

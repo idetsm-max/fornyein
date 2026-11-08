@@ -8,6 +8,7 @@ import { createTransport } from './engine/transport.js';
 import { attachAutosave, loadProject } from './engine/storage.js';
 import { baseFonts, loadR2Fonts } from './engine/fonts.js';
 import { deleteSelected, duplicateSelected, splitClip } from './engine/actions.js';
+import { createAudioController } from './engine/audio.js';
 
 const store = createStore(newProject());
 const transport = createTransport(() => projectDuration(store.get().project), () => Math.max(30, projectDuration(store.get().project)));
@@ -24,6 +25,7 @@ function App() {
   const [, redrawSave] = useState(0);
   useEffect(() => { document.documentElement.dataset.theme = theme; try { localStorage.setItem('fn.theme', theme); } catch {} }, [theme]);
   useEffect(() => { const f = () => redrawSave((n) => n + 1); window.addEventListener('fn-save', f); loadR2Fonts().then((x) => setFonts((old) => [...old, ...x])); return () => window.removeEventListener('fn-save', f); }, []);
+  useEffect(() => { const audio = createAudioController(transport, () => store.get().project); return () => audio.dispose(); }, []);
   useEffect(() => { const onKey = (e) => { const typing = /input|textarea/i.test(e.target.tagName); if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? store.redo() : store.undo(); } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); store.redo(); } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && !typing) { e.preventDefault(); duplicateSelected(store); } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'b' || e.key === 's') && !typing) { e.preventDefault(); const id = store.get().selection; if (id) splitClip(store, id, transport.t); } else if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) { e.preventDefault(); deleteSelected(store, { ripple: e.shiftKey }); } else if (e.code === 'Space' && !typing) { e.preventDefault(); transport.toggle(); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
   const onNew = () => { transport.pause(); store.load(newProject()); };
   const onOpen = async (id) => { const p = await loadProject(id).catch(() => null); if (p) { transport.pause(); store.load(p); } };
