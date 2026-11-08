@@ -1,0 +1,40 @@
+/* Phase 1 additions: player selection box, menus, text tool panel, project name, plus small-screen tuning. Loaded after styles.css.
+   Scoped so it does not fight the clip styles in styles.css (.clip.sel etc.). */
+.main{grid-template-rows:minmax(0,1fr) clamp(236px,34vh,320px)}
+.tcode{white-space:nowrap;font-size:12px}
+.stagecanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.frame .hint{position:absolute;left:0;right:0;bottom:12%;text-align:center;color:rgba(255,255,255,.7);font-size:13px;pointer-events:none}
+.frame>.sel{position:absolute;border:1.5px solid #fff;outline:1px solid rgba(43,133,253,.9);cursor:move;touch-action:none}
+.frame>.sel .h{position:absolute;width:9px;height:9px;background:#fff;border:1.5px solid var(--accent);border-radius:50%;pointer-events:none}
+.frame>.sel .floatbar{cursor:default}
+.clip{cursor:pointer;user-select:none}
+.tlscroll{overflow-x:auto;overflow-y:hidden}
+.tlinner{position:relative;min-width:100%}
+.ruler{cursor:col-resize;touch-action:none}
+.ruler span{white-space:nowrap}
+.trow{min-width:100%}
+/* menus */
+.menuwrap{position:relative}
+.menu{position:absolute;top:calc(100% + 6px);left:0;z-index:50;width:290px;max-height:360px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px}
+.menuitem{display:flex;align-items:center;gap:6px;width:100%;border-radius:8px;color:var(--tx)}
+.menuitem:hover{background:var(--field)}
+.menuitem>button.grow{flex:1;display:flex;justify-content:space-between;gap:10px;padding:9px 10px;text-align:left;min-width:0}
+.menuitem b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.menuitem em{font-style:normal;color:var(--mut);flex:none}
+.menuitem .x{width:30px;height:30px;display:grid;place-items:center;color:var(--mut);border-radius:6px}.menuitem .x:hover{color:#ff6b7a}
+.menuitem.new{padding:9px 10px;font-weight:600;color:var(--accent2)}
+.menuempty{padding:12px;color:var(--mut);text-align:center}
+.savedpill.dirty .icon,.savedpill.saving .icon{color:#e8b64a}.savedpill.error .icon{color:#ff6b7a}.savedpill.idle .icon{color:var(--dim)}
+/* text tool panel */
+.btn.wide{width:100%;justify-content:center;flex:none}.btn:disabled{opacity:.45;cursor:default}
+.textlist{display:flex;flex-direction:column;gap:4px}
+.titem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid transparent;text-align:left;color:var(--tx)}
+.titem:hover{background:var(--field)}.titem.on{border-color:var(--accent-line);background:var(--accent-soft)}
+.titem .n{width:20px;color:var(--mut);flex:none}.titem .tx{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"Noto Sans Myanmar",Inter,sans-serif}.titem em{font-style:normal;color:var(--mut);flex:none}
+.pname{width:150px;height:28px;border:1px solid transparent;border-radius:6px;background:none;color:var(--tx);font-weight:600;padding:0 6px;outline:0}
+.pname:hover{background:var(--field)}.pname:focus{background:var(--field);border-color:var(--accent)}
+/* smaller screens (laptops): tighter panels and track rows */
+@media (max-height:860px){
+  .railbtn{padding:7px 0 6px}.tab{height:40px}.pbody{padding:10px;gap:8px}.frow{min-height:30px}.textbox textarea{height:70px}
+  .thead.text,.thead.audio,.thead.overlay,.trow.text,.trow.audio,.trow.overlay{height:38px}.thead.video,.trow.video{height:46px}
+  .tltools{padding:5px 10px}
+}
