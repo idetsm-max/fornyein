@@ -1,18 +1,38 @@
 import { html, useState } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
+import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
+import { RATIOS, findClip, textTrack } from '../engine/model.js';
+import { addText, addLines } from '../engine/actions.js';
 
-// ---------------- left panel: Media (and an empty state for the tools that arrive in later phases) ----------------
+// ---------------- left panel: Text tool (real) · Media (still a demo until phase 3) · empty state for the rest ----------------
 const DEMO_MEDIA = [
   ['sunset', 'video', '00:15'], ['night', 'video', '00:12'], ['forest', 'photo', ''], ['music', 'audio', '03:58'],
   ['city', 'video', '00:18'], ['sky', 'photo', ''], ['flower', 'photo', ''], ['sea', 'video', '00:14'],
 ];
-export function MediaPanel({ tool }) {
+function TextPanel({ store, transport }) {
+  const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
+  const [poem, setPoem] = useState('');
+  const clips = [...textTrack(project).clips].sort((a, b) => a.start - b.start);
+  const pick = (c) => { store.select(c.id); transport.seek(c.start + 0.01); };
+  return html`<section class="panel media">
+    <div class="phead"><b>${L('text')}</b></div>
+    <div class="pbody scroll">
+      <button type="button" class="uploadbtn" onClick=${() => addText(store, transport)}><${Icon} name="plus" size=${20} /><span>Add text</span></button>
+      <div class="textbox"><textarea value=${poem} placeholder="ကဗျာ paste လုပ်ပါ — စာကြောင်းတစ်ကြောင်းကို clip တစ်ခုစီ ဖန်တီးပေးမယ်" onInput=${(e) => setPoem(e.target.value)} /></div>
+      <button type="button" class="btn ghost wide" disabled=${!poem.trim()} onClick=${() => { addLines(store, transport, poem.split('\n')); setPoem(''); }}><${Icon} name="text" size=${16} /><span>Add lines as clips</span></button>
+      <div class="textlist">${clips.length === 0 ? html`<div class="menuempty">Text clip မရှိသေးပါ</div>` : clips.map((c, i) => html`<button type="button" class=${cx('titem', sel === c.id && 'on')} onClick=${() => pick(c)}>
+        <span class="n">${i + 1}</span><span class="tx">${c.text.split('\n')[0] || '…'}</span><em>${c.start.toFixed(1)}s</em></button>`)}</div>
+    </div>
+  </section>`;
+}
+export function MediaPanel({ tool, store, transport }) {
   const [tab, setTab] = useState('local');
   const [kind, setKind] = useState('all');
   const [grid, setGrid] = useState(true);
   const [pick, setPick] = useState(0);
+  if (tool === 'text') return html`<${TextPanel} store=${store} transport=${transport} />`;
   if (tool !== 'media') {
     return html`<section class="panel media"><div class="phead"><b>${L(tool)}</b></div>
       <div class="empty"><${Icon} name=${tool} size=${34} /><p>${H(tool)}</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div></section>`;
@@ -38,39 +58,44 @@ export function MediaPanel({ tool }) {
   </section>`;
 }
 
-// ---------------- right panel (top): Inspector ----------------
-const FONTS = ['Noto Sans Myanmar', 'Noto Serif Myanmar', 'Padauk', 'Pyidaungsu', 'system-ui'];
-export function Inspector() {
+// ---------------- right panel (top): Inspector — edits the selected text clip ----------------
+export function Inspector({ store, fonts }) {
+  const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const [tab, setTab] = useState('text');
-  const [s, setS] = useState({ text: 'ကဗျာ ခေါင်းစဉ်', font: FONTS[0], b: false, i: false, u: false, align: 'center', fill: '#ffffff', strokeOn: true, stroke: '#000000', size: 72, opacity: 100, x: 960, y: 540, rot: 0 });
-  const set = (k) => (v) => setS((o) => ({ ...o, [k]: v }));
-  const tg = (k) => () => setS((o) => ({ ...o, [k]: !o[k] }));
-  return html`<aside class="panel inspector">
-    <${Tabs} value=${tab} onChange=${setTab} tabs=${[['text', L('tText'), H('tText')], ['anim', L('tAnimation'), H('tAnimation')], ['timing', L('tTiming'), H('tTiming')]]} />
+  const found = sel ? findClip(project, sel) : null, c = found && found.clip.kind === 'text' ? found.clip : null;
+  const [W] = RATIOS[project.size], [, H2] = RATIOS[project.size];
+  const upd = (key, fn) => store.edit((d) => { const f = findClip(d, sel); if (f) fn(f.clip); }, { key: key + sel });
+  const tabs = html`<${Tabs} value=${tab} onChange=${setTab} tabs=${[['text', L('tText'), H('tText')], ['anim', L('tAnimation'), H('tAnimation')], ['timing', L('tTiming'), H('tTiming')]]} />`;
+  if (!c) return html`<aside class="panel inspector">${tabs}<div class="empty"><${Icon} name="text" size=${32} /><p>Select a text clip</p><small>Timeline မှာ စာတန်းတစ်ခု ရွေးပါ၊ ဒါမှမဟုတ် Text tool မှာ Add text နှိပ်ပါ</small></div></aside>`;
+  const s = c.style, fontOpts = fonts.includes(s.font) ? fonts : [s.font, ...fonts];
+  return html`<aside class="panel inspector">${tabs}
     <div class="pbody scroll">
       ${tab === 'text' ? html`
-        <div class="textbox"><textarea value=${s.text} maxlength="300" onInput=${(e) => set('text')(e.target.value)} placeholder="စာသား ရိုက်ပါ" /><span class="count">${s.text.length} / 300</span></div>
-        <${Field} label=${L('font')} tip=${H('font')}><${Select} value=${s.font} onChange=${set('font')} options=${FONTS} /><//>
+        <div class="textbox"><textarea value=${c.text} maxlength="500" onInput=${(e) => upd('text', (k) => { k.text = e.target.value; })} placeholder="စာသား ရိုက်ပါ" /><span class="count">${c.text.length} / 500</span></div>
+        <${Field} label=${L('font')} tip=${H('font')}><${Select} value=${s.font} onChange=${(v) => upd('font', (k) => { k.style.font = v; })} options=${fontOpts} /><//>
         <${Field} label=${L('style')} tip=${H('style')}>
-          <div class="seg"><${IconBtn} name="bold" active=${s.b} onClick=${tg('b')} title="Bold" /><${IconBtn} name="italic" active=${s.i} onClick=${tg('i')} title="Italic" /><${IconBtn} name="underline" active=${s.u} onClick=${tg('u')} title="Underline" /></div>
-          <div class="seg"><${IconBtn} name="alignLeft" active=${s.align === 'left'} onClick=${() => set('align')('left')} title="Left" /><${IconBtn} name="alignCenter" active=${s.align === 'center'} onClick=${() => set('align')('center')} title="Center" /><${IconBtn} name="alignRight" active=${s.align === 'right'} onClick=${() => set('align')('right')} title="Right" /><${IconBtn} name="alignJustify" active=${s.align === 'justify'} onClick=${() => set('align')('justify')} title="Justify" /></div>
+          <div class="seg"><${IconBtn} name="bold" active=${s.bold} onClick=${() => upd('b', (k) => { k.style.bold = !k.style.bold; })} title="Bold" /><${IconBtn} name="italic" active=${s.italic} onClick=${() => upd('i', (k) => { k.style.italic = !k.style.italic; })} title="Italic" /><${IconBtn} name="underline" active=${s.underline} onClick=${() => upd('u', (k) => { k.style.underline = !k.style.underline; })} title="Underline" /></div>
+          <div class="seg">${[['left', 'alignLeft'], ['center', 'alignCenter'], ['right', 'alignRight']].map(([a, ic]) => html`<${IconBtn} name=${ic} active=${s.align === a} onClick=${() => upd('al', (k) => { k.style.align = a; })} title=${a} />`)}</div>
         <//>
-        <${Field} label=${L('color')} tip=${H('color')}><label class="swatch"><input type="color" value=${s.fill} onInput=${(e) => set('fill')(e.target.value)} /><span style=${{ background: s.fill }}></span></label><${IconBtn} name="pipette" title="Eyedropper" /><//>
-        <${Field} label=${L('stroke')} tip=${H('stroke')}><label class="switch"><input type="checkbox" checked=${s.strokeOn} onChange=${tg('strokeOn')} /><i></i></label><label class=${cx('swatch', !s.strokeOn && 'off')}><input type="color" value=${s.stroke} disabled=${!s.strokeOn} onInput=${(e) => set('stroke')(e.target.value)} /><span style=${{ background: s.stroke }}></span></label><//>
-        <${Slider} label=${L('size')} tip=${H('size')} value=${s.size} min=${8} max=${240} onChange=${set('size')} />
-        <${Slider} label=${L('opacity')} tip=${H('opacity')} value=${s.opacity} min=${0} max=${100} onChange=${set('opacity')} unit="%" />
+        <${Field} label=${L('color')} tip=${H('color')}><label class="swatch"><input type="color" value=${s.fill} onInput=${(e) => upd('fill', (k) => { k.style.fill = e.target.value; })} /><span style=${{ background: s.fill }}></span></label><//>
+        <${Field} label=${L('stroke')} tip=${H('stroke')}><label class="switch"><input type="checkbox" checked=${s.strokeOn} onChange=${() => upd('son', (k) => { k.style.strokeOn = !k.style.strokeOn; })} /><i></i></label><label class=${cx('swatch', !s.strokeOn && 'off')}><input type="color" value=${s.stroke} disabled=${!s.strokeOn} onInput=${(e) => upd('stroke', (k) => { k.style.stroke = e.target.value; })} /><span style=${{ background: s.stroke }}></span></label><//>
+        <${Slider} label=${L('size')} tip=${H('size')} value=${s.size} min=${8} max=${240} onChange=${(v) => upd('size', (k) => { k.style.size = v; })} />
+        <${Slider} label=${L('opacity')} tip=${H('opacity')} value=${s.opacity} min=${0} max=${100} onChange=${(v) => upd('op', (k) => { k.style.opacity = v; })} unit="%" />
         <${Field} label=${L('position')} tip=${H('position')}>
-          <label class="xy"><em>X</em><input type="number" value=${s.x} onInput=${(e) => set('x')(+e.target.value || 0)} /></label>
-          <label class="xy"><em>Y</em><input type="number" value=${s.y} onInput=${(e) => set('y')(+e.target.value || 0)} /></label>
+          <label class="xy"><em>X</em><input type="number" value=${Math.round(c.pos.x / 100 * W)} onInput=${(e) => upd('px', (k) => { k.pos.x = (+e.target.value || 0) / W * 100; })} /></label>
+          <label class="xy"><em>Y</em><input type="number" value=${Math.round(c.pos.y / 100 * H2)} onInput=${(e) => upd('py', (k) => { k.pos.y = (+e.target.value || 0) / H2 * 100; })} /></label>
         <//>
-        <${Slider} label=${L('rotate')} tip=${H('rotate')} value=${s.rot} min=${-180} max=${180} onChange=${set('rot')} unit="°" />
-        <div class="rowend"><${IconBtn} name="reset" title="Reset" onClick=${() => set('rot')(0)} /></div>`
-      : html`<div class="empty"><${Icon} name=${tab === 'anim' ? 'effects' : 'speed'} size=${30} /><p>${tab === 'anim' ? 'In / Out / Loop animation' : 'Start · Duration'}</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div>`}
+        <${Slider} label=${L('rotate')} tip=${H('rotate')} value=${Math.round(c.pos.rot)} min=${-180} max=${180} onChange=${(v) => upd('rot', (k) => { k.pos.rot = v; })} unit="°" />
+        <div class="rowend"><${IconBtn} name="reset" title="Reset" onClick=${() => upd('rot', (k) => { k.pos.rot = 0; })} /></div>`
+      : tab === 'timing' ? html`
+        <${Field} label="Start" tip="စတင်ချိန် (စက္ကန့်)"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${+c.start.toFixed(2)} onInput=${(e) => upd('st', (k) => { k.start = Math.max(0, +e.target.value || 0); })} /></label><//>
+        <${Field} label="Duration" tip="ကြာချိန် (စက္ကန့်)"><label class="xy"><em>s</em><input type="number" step="0.1" min="0.1" value=${+c.dur.toFixed(2)} onInput=${(e) => upd('du', (k) => { k.dur = Math.max(0.1, +e.target.value || 0.1); })} /></label><//>`
+      : html`<div class="empty"><${Icon} name="effects" size=${30} /><p>In / Out / Loop animation</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div>`}
     </div>
   </aside>`;
 }
 
-// ---------------- right panel (bottom): Effects / Transitions / Filters ----------------
+// ---------------- right panel (bottom): Effects / Transitions / Filters (design only for now) ----------------
 const FX = {
   effects: [['Glow', 'g1'], ['Shake', 'g2'], ['Zoom In', 'g3'], ['Blur', 'g4'], ['Flash', 'g5'], ['Film Grain', 'g6'], ['Vignette', 'g7'], ['Chromatic', 'g8']],
   transitions: [['Fade', 'g2'], ['Slide', 'g4'], ['Zoom', 'g6'], ['Wipe', 'g8']],
