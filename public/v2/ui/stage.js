@@ -5,7 +5,7 @@ import { useStore, useTransport } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, projectDuration, fmtClock } from '../engine/model.js';
 import { drawFrame, bboxes, measureText } from '../engine/render.js';
-import { deleteSelected, duplicateSelected, toggleTrack } from '../engine/actions.js';
+import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, moveClip, trimClip, splitClip } from '../engine/actions.js';
 
 export { RATIOS };
 
@@ -78,58 +78,34 @@ export function Player({ store, transport, fonts }) {
   </section>`;
 }
 
-// ---------------- bottom: Timeline (real clips; drag / trim / split arrive in phase 2) ----------------
+// ---------------- bottom: Timeline (Phase 2 clip operations) ----------------
 const TRACK_UI = { text: ['text', 'trackText'], video: ['video', 'trackVideo'], overlay: ['layers', 'trackOverlay'], audio: ['audio', 'trackAudio'] };
-function Playhead({ transport, pps }) {
-  const { t } = useTransport(transport);
-  return html`<div class="playhead" style=${{ left: (t * pps) + 'px' }}><i></i></div>`;
-}
+function Playhead({ transport, pps }) { const { t } = useTransport(transport); return html`<div class="playhead" style=${{ left: (t * pps) + 'px' }}><i></i></div>`; }
 export function Timeline({ store, transport, pps, setPps }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
-  const scrollRef = useRef(), scrubbing = useRef(false);
+  const [selectedIds, setSelectedIds] = useState(() => sel ? [sel] : []), [snap, setSnap] = useState(true);
+  const scrollRef = useRef(), gesture = useRef(null), scrubbing = useRef(false);
+  useEffect(() => { if (sel && !selectedIds.includes(sel)) setSelectedIds([sel]); }, [sel]);
   const dur = Math.max(30, projectDuration(project) + 5), width = Math.round(dur * pps);
   const step = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s * pps >= 70) || 300;
   const marks = []; for (let i = 0; i * step <= dur; i++) marks.push(i * step);
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}${step < 1 ? '.5' : ''}`;
   const seekFromEvent = (e) => { const el = scrollRef.current, r = el.getBoundingClientRect(); transport.seek(Math.max(0, (e.clientX - r.left + el.scrollLeft) / pps)); };
-
-  useEffect(() => transport.subscribe(() => {                    // keep the playhead in view while playing
-    if (!transport.playing) return; const el = scrollRef.current, x = transport.t * pps;
-    if (el && (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)) el.scrollLeft = Math.max(0, x - 60);
-  }), [pps]);
-
+  const pick = (e, c) => { e.stopPropagation(); const multi = e.shiftKey || e.ctrlKey || e.metaKey; const ids = multi ? (selectedIds.includes(c.id) ? selectedIds.filter((x) => x !== c.id) : [...selectedIds, c.id]) : [c.id]; setSelectedIds(ids); store.select(c.id); transport.seek(c.start + .01); };
+  const downClip = (e, c) => { pick(e, c); const r = e.currentTarget.getBoundingClientRect(); const edge = e.clientX - r.left < 9 ? 'left' : r.right - e.clientX < 9 ? 'right' : 'move'; gesture.current = { id: c.id, edge, x: e.clientX, start: c.start, end: c.start + c.dur, pps }; e.currentTarget.setPointerCapture?.(e.pointerId); };
+  const moveClipEvent = (e) => { const g = gesture.current; if (!g) return; const delta = (e.clientX - g.x) / g.pps; if (g.edge === 'move') moveClip(store, g.id, g.start + delta, { snap, key: 'tlmove' }); else trimClip(store, g.id, g.edge, g.edge === 'left' ? g.start + delta : g.end + delta, { snap }); };
+  const upClip = () => { gesture.current = null; };
+  const split = () => { const id = selectedIds[0] || sel; if (id) splitClip(store, id, transport.t, { snap }); };
+  const remove = (ripple = false) => { deleteClips(store, selectedIds.length ? selectedIds : [sel], { ripple }); setSelectedIds([]); };
+  useEffect(() => transport.subscribe(() => { if (!transport.playing) return; const el = scrollRef.current, x = transport.t * pps; if (el && (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)) el.scrollLeft = Math.max(0, x - 60); }), [pps]);
   const zoomVal = Math.round(100 * Math.log(pps / 10) / Math.log(20));
-  return html`<section class="panel timeline">
-    <div class="tltools">
-      <${IconBtn} name="undo" size=${17} title=${L('undo') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} /><${IconBtn} name="redo" size=${17} title=${L('redo') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} /><span class="vsep"></span>
-      <${IconBtn} name="scissors" size=${17} title="Split · Ctrl+B (phase 2)" disabled=${true} /><${IconBtn} name="trash" size=${17} title="Delete · Del" disabled=${!sel} onClick=${() => deleteSelected(store)} /><${IconBtn} name="copy" size=${17} title="Duplicate · Ctrl+D" disabled=${!sel} onClick=${() => duplicateSelected(store)} />
-      <${IconBtn} name="crop" size=${17} title="Crop" disabled=${true} /><${IconBtn} name="speed" size=${17} title="Speed" disabled=${true} /><${IconBtn} name="magnet" size=${17} title="Snap" disabled=${true} /><${IconBtn} name="link" size=${17} title="Link" disabled=${true} />
-      <div class="spacer"></div>
-      <${IconBtn} name="zoomOut" size=${17} title="Zoom out" onClick=${() => setPps(clamp(pps / 1.4, 10, 200))} />
-      <input class="range zoomrange" type="range" min="0" max="100" value=${zoomVal} style=${{ '--p': zoomVal + '%' }} onInput=${(e) => setPps(10 * Math.pow(20, +e.target.value / 100))} />
-      <${IconBtn} name="zoomIn" size=${17} title="Zoom in" onClick=${() => setPps(clamp(pps * 1.4, 10, 200))} />
-    </div>
-    <div class="tlbody">
-      <div class="tlheads"><div class="rulerhead"></div>${project.tracks.map((t) => {
-        const [icon, key] = TRACK_UI[t.kind] || ['layers', 'trackOverlay'];
-        return html`<div class=${cx('thead', t.kind)}><${IconBtn} name=${t.hidden ? 'eyeOff' : 'eye'} size=${16} onClick=${() => toggleTrack(store, t.id, 'hidden')} title="Show / hide" />
-          <${IconBtn} name=${t.locked ? 'lock' : 'unlock'} size=${16} onClick=${() => toggleTrack(store, t.id, 'locked')} title="Lock" active=${t.locked} />
-          <span class="tname" title=${H(key)}><${Icon} name=${icon} size=${15} /><span>${L(key)}</span></span></div>`;
-      })}</div>
-      <div class="tlscroll" ref=${scrollRef}>
-        <div class="tlinner" style=${{ width: width + 'px' }}>
-          <div class="ruler" onPointerDown=${(e) => { scrubbing.current = true; e.currentTarget.setPointerCapture(e.pointerId); seekFromEvent(e); }}
-            onPointerMove=${(e) => { if (scrubbing.current) seekFromEvent(e); }} onPointerUp=${() => { scrubbing.current = false; }}>
-            ${marks.map((s) => html`<span style=${{ left: (s * pps) + 'px' }}>${fmt(s)}</span>`)}</div>
-          ${project.tracks.map((t) => html`<div class=${cx('trow', t.kind, t.hidden && 'hidden', t.locked && 'locked')}
-            onPointerDown=${(e) => { if (e.target === e.currentTarget) { store.select(null); seekFromEvent(e); } }}>
-            ${t.clips.map((c) => html`<div class=${cx('clip', c.kind === 'text' ? 'purple' : 'film', sel === c.id && 'sel')} style=${{ left: (c.start * pps) + 'px', width: Math.max(6, c.dur * pps) + 'px' }}
-              title=${c.text || ''} onPointerDown=${(e) => { e.stopPropagation(); store.select(c.id); }}>
-              <span class="clabel">${c.kind === 'text' ? html`<${Icon} name="text" size=${13} />` : ''}${(c.text || '').split('\n')[0]}</span></div>`)}</div>`)}
-          <${Playhead} transport=${transport} pps=${pps} />
-        </div>
-      </div>
-    </div>
-  </section>`;
+  return html`<section class="panel timeline"><div class="tltools">
+    <${IconBtn} name="undo" size=${17} title=${L('undo') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} /><${IconBtn} name="redo" size=${17} title=${L('redo') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} /><span class="vsep"></span>
+    <${IconBtn} name="scissors" size=${17} title="Split · Ctrl+B" disabled=${!selectedIds.length} onClick=${split} /><${IconBtn} name="trash" size=${17} title="Delete · Del" disabled=${!selectedIds.length} onClick=${() => remove(false)} /><${IconBtn} name="crop" size=${17} title="Ripple delete · Shift+Del" disabled=${!selectedIds.length} onClick=${() => remove(true)} /><${IconBtn} name="copy" size=${17} title="Duplicate · Ctrl+D" disabled=${selectedIds.length !== 1} onClick=${() => duplicateSelected(store)} /><${IconBtn} name="magnet" size=${17} title="Snap" active=${snap} onClick=${() => setSnap(!snap)} />
+    <div class="spacer"></div><${IconBtn} name="zoomOut" size=${17} title="Zoom out" onClick=${() => setPps(clamp(pps / 1.4, 10, 200))} /><input class="range zoomrange" type="range" min="0" max="100" value=${zoomVal} style=${{ '--p': zoomVal + '%' }} onInput=${(e) => setPps(10 * Math.pow(20, +e.target.value / 100))} /><${IconBtn} name="zoomIn" size=${17} title="Zoom in" onClick=${() => setPps(clamp(pps * 1.4, 10, 200))} />
+  </div><div class="tlbody"><div class="tlheads"><div class="rulerhead"></div>${project.tracks.map((t) => { const [icon, key] = TRACK_UI[t.kind] || ['layers', 'trackOverlay']; return html`<div class=${cx('thead', t.kind)}><${IconBtn} name=${t.hidden ? 'eyeOff' : 'eye'} size=${16} onClick=${() => toggleTrack(store, t.id, 'hidden')} title="Show / hide" /><${IconBtn} name=${t.locked ? 'lock' : 'unlock'} size=${16} onClick=${() => toggleTrack(store, t.id, 'locked')} title="Lock" active=${t.locked} /><span class="tname" title=${H(key)}><${Icon} name=${icon} size=${15} /><span>${L(key)}</span></span></div>`; })}</div><div class="tlscroll" ref=${scrollRef}><div class="tlinner" style=${{ width: width + 'px' }}>
+    <div class="ruler" onPointerDown=${(e) => { scrubbing.current = true; e.currentTarget.setPointerCapture(e.pointerId); seekFromEvent(e); }} onPointerMove=${(e) => { if (scrubbing.current) seekFromEvent(e); }} onPointerUp=${() => { scrubbing.current = false; }}>${marks.map((s) => html`<span style=${{ left: (s * pps) + 'px' }}>${fmt(s)}</span>`)}</div>
+    ${project.tracks.map((t) => html`<div class=${cx('trow', t.kind, t.hidden && 'hidden', t.locked && 'locked')} onPointerDown=${(e) => { if (e.target === e.currentTarget) { setSelectedIds([]); store.select(null); seekFromEvent(e); } }}>${t.clips.map((c) => html`<div class=${cx('clip', c.kind === 'text' ? 'purple' : 'film', selectedIds.includes(c.id) && 'sel')} style=${{ left: (c.start * pps) + 'px', width: Math.max(8, c.dur * pps) + 'px', cursor: t.locked ? 'not-allowed' : 'grab' }} title=${c.text || ''} onPointerDown=${(e) => downClip(e, c)} onPointerMove=${moveClipEvent} onPointerUp=${upClip} onDblClick=${() => { store.select(c.id); splitClip(store, c.id, transport.t, { snap }); }}><span class="clabel">${c.kind === 'text' ? html`<${Icon} name="text" size=${13} />` : ''}${(c.text || '').split('\n')[0]}</span></div>`)}</div>`)}
+    <${Playhead} transport=${transport} pps=${pps} /></div></div></div></section>`;
 }

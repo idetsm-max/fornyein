@@ -24,7 +24,8 @@
 |---|---|
 | **v1 (`/app`)** | အလုပ်လုပ်ပေမဲ့ patch တွေ ပေါင်းထားတဲ့ ကုဒ်။ **အဆင့် ၇ မှာ အစားထိုးပြီး ဖျက်မယ်။** အခုထိ ထိမထား |
 | **v2 Phase 0 (Shell)** | ✅ Deploy ပြီး (`/v2/`)၊ သင့် screenshot နဲ့ စစ်ပြီး — layout/အရောင် နမူနာနဲ့ ကိုက်၊ dark/light ရ |
-| **v2 Phase 1 (Engine core)** | ✅ GitHub `main` သို့ တင်ပြီး။ Project store/undo-redo, IndexedDB autosave, Canvas renderer, transport, Text tool, poem lines, Inspector, real Player/Timeline ပါဝင်။ Integration bug ပြင်ပြီး local JS syntax + headless Chromium boot smoke test အောင်မြင် — user Chrome စစ်ဆေးရန် ကျန် |
+| **v2 Phase 1 (Engine core)** | ✅ GitHub `main` သို့ တင်ပြီး။ Project store/undo-redo, IndexedDB autosave, Canvas renderer, transport, Text tool, poem lines, Inspector, real Player/Timeline ပါဝင်။ Integration bug ပြင်ပြီး local JS syntax + headless Chromium boot smoke test အောင်မြင် |
+| **v2 Phase 2 (Timeline)** | ⚙️ လုပ်နေဆဲ — clip drag/move, edge trim, split, delete/ripple delete, snap toggle, Shift/Ctrl multi-select, keyboard shortcuts, zoom ပါဝင်။ Unit tests ၄/၄ နှင့် headless boot smoke test အောင်မြင်; user Chrome စစ်ဆေးရန် ကျန် |
 | Auto caption (ASR) | ⏸ ရပ်ထား။ Cloudflare Workers AI Whisper က မြန်မာအတွက် သုံးမရ (တခြားစာလုံး ထွက်) |
 | Cloudflare Access | ⏸ မဖွင့်ရသေး (AUD tag မရှိသေး) — `/api/*` အားလုံး public |
 | `local-asr/` (ကိုယ့်ကွန်ပျူတာ Whisper server) | ပြင်ဆင်ထား၊ မစမ်းရသေး |
@@ -203,5 +204,6 @@ clip    = { id, kind, start, dur, in(source offset) , ...kind ဆိုင်ရ
 ## ၁၀။ နောက်ထပ် လုပ်ရမယ့်အရာ (ချက်ချင်း)
 
 1. **Phase 1 ကို user Chrome မှာ စစ်** — Text tool → Add text/poem lines၊ Inspector ပြင်၊ canvas drag၊ Play/Pause/seek၊ Undo/Redo၊ project Save/Open/reload နှင့် မြန်မာစာ rendering။
-2. အဆင်ပြေရင် **အဆင့် ၂ (Timeline)** စ — drag/trim/split/delete/snap/multi-select/zoom ကို ဆက်တည်ဆောက်မယ်။
+2. **အဆင့် ၂ (Timeline) ကို user Chrome မှာ စစ်** — clip drag/trim/split/delete/ripple-delete/snap/multi-select/zoom နှင့် Ctrl+B, Delete, Shift+Delete shortcuts။
+3. အဆင်ပြေရင် **အဆင့် ၃ (Media + Audio)** စ — local import, IndexedDB Blob, waveform, record, R2 library နှင့် audio clock ကို ဆက်တည်ဆောက်မယ်။
 3. သင်ပြင်ဆင်ရန်: R2 `Fonts/` ထဲ font တင်၊ စမ်းသပ်ဖို့ ကဗျာဖတ်သံ audio ၁–၂ မိနစ် (ကိုယ့်ဖတ်သံ) ပြင်ထား၊ (လိုရင်) Cloudflare Access AUD tag။
