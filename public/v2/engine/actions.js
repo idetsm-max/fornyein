@@ -19,6 +19,8 @@ export function addLines(store, transport, lines, dur = 3) {
   const clips = list.map((text) => { const c = newTextClip(at, text, dur); at += dur; return c; });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start);
 }
+const srtTime = (s) => { const ms = Math.max(0, Math.round(s * 1000)); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60, milli = ms % 1000; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')},${String(milli).padStart(3, '0')}`; };
+export function textToSrt(project) { return textTrack(project).clips.slice().sort((a, b) => a.start - b.start).map((c, i) => `${i + 1}\n${srtTime(c.start)} --> ${srtTime(clipEnd(c))}\n${c.text || ''}\n`).join('\n'); }
 export function addMedia(store, transport, meta) {
   const start = freeSlot(audioTrack(store.get().project), transport.t, meta.dur || 1);
   store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; audioTrack(d).clips.push(newAudioClip(start, meta.id, meta.dur || 1, meta.name)); });

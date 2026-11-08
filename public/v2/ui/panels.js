@@ -4,7 +4,7 @@ import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
-import { addText, addLines, addMedia } from '../engine/actions.js';
+import { addText, addLines, addMedia, textToSrt } from '../engine/actions.js';
 import { importFile } from '../engine/media.js';
 import { loadMedia } from '../engine/storage.js';
 
@@ -32,6 +32,7 @@ function TextPanel({ store, transport }) {
       <button type="button" class="uploadbtn" onClick=${() => addText(store, transport)}><${Icon} name="plus" size=${20} /><span>Add text</span></button>
       <div class="textbox"><textarea value=${poem} placeholder="ကဗျာ paste လုပ်ပါ — စာကြောင်းတစ်ကြောင်းကို clip တစ်ခုစီ ဖန်တီးပေးမယ်" onInput=${(e) => setPoem(e.target.value)} /></div>
       <button type="button" class="btn ghost wide" disabled=${!poem.trim()} onClick=${() => { addLines(store, transport, poem.split('\n')); setPoem(''); }}><${Icon} name="text" size=${16} /><span>Add lines as clips</span></button>
+      <button type="button" class="btn ghost wide" disabled=${!clips.length} onClick=${() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([textToSrt(project)], { type: 'text/plain;charset=utf-8' })); a.download = `${project.name || 'fornyein'}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500); }}><${Icon} name="download" size=${16} /><span>Export SRT</span></button>
       <div class="textlist">${clips.length === 0 ? html`<div class="menuempty">Text clip မရှိသေးပါ</div>` : clips.map((c, i) => html`<button type="button" class=${cx('titem', sel === c.id && 'on')} onClick=${() => pick(c)}>
         <span class="n">${i + 1}</span><span class="tx">${c.text.split('\n')[0] || '…'}</span><em>${c.start.toFixed(1)}s</em></button>`)}</div>
     </div>
@@ -81,6 +82,9 @@ export function Inspector({ store, fonts }) {
           <div class="seg">${[['left', 'alignLeft'], ['center', 'alignCenter'], ['right', 'alignRight']].map(([a, ic]) => html`<${IconBtn} name=${ic} active=${s.align === a} onClick=${() => upd('al', (k) => { k.style.align = a; })} title=${a} />`)}</div>
         <//>
         <${Field} label=${L('color')} tip=${H('color')}><label class="swatch"><input type="color" value=${s.fill} onInput=${(e) => upd('fill', (k) => { k.style.fill = e.target.value; })} /><span style=${{ background: s.fill }}></span></label><//>
+        <${Field} label="Fill 2 / Gradient" tip="ဒုတိယအရောင်နှင့် gradient"><label class="switch"><input type="checkbox" checked=${!!s.gradient} onChange=${() => upd('gradient', (k) => { k.style.gradient = !k.style.gradient; })} /><i></i></label><label class="swatch"><input type="color" value=${s.fill2 || s.fill} onInput=${(e) => upd('fill2', (k) => { k.style.fill2 = e.target.value; })} /><span style=${{ background: s.fill2 || s.fill }}></span></label><//>
+        <${Field} label="Shadow" tip="စာသားအရိပ်"><label class="switch"><input type="checkbox" checked=${!!s.shadow?.on} onChange=${() => upd('shadow', (k) => { k.style.shadow = { ...(k.style.shadow || {}), on: !k.style.shadow?.on }; })} /><i></i></label><//>
+        <${Field} label="Glow" tip="စာသားအလင်းရောင်"><label class="switch"><input type="checkbox" checked=${!!s.glow?.on} onChange=${() => upd('glow', (k) => { k.style.glow = { ...(k.style.glow || {}), on: !k.style.glow?.on }; })} /><i></i></label><//>
         <${Field} label=${L('stroke')} tip=${H('stroke')}><label class="switch"><input type="checkbox" checked=${s.strokeOn} onChange=${() => upd('son', (k) => { k.style.strokeOn = !k.style.strokeOn; })} /><i></i></label><label class=${cx('swatch', !s.strokeOn && 'off')}><input type="color" value=${s.stroke} disabled=${!s.strokeOn} onInput=${(e) => upd('stroke', (k) => { k.style.stroke = e.target.value; })} /><span style=${{ background: s.stroke }}></span></label><//>
         <${Slider} label=${L('size')} tip=${H('size')} value=${s.size} min=${8} max=${240} onChange=${(v) => upd('size', (k) => { k.style.size = v; })} />
         <${Slider} label=${L('opacity')} tip=${H('opacity')} value=${s.opacity} min=${0} max=${100} onChange=${(v) => upd('op', (k) => { k.style.opacity = v; })} unit="%" />
@@ -93,7 +97,12 @@ export function Inspector({ store, fonts }) {
       : tab === 'timing' ? html`
         <${Field} label="Start" tip="စတင်ချိန် (စက္ကန့်)"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${+c.start.toFixed(2)} onInput=${(e) => upd('st', (k) => { k.start = Math.max(0, +e.target.value || 0); })} /></label><//>
         <${Field} label="Duration" tip="ကြာချိန် (စက္ကန့်)"><label class="xy"><em>s</em><input type="number" step="0.1" min="0.1" value=${+c.dur.toFixed(2)} onInput=${(e) => upd('du', (k) => { k.dur = Math.max(0.1, +e.target.value || 0.1); })} /></label><//>`
-      : html`<div class="empty"><${Icon} name="effects" size=${30} /><p>In / Out / Loop animation</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div>`}
+      : tab === 'anim' ? html`
+        <${Field} label="In" tip="ဝင်လာ animation"><${Select} value=${c.anim?.in || 'fade'} onChange=${(v) => upd('ain', (k) => { k.anim = { ...(k.anim || {}), in: v }; })} options=${[['none', 'None'], ['fade', 'Fade'], ['slideUp', 'Slide up'], ['zoom', 'Zoom']]}/><//>
+        <${Field} label="Out" tip="ထွက်သွား animation"><${Select} value=${c.anim?.out || 'fade'} onChange=${(v) => upd('aout', (k) => { k.anim = { ...(k.anim || {}), out: v }; })} options=${[['none', 'None'], ['fade', 'Fade']]}/><//>
+        <${Field} label="Loop" tip="ပြန်လည်လှုပ်ရှားမှု"><${Select} value=${c.anim?.loop || 'none'} onChange=${(v) => upd('aloop', (k) => { k.anim = { ...(k.anim || {}), loop: v }; })} options=${[['none', 'None'], ['pulse', 'Pulse'], ['float', 'Float']]}/><//>
+        <${Slider} label="In duration" tip="ဝင်ချိန်" value=${Math.round((c.anim?.inDur || .35) * 100)} min=${0} max=${200} onChange=${(v) => upd('aid', (k) => { k.anim = { ...(k.anim || {}), inDur: v / 100 }; })} unit="%" />
+      ` : html`<div class="empty"><${Icon} name="effects" size=${30} /><p>Text animation</p><small>In / Out / Loop animation</small></div>`}
     </div>
   </aside>`;
 }
