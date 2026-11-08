@@ -7,6 +7,8 @@ import { RATIOS, findClip, projectDuration, fmtClock } from '../engine/model.js'
 import { drawFrame, bboxes, measureText } from '../engine/render.js';
 import { deleteSelected, duplicateSelected, toggleTrack } from '../engine/actions.js';
 
+export { RATIOS };
+
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
 // ---------------- centre: Player (real canvas) ----------------
