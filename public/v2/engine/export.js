@@ -1,0 +1,11 @@
+import { newProject, RATIOS } from './model.js';
+
+export const EXPORT_PRESETS = {
+  '720p': { width: 1280, height: 720, fps: 30, label: '720p' },
+  '1080p': { width: 1920, height: 1080, fps: 30, label: '1080p' },
+  '9:16': { width: 1080, height: 1920, fps: 30, label: '9:16' },
+  '1:1': { width: 1080, height: 1080, fps: 30, label: '1:1' },
+};
+export function exportConfig(project, preset = '720p') { const p = EXPORT_PRESETS[preset] || EXPORT_PRESETS['720p']; const ratio = project?.size && RATIOS[project.size]; return { ...p, width: ratio && preset === 'project' ? ratio[0] : p.width, height: ratio && preset === 'project' ? ratio[1] : p.height, duration: Math.max(0, ...((project?.tracks || []).flatMap((t) => t.clips || []).map((c) => c.start + c.dur))) }; }
+export function normalizeImportedProject(input) { const source = typeof input === 'string' ? JSON.parse(input) : input; const base = newProject(); if (!source || typeof source !== 'object') return base; const p = { ...base, ...source, version: 3, media: { ...(source.media || {}) }, tracks: Array.isArray(source.tracks) && source.tracks.length ? source.tracks.map((t, i) => ({ id: t.id || `trk-import-${i}`, kind: t.kind || (i === 0 ? 'text' : 'audio'), name: t.name || 'Imported', hidden: !!t.hidden, locked: !!t.locked, muted: !!t.muted, mixer: { volume: 1, pan: 0, bypass: false, ducking: false, ...(t.mixer || {}) }, clips: Array.isArray(t.clips) ? t.clips.map((c) => { const rawDur = Number(c.dur); return { ...c, id: c.id || `clip-import-${i}`, start: Math.max(0, Number(c.start) || 0), dur: Math.max(.1, Number.isFinite(rawDur) ? rawDur : 1) }; }) : [] })) : base.tracks }; return p; }
+export function createExportJob(project, preset = '720p', { onProgress = () => {}, signal } = {}) { const config = exportConfig(project, preset); let cancelled = false; return { config, cancel() { cancelled = true; }, async run(renderFrame) { const total = Math.max(1, Math.ceil(config.duration * config.fps)); for (let i = 0; i < total; i++) { if (cancelled || signal?.aborted) throw new DOMException('Export cancelled', 'AbortError'); await renderFrame(i / config.fps, config); onProgress((i + 1) / total); } return { cancelled: false, frames: total, config }; } }; }
