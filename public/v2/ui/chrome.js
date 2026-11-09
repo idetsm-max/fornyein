@@ -5,7 +5,7 @@ import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
-import { createMediabunnyJob } from '../engine/export.js';
+import { createMediabunnyJob, saveExportResult } from '../engine/export.js';
 
 const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? 'just now' : s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
@@ -27,7 +27,7 @@ function ProjectsMenu({ onNew, onOpen }) {
 
 function ExportDialog({ project, onClose }) {
   const [preset, setPreset] = useState('720p'), [format, setFormat] = useState('mp4'), [progress, setProgress] = useState(0), [running, setRunning] = useState(false), [error, setError] = useState(''), job = useRef(null);
-  const start = async () => { setError(''); setProgress(0); setRunning(true); try { const j = await createMediabunnyJob(project, preset, { format, onProgress: setProgress }); job.current = j; const result = await j.run(); const url = URL.createObjectURL(result.blob), a = document.createElement('a'); a.href = url; a.download = `${project.name || 'fornyein'}.${format}`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); } catch (e) { setError(e?.message || String(e)); } finally { setRunning(false); } };
+  const start = async () => { setError(''); setProgress(0); setRunning(true); try { const j = await createMediabunnyJob(project, preset, { format, onProgress: setProgress }); job.current = j; const result = await j.run(); await saveExportResult(result, `${project.name || 'fornyein'}.${format}`); } catch (e) { setError(e?.message || String(e)); } finally { setRunning(false); } };
   return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && !running && onClose()}><div class="exportbox"><div class="exporthead"><b>Export video</b><button type="button" class="x" disabled=${running} onClick=${onClose}>×</button></div><div class="exportbody"><label>Resolution<${Select} value=${preset} onChange=${setPreset} options=${['720p', '1080p', '9:16', '1:1']} /></label><label>Format<${Select} value=${format} onChange=${setFormat} options=${['mp4', 'webm']} /></label>${running && html`<div class="exportprogress"><div><span>Rendering…</span><b>${Math.round(progress * 100)}%</b></div><progress max="1" value=${progress}></progress></div>`}${error && html`<p class="exporterror">${error}</p>`}</div><div class="exportfoot">${running ? html`<button type="button" class="btn ghost" onClick=${() => job.current?.cancel()}>Cancel</button>` : html`<button type="button" class="btn ghost" onClick=${onClose}>Close</button><button type="button" class="btn primary" onClick=${start}>Export</button>`}</div></div></div>`;
 }
 export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen }) {
