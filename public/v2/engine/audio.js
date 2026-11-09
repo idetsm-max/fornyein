@@ -1,10 +1,11 @@
 import { loadMedia } from './storage.js';
 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function impulse(ctx, seconds = 1.8, decay = 2.4) { const length = Math.floor(ctx.sampleRate * seconds), buffer = ctx.createBuffer(2, length, ctx.sampleRate); for (let ch = 0; ch < 2; ch++) { const data = buffer.getChannelData(ch); for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay); } return buffer; }
 function setupGraph(ctx, el, output) {
-  const source = ctx.createMediaElementSource(el), eq = ['low', 'mid', 'high'].map((type) => { const n = ctx.createBiquadFilter(); n.type = type === 'mid' ? 'peaking' : `${type}pass`; if (type === 'low') n.type = 'lowshelf'; if (type === 'high') n.type = 'highshelf'; n.frequency.value = type === 'low' ? 180 : type === 'mid' ? 1200 : 5000; return n; }), comp = ctx.createDynamicsCompressor(), delay = ctx.createDelay(2), echoGain = ctx.createGain(), gain = ctx.createGain(), pan = ctx.createStereoPanner(), analyser = ctx.createAnalyser();
-  delay.delayTime.value = .18; echoGain.gain.value = 0; comp.connect(delay); delay.connect(echoGain); echoGain.connect(gain); eq[2].connect(comp); source.connect(eq[0]); eq[0].connect(eq[1]); eq[1].connect(eq[2]); comp.connect(gain); gain.connect(pan); pan.connect(analyser); analyser.connect(output || ctx.destination);
-  return { source, eq, comp, delay, echoGain, gain, pan, analyser };
+  const source = ctx.createMediaElementSource(el), eq = ['low', 'mid', 'high'].map((type) => { const n = ctx.createBiquadFilter(); n.type = type === 'mid' ? 'peaking' : `${type}pass`; if (type === 'low') n.type = 'lowshelf'; if (type === 'high') n.type = 'highshelf'; n.frequency.value = type === 'low' ? 180 : type === 'mid' ? 1200 : 5000; return n; }), comp = ctx.createDynamicsCompressor(), delay = ctx.createDelay(2), echoGain = ctx.createGain(), convolver = ctx.createConvolver(), reverbGain = ctx.createGain(), gain = ctx.createGain(), pan = ctx.createStereoPanner(), analyser = ctx.createAnalyser();
+  convolver.buffer = impulse(ctx); delay.delayTime.value = .18; echoGain.gain.value = 0; reverbGain.gain.value = 0; comp.connect(delay); delay.connect(echoGain); echoGain.connect(gain); comp.connect(convolver); convolver.connect(reverbGain); reverbGain.connect(gain); eq[2].connect(comp); source.connect(eq[0]); eq[0].connect(eq[1]); eq[1].connect(eq[2]); comp.connect(gain); gain.connect(pan); pan.connect(analyser); analyser.connect(output || ctx.destination);
+  return { source, eq, comp, delay, echoGain, convolver, reverbGain, gain, pan, analyser };
 }
 function applyGraph(item, clip, track, duck = 1) {
   const m = item.graph, mix = track?.mixer || {}, bypass = clip.bypass || mix.bypass;
@@ -13,6 +14,7 @@ function applyGraph(item, clip, track, duck = 1) {
   m.eq[0].gain.setTargetAtTime(bypass ? 0 : (q.low || 0), now, .02); m.eq[1].gain.setTargetAtTime(bypass ? 0 : (q.mid || 0), now, .02); m.eq[2].gain.setTargetAtTime(bypass ? 0 : (q.high || 0), now, .02);
   m.comp.threshold.setTargetAtTime(clip.compressor?.enabled ? clip.compressor.threshold : 0, now, .02); m.comp.ratio.setTargetAtTime(clip.compressor?.enabled ? clip.compressor.ratio : 1, now, .02);
   m.delay.delayTime.setTargetAtTime(.12 + (clip.echo || 0) * .35, now, .02); m.echoGain.gain.setTargetAtTime((clip.echo || 0) * .35, now, .02); m.gain.gain.setTargetAtTime(clamp((clip.gain ?? 1) * (clip.volume ?? 1) * (mix.volume ?? 1) * duck, 0, 2), now, .02); m.pan.pan.setTargetAtTime(clamp((clip.pan ?? 0) + (mix.pan ?? 0), -1, 1), now, .02);
+  m.reverbGain.gain.setTargetAtTime((clip.reverb || 0) * .45, now, .02);
 }
 export function createAudioController(transport, getProject) {
   const players = new Map(); let lastT = 0, active = false, token = 0, ctx = null, master = null;

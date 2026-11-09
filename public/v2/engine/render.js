@@ -1,6 +1,7 @@
 // The ONE drawing function. Preview and (later) export both call drawFrame(ctx, W, H, project, t).
 import { clipEnd } from './model.js';
 import { revealText } from './text.js';
+import { transitionState } from './visual.js';
 
 const seg = new Intl.Segmenter('my', { granularity: 'word' });
 export function wrapText(ctx, text, maxW) {
@@ -24,13 +25,14 @@ function drawText(ctx, cw, ch, c, t) {
   const revealProgress = c.reveal?.mode && c.reveal.mode !== 'none' ? Math.max(0, Math.min(1, (t - c.start) / Math.max(.01, c.dur) * (c.reveal.speed || 1))) : 1;
   const visibleText = revealText(c.text || ' ', revealProgress, c.reveal?.mode || 'none');
   const lines = wrapText(ctx, visibleText || ' ', maxW), widths = lines.map((l) => ctx.measureText(l).width), blockW = Math.max(...widths, 1), blockH = lines.length * lh;
-  const cx = c.pos.x / 100 * cw, cy = c.pos.y / 100 * ch;
+  let cx = c.pos.x / 100 * cw, cy = c.pos.y / 100 * ch;
   const a = c.anim || {}, local = Math.max(0, t - c.start), remaining = c.start + c.dur - t;
   let animAlpha = 1, scale = 1;
   if (a.in === 'fade' && a.inDur > 0) animAlpha *= Math.min(1, local / a.inDur);
   if (a.in === 'slideUp') { const p = Math.min(1, local / Math.max(.01, a.inDur || .35)); cy += (1 - p) * ch * .08; animAlpha *= p; }
   if (a.in === 'zoom') { const p = Math.min(1, local / Math.max(.01, a.inDur || .35)); scale = .8 + .2 * p; animAlpha *= p; }
   if (a.out === 'fade' && a.outDur > 0) animAlpha *= Math.min(1, remaining / a.outDur);
+  const tr = transitionState(c, t); if (tr.inType === 'fade') animAlpha *= tr.inProgress; if (tr.outType === 'fade') animAlpha *= tr.outProgress; if (tr.inType === 'slide') cx += (1 - tr.inProgress) * cw * .08; if (tr.outType === 'slide') cx += (1 - tr.outProgress) * cw * .08;
   if (a.loop === 'pulse') { const p = (Math.sin(local * Math.PI * 2) + 1) / 2; scale *= .98 + p * .04; }
   if (a.loop === 'float') cy += Math.sin(local * Math.PI * 2) * ch * .012;
   ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, s.opacity / 100 * animAlpha)); ctx.translate(cx, cy); ctx.scale(scale, scale); ctx.rotate((c.pos.rot || 0) * Math.PI / 180);
