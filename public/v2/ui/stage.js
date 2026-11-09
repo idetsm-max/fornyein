@@ -56,7 +56,7 @@ export function Player({ store, transport, fonts }) {
   return html`<section class="panel player">
     <div class="stagewrap">
       <div class="frame" ref=${frameRef} style=${{ width: `min(100cqw, calc(100cqh * ${w / h}))`, aspectRatio: `${w} / ${h}` }} onPointerDown=${(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) store.select(null); }}>
-        <canvas ref=${canvasRef} class="stagecanvas"></canvas>
+        <canvas ref=${canvasRef} class="stagecanvas" role="img" aria-label="Video preview canvas"></canvas>
         ${ov && html`<div class="sel" style=${{ left: (ov.x - ov.w / 2) + '%', top: (ov.y - ov.h / 2) + '%', width: ov.w + '%', height: ov.h + '%', transform: `rotate(${ov.rot}deg)` }}
           onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onDblClick=${() => document.querySelector('.inspector textarea')?.focus()}>
           <div class="floatbar" onPointerDown=${(e) => e.stopPropagation()}>
