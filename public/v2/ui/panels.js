@@ -70,11 +70,23 @@ export function Inspector({ store, fonts }) {
   const found = sel ? findClip(project, sel) : null, c = found ? found.clip : null;
   const [W] = RATIOS[project.size], [, H2] = RATIOS[project.size];
   const upd = (key, fn) => store.edit((d) => { const f = findClip(d, sel); if (f) fn(f.clip); }, { key: key + sel });
+  const updTrack = (key, fn) => store.edit((d) => { const f = findClip(d, sel); if (f) fn(f.track); }, { key: 'track-' + key + sel });
   const tabs = html`<${Tabs} value=${tab} onChange=${setTab} tabs=${[['text', L('tText'), H('tText')], ['anim', L('tAnimation'), H('tAnimation')], ['timing', L('tTiming'), H('tTiming')]]} />`;
   if (!c) return html`<aside class="panel inspector">${tabs}<div class="empty"><${Icon} name="text" size=${32} /><p>Select a text clip</p><small>Timeline မှာ စာတန်းတစ်ခု ရွေးပါ၊ ဒါမှမဟုတ် Text tool မှာ Add text နှိပ်ပါ</small></div></aside>`;
   if (c.kind === 'audio') return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
     <div class="audioins"><b>${c.name || project.media?.[c.mediaId]?.name || 'Audio clip'}</b><small>Audio clip settings</small></div>
+    <${Slider} label="Track volume" tip="Audio track master volume" value=${Math.round((found.track.mixer?.volume ?? 1) * 100)} min=${0} max=${150} onChange=${(v) => updTrack('volume', (k) => { k.mixer = { ...(k.mixer || {}), volume: v / 100 }; })} unit="%" />
+    <${Slider} label="Track pan" tip="Audio track pan" value=${Math.round((found.track.mixer?.pan || 0) * 100)} min=${-100} max=${100} onChange=${(v) => updTrack('pan', (k) => { k.mixer = { ...(k.mixer || {}), pan: v / 100 }; })} unit="%" />
+    <${Field} label="Ducking" tip="Voice clip ပေါ်ချိန် Music အသံလျှော့"><label class="switch"><input type="checkbox" checked=${!!found.track.mixer?.ducking} onChange=${() => updTrack('ducking', (k) => { k.mixer = { ...(k.mixer || {}), ducking: !k.mixer?.ducking }; })} /><i></i></label><//>
     <${Slider} label="Gain" tip="အသံအတိုးအကျယ်" value=${Math.round((c.gain ?? 1) * 100)} min=${0} max=${200} onChange=${(v) => upd('gain', (k) => { k.gain = v / 100; })} unit="%" />
+    <${Slider} label="Volume" tip="Clip volume" value=${Math.round((c.volume ?? 1) * 100)} min=${0} max=${150} onChange=${(v) => upd('volume', (k) => { k.volume = v / 100; })} unit="%" />
+    <${Slider} label="Pan" tip="ဘယ်/ညာ stereo pan" value=${Math.round((c.pan ?? 0) * 100)} min=${-100} max=${100} onChange=${(v) => upd('pan', (k) => { k.pan = v / 100; })} unit="%" />
+    <${Slider} label="EQ Low" tip="Bass" value=${Math.round(c.eq?.low || 0)} min=${-12} max=${12} onChange=${(v) => upd('eql', (k) => { k.eq = { ...(k.eq || {}), low: v }; })} unit="dB" />
+    <${Slider} label="EQ Mid" tip="Mid" value=${Math.round(c.eq?.mid || 0)} min=${-12} max=${12} onChange=${(v) => upd('eqm', (k) => { k.eq = { ...(k.eq || {}), mid: v }; })} unit="dB" />
+    <${Slider} label="EQ High" tip="Treble" value=${Math.round(c.eq?.high || 0)} min=${-12} max=${12} onChange=${(v) => upd('eqh', (k) => { k.eq = { ...(k.eq || {}), high: v }; })} unit="dB" />
+    <${Field} label="Compressor" tip="Dynamic range control"><label class="switch"><input type="checkbox" checked=${!!c.compressor?.enabled} onChange=${() => upd('comp', (k) => { k.compressor = { ...(k.compressor || {}), enabled: !k.compressor?.enabled }; })} /><i></i></label><//>
+    <${Slider} label="Echo" tip="Delay echo" value=${Math.round((c.echo || 0) * 100)} min=${0} max=${100} onChange=${(v) => upd('echo', (k) => { k.echo = v / 100; })} unit="%" />
+    <${Field} label="Bypass" tip="DSP ကို ပိတ်/ဖွင့်"><label class="switch"><input type="checkbox" checked=${!!c.bypass} onChange=${() => upd('bypass', (k) => { k.bypass = !k.bypass; })} /><i></i></label><//>
     <${Field} label="Fade in" tip="အသံဝင်ချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${c.fade?.in || 0} onInput=${(e) => upd('fadein', (k) => { k.fade = { ...(k.fade || {}), in: Math.max(0, +e.target.value || 0) }; })} /></label><//>
     <${Field} label="Fade out" tip="အသံထွက်ချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0" value=${c.fade?.out || 0} onInput=${(e) => upd('fadeout', (k) => { k.fade = { ...(k.fade || {}), out: Math.max(0, +e.target.value || 0) }; })} /></label><//>
     <${Field} label="Loop" tip="Music ကို ပြန်လည်ဖွင့်ရန်"><label class="switch"><input type="checkbox" checked=${!!c.loop} onChange=${() => upd('loop', (k) => { k.loop = !k.loop; })} /><i></i></label><//>
