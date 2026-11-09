@@ -2,6 +2,8 @@
 import { clipEnd } from './model.js';
 import { revealText } from './text.js';
 import { transitionState } from './visual.js';
+import { loadMedia } from './storage.js';
+import { filterString } from './visual.js';
 
 const seg = new Intl.Segmenter('my', { granularity: 'word' });
 export function wrapText(ctx, text, maxW) {
@@ -17,6 +19,9 @@ export function wrapText(ctx, text, maxW) {
 }
 
 export const bboxes = new Map();   // clip id -> {cx, cy, w, h, rot, cw, ch} in canvas pixels (used by the selection box)
+const visualCache = new Map();
+function ensureVisual(media) { if (!media || visualCache.has(media.id)) return visualCache.get(media.id); const item = { ready: false, el: null }; visualCache.set(media.id, item); loadMedia(media.id).then((blob) => { if (!blob) return; const url = URL.createObjectURL(blob); const el = media.kind === 'video' ? document.createElement('video') : new Image(); el.src = url; if (media.kind === 'video') { el.muted = true; el.playsInline = true; el.onloadeddata = () => { item.ready = true; }; } else el.onload = () => { item.ready = true; }; item.el = el; }); return item; }
+function drawVisual(ctx, cw, ch, project, c, t) { const media = project.media?.[c.mediaId], item = ensureVisual(media); if (!item.ready || !item.el) return; if (c.kind === 'video') { const local = Math.max(0, Math.min(c.dur, t - c.start)); if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local; item.el.play?.().catch(() => {}); } const tr = transitionState(c, t), p = tr.inType === 'fade' ? tr.inProgress : tr.inType === 'slide' ? tr.inProgress : 1, q = tr.outType === 'fade' ? tr.outProgress : tr.outType === 'slide' ? tr.outProgress : 1; ctx.save(); ctx.globalAlpha = p * q; ctx.filter = filterString(media.adjust); let x = 0; if (tr.inType === 'slide') x = (1 - p) * cw; if (tr.outType === 'slide') x += (1 - q) * cw; const iw = item.el.videoWidth || item.el.naturalWidth || cw, ih = item.el.videoHeight || item.el.naturalHeight || ch, scale = c.fit === 'contain' ? Math.min(cw / iw, ch / ih) : Math.max(cw / iw, ch / ih), w = iw * scale, h = ih * scale; ctx.drawImage(item.el, x + (cw - w) / 2, (ch - h) / 2, w, h); ctx.restore(); }
 
 function drawText(ctx, cw, ch, c, t) {
   const s = c.style || {}, fs = Math.max(4, s.size * ch / 1080) * (c.pos?.scale || 1), maxW = cw * 0.86, lh = fs * 1.5;
@@ -57,7 +62,7 @@ export function drawFrame(ctx, cw, ch, project, t) {
   for (const kind of ['video', 'overlay', 'text']) {                       // bottom -> top
     for (const tr of project.tracks) {
       if (tr.kind !== kind || tr.hidden) continue;
-      for (const c of tr.clips) if (t >= c.start && t < clipEnd(c) && c.kind === 'text') drawText(ctx, cw, ch, c, t);
+      for (const c of tr.clips) if (t >= c.start && t < clipEnd(c)) { if (c.kind === 'text') drawText(ctx, cw, ch, c, t); else if (c.kind === 'video' || c.kind === 'image') drawVisual(ctx, cw, ch, project, c, t); }
     }
   }
 }

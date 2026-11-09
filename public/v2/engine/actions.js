@@ -1,5 +1,5 @@
 // User actions shared by buttons, keyboard, canvas and Timeline.
-import { newTextClip, newAudioClip, textTrack, audioTrack, findClip, uid, freeSlot, clipEnd } from './model.js';
+import { newTextClip, newAudioClip, newVisualClip, textTrack, audioTrack, visualTrack, findClip, uid, freeSlot, clipEnd } from './model.js';
 import { PRESETS, normalizeMyanmar } from './text.js';
 const MIN_DUR = 0.1;
 const snapTime = (value, project, ignoreId, enabled = true) => {
@@ -41,9 +41,9 @@ export function syncTextClip(store, id, start, nextStart = null) {
   store.edit((d) => { const f = findClip(d, id); if (!f) return; f.clip.start = Math.max(0, +start.toFixed(3)); if (nextStart != null) f.clip.dur = Math.max(.1, +(nextStart - f.clip.start).toFixed(3)); }, { key: 'tap-sync:' + id });
 }
 export function addMedia(store, transport, meta) {
-  const start = freeSlot(audioTrack(store.get().project), transport.t, meta.dur || 1);
-  store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; audioTrack(d).clips.push(newAudioClip(start, meta.id, meta.dur || 1, meta.name)); });
-  const clip = audioTrack(store.get().project).clips.at(-1); if (clip) { store.select(clip.id); transport.seek(start); }
+  const isAudio = meta.kind === 'audio', track = isAudio ? audioTrack(store.get().project) : visualTrack(store.get().project), start = freeSlot(track, transport.t, meta.dur || 3);
+  store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; const tr = isAudio ? audioTrack(d) : visualTrack(d); tr.clips.push(isAudio ? newAudioClip(start, meta.id, meta.dur || 1, meta.name) : newVisualClip(start, meta.id, meta.dur || 3, meta.kind, meta.name)); });
+  const clip = (isAudio ? audioTrack(store.get().project) : visualTrack(store.get().project)).clips.at(-1); if (clip) { store.select(clip.id); transport.seek(start); }
   return meta;
 }
 export function moveClip(store, id, start, { snap = true, key = 'move' } = {}) {
