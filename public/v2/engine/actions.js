@@ -1,5 +1,5 @@
 // User actions shared by buttons, keyboard, canvas and Timeline.
-import { newTextClip, newAudioClip, newVisualClip, textTrack, audioTrack, visualTrack, findClip, uid, freeSlot, clipEnd } from './model.js';
+import { newTextClip, newAudioClip, newVisualClip, newOverlayClip, textTrack, audioTrack, visualTrack, findClip, uid, freeSlot, clipEnd, projectDuration } from './model.js';
 import { PRESETS, normalizeMyanmar } from './text.js';
 const MIN_DUR = 0.1;
 const snapTime = (value, project, ignoreId, enabled = true) => {
@@ -45,6 +45,11 @@ export function addMedia(store, transport, meta) {
   store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; const tr = isAudio ? audioTrack(d) : visualTrack(d); tr.clips.push(isAudio ? newAudioClip(start, meta.id, meta.dur || 1, meta.name) : newVisualClip(start, meta.id, meta.dur || 3, meta.kind, meta.name)); });
   const clip = (isAudio ? audioTrack(store.get().project) : visualTrack(store.get().project)).clips.at(-1); if (clip) { store.select(clip.id); transport.seek(start); }
   return meta;
+}
+export function addOverlayLogo(store, transport, meta) {
+  if (!meta || meta.kind !== 'image') return;
+  const start = transport.t, c = newOverlayClip(start, meta.id, Math.max(30, projectDuration(store.get().project) - start || 30), meta.name);
+  store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; d.tracks.find((t) => t.kind === 'overlay').clips.push(c); }); store.select(c.id); transport.seek(start); return c;
 }
 export function moveClip(store, id, start, { snap = true, key = 'move' } = {}) {
   store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return; f.clip.start = snapTime(start, d, id, snap); }, { key: `${key}:${id}` });

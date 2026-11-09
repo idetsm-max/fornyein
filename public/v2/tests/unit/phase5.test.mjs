@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newProject, newAudioClip, newVisualClip } from '../../engine/model.js';
+import { newProject, newAudioClip, newVisualClip, newOverlayClip } from '../../engine/model.js';
 import { filterString, normalizeAdjust } from '../../engine/visual.js';
 import { transitionState } from '../../engine/visual.js';
 
@@ -10,3 +10,4 @@ test('visual adjustments compile to CSS filter', () => { assert.match(filterStri
 test('audio clip exposes convolution reverb amount', () => { assert.equal(newAudioClip(0, 'm1', 2).reverb, 0); });
 test('fade and slide transitions report progress', () => { const c = { start: 2, dur: 4, transition: { in: 'slide', out: 'fade', dur: 1 } }; const s = transitionState(c, 2.5); assert.equal(s.inType, 'slide'); assert.equal(s.inProgress, .5); assert.equal(s.outType, 'fade'); });
 test('visual clips carry fit and transition defaults', () => { const c = newVisualClip(1, 'v1', 5, 'video', 'demo.mp4'); assert.equal(c.kind, 'video'); assert.equal(c.fit, 'cover'); assert.equal(c.transition.in, 'fade'); });
+test('overlay logo defaults to a small corner credit', () => { const c = newOverlayClip(0, 'logo', 30, 'logo.png'); assert.equal(c.kind, 'image'); assert.equal(c.fit, 'contain'); assert.equal(c.pos.x, 92); assert.equal(c.pos.y, 90); assert.ok(c.pos.scale < .25); });
