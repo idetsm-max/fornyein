@@ -21,6 +21,14 @@ export function addLines(store, transport, lines, dur = 3) {
 }
 const srtTime = (s) => { const ms = Math.max(0, Math.round(s * 1000)); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60, milli = ms % 1000; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')},${String(milli).padStart(3, '0')}`; };
 export function textToSrt(project) { return textTrack(project).clips.slice().sort((a, b) => a.start - b.start).map((c, i) => `${i + 1}\n${srtTime(c.start)} --> ${srtTime(clipEnd(c))}\n${c.text || ''}\n`).join('\n'); }
+export function addTimedLines(store, transport, lines, segments) {
+  const list = lines.map((x) => x.trim()).filter(Boolean); if (!list.length || !segments?.length) return;
+  const clips = list.map((text, i) => { const seg = segments[Math.min(i, segments.length - 1)]; return newTextClip(seg.start, text, Math.max(.1, seg.end - seg.start)); });
+  store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start); return clips;
+}
+export function syncTextClip(store, id, start, nextStart = null) {
+  store.edit((d) => { const f = findClip(d, id); if (!f) return; f.clip.start = Math.max(0, +start.toFixed(3)); if (nextStart != null) f.clip.dur = Math.max(.1, +(nextStart - f.clip.start).toFixed(3)); }, { key: 'tap-sync:' + id });
+}
 export function addMedia(store, transport, meta) {
   const start = freeSlot(audioTrack(store.get().project), transport.t, meta.dur || 1);
   store.edit((d) => { d.media ||= {}; d.media[meta.id] = meta; audioTrack(d).clips.push(newAudioClip(start, meta.id, meta.dur || 1, meta.name)); });
@@ -28,24 +36,24 @@ export function addMedia(store, transport, meta) {
   return meta;
 }
 export function moveClip(store, id, start, { snap = true, key = 'move' } = {}) {
-  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked) return; f.clip.start = snapTime(start, d, id, snap); }, { key: `${key}:${id}` });
+  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return; f.clip.start = snapTime(start, d, id, snap); }, { key: `${key}:${id}` });
 }
 export function trimClip(store, id, edge, value, { snap = true } = {}) {
-  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked) return; const c = f.clip;
+  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return; const c = f.clip;
     if (edge === 'left') { const end = clipEnd(c); const start = Math.min(end - MIN_DUR, snapTime(value, d, id, snap)); c.start = Math.max(0, start); c.dur = Math.max(MIN_DUR, end - c.start); }
     else { const end = Math.max(c.start + MIN_DUR, snapTime(value, d, id, snap)); c.dur = +Math.max(MIN_DUR, end - c.start).toFixed(3); }
   }, { key: `trim:${id}:${edge}` });
 }
 export function splitClip(store, id, at, { snap = true } = {}) {
   let rightId = null;
-  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked) return; const c = f.clip; const cut = snapTime(at, d, id, snap); if (cut <= c.start + MIN_DUR || cut >= clipEnd(c) - MIN_DUR) return;
+  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return; const c = f.clip; const cut = snapTime(at, d, id, snap); if (cut <= c.start + MIN_DUR || cut >= clipEnd(c) - MIN_DUR) return;
     const right = JSON.parse(JSON.stringify(c)); right.id = uid(); right.start = cut; right.dur = clipEnd(c) - cut; c.dur = cut - c.start; f.track.clips.splice(f.ci + 1, 0, right); rightId = right.id;
   });
   if (rightId) store.select(rightId); return rightId;
 }
 export function deleteClips(store, ids, { ripple = false } = {}) {
   const set = new Set(ids.filter(Boolean)); if (!set.size) return;
-  store.edit((d) => { for (const t of d.tracks) { const removed = t.clips.filter((c) => set.has(c.id)); if (!removed.length || t.locked) continue; const shift = ripple ? removed.reduce((n, c) => n + c.dur, 0) : 0; const first = Math.min(...removed.map((c) => c.start)); t.clips = t.clips.filter((c) => !set.has(c.id)); if (ripple) for (const c of t.clips) if (c.start >= first) c.start = Math.max(0, c.start - shift); } });
+  store.edit((d) => { for (const t of d.tracks) { const removed = t.clips.filter((c) => set.has(c.id) && !c.locked); if (!removed.length || t.locked) continue; const shift = ripple ? removed.reduce((n, c) => n + c.dur, 0) : 0; const first = Math.min(...removed.map((c) => c.start)); t.clips = t.clips.filter((c) => !set.has(c.id)); if (ripple) for (const c of t.clips) if (c.start >= first) c.start = Math.max(0, c.start - shift); } });
 }
 export function deleteSelected(store, { ripple = false } = {}) { const id = store.get().selection; if (id) deleteClips(store, [id], { ripple }); }
 export function duplicateSelected(store) {

@@ -4,8 +4,8 @@ import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
-import { addText, addLines, addMedia, textToSrt } from '../engine/actions.js';
-import { importFile } from '../engine/media.js';
+import { addText, addLines, addTimedLines, addMedia, textToSrt, syncTextClip } from '../engine/actions.js';
+import { importFile, detectVoiceSegments } from '../engine/media.js';
 import { loadMedia } from '../engine/storage.js';
 
 // ---------------- left panel: Text tool (real) · Media (still a demo until phase 3) · empty state for the rest ----------------
@@ -23,15 +23,21 @@ function MediaPreview({ media }) {
 }
 function TextPanel({ store, transport }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
-  const [poem, setPoem] = useState('');
+  const [poem, setPoem] = useState(''), [syncing, setSyncing] = useState(false), [syncIndex, setSyncIndex] = useState(0), [drafting, setDrafting] = useState(false);
   const clips = [...textTrack(project).clips].sort((a, b) => a.start - b.start);
   const pick = (c) => { store.select(c.id); transport.seek(c.start + 0.01); };
+  const beginSync = () => { if (!clips.length) return; setSyncing(true); setSyncIndex(0); transport.seek(0); transport.play(); };
+  const tapSync = () => { if (!syncing) return; const now = transport.t, current = clips[syncIndex], previous = clips[syncIndex - 1]; if (previous) syncTextClip(store, previous.id, previous.start, now); if (current) { syncTextClip(store, current.id, now); store.select(current.id); } if (syncIndex >= clips.length - 1) { transport.pause(); setSyncing(false); } else setSyncIndex(syncIndex + 1); };
+  const autoDraft = async () => { const lines = poem.split('\n').map((x) => x.trim()).filter(Boolean), audio = project.tracks.find((t) => t.kind === 'audio')?.clips[0]; if (!lines.length || !audio) return; setDrafting(true); try { const blob = await loadMedia(audio.mediaId); const segments = await detectVoiceSegments(blob); addTimedLines(store, transport, lines, segments); setPoem(''); } finally { setDrafting(false); } };
+  useEffect(() => { if (!syncing) return; const onKey = (e) => { if (e.code === 'Space') { e.preventDefault(); tapSync(); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [syncing, syncIndex, clips]);
   return html`<section class="panel media">
     <div class="phead"><b>${L('text')}</b></div>
     <div class="pbody scroll">
       <button type="button" class="uploadbtn" onClick=${() => addText(store, transport)}><${Icon} name="plus" size=${20} /><span>Add text</span></button>
       <div class="textbox"><textarea value=${poem} placeholder="ကဗျာ paste လုပ်ပါ — စာကြောင်းတစ်ကြောင်းကို clip တစ်ခုစီ ဖန်တီးပေးမယ်" onInput=${(e) => setPoem(e.target.value)} /></div>
       <button type="button" class="btn ghost wide" disabled=${!poem.trim()} onClick=${() => { addLines(store, transport, poem.split('\n')); setPoem(''); }}><${Icon} name="text" size=${16} /><span>Add lines as clips</span></button>
+      <button type="button" class="btn ghost wide" disabled=${!poem.trim() || !project.tracks.find((t) => t.kind === 'audio')?.clips.length || drafting} onClick=${autoDraft}><${Icon} name="wand" size=${16} /><span>${drafting ? 'Analyzing voice…' : 'Auto-draft from voice'}</span></button>
+      <div class="syncrow"><button type="button" class=${cx('btn', syncing && 'on')} disabled=${!clips.length} onClick=${beginSync}>${syncing ? 'Tap next (Space)' : 'Start tap-sync'}</button>${syncing && html`<button type="button" class="btn ghost" onClick=${tapSync}>Tap ${syncIndex + 1}/${clips.length}</button>`}</div>
       <button type="button" class="btn ghost wide" disabled=${!clips.length} onClick=${() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([textToSrt(project)], { type: 'text/plain;charset=utf-8' })); a.download = `${project.name || 'fornyein'}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500); }}><${Icon} name="download" size=${16} /><span>Export SRT</span></button>
       <div class="textlist">${clips.length === 0 ? html`<div class="menuempty">Text clip မရှိသေးပါ</div>` : clips.map((c, i) => html`<button type="button" class=${cx('titem', sel === c.id && 'on')} onClick=${() => pick(c)}>
         <span class="n">${i + 1}</span><span class="tx">${c.text.split('\n')[0] || '…'}</span><em>${c.start.toFixed(1)}s</em></button>`)}</div>
@@ -76,6 +82,7 @@ export function Inspector({ store, fonts }) {
     <div class="pbody scroll">
       ${tab === 'text' ? html`
         <div class="textbox"><textarea value=${c.text} maxlength="500" onInput=${(e) => upd('text', (k) => { k.text = e.target.value; })} placeholder="စာသား ရိုက်ပါ" /><span class="count">${c.text.length} / 500</span></div>
+        <div class="reviewrow"><span>Review</span><${IconBtn} name="edit" active=${c.review === 'draft'} title="Draft" onClick=${() => upd('review-draft', (k) => { k.review = 'draft'; })} /><${IconBtn} name="check" active=${c.review === 'review'} title="Review" onClick=${() => upd('review', (k) => { k.review = 'review'; })} /><${IconBtn} name="lock" active=${!!c.locked} title="Lock" onClick=${() => upd('lock', (k) => { k.locked = !k.locked; })} /></div>
         <${Field} label=${L('font')} tip=${H('font')}><${Select} value=${s.font} onChange=${(v) => upd('font', (k) => { k.style.font = v; })} options=${fontOpts} /><//>
         <${Field} label=${L('style')} tip=${H('style')}>
           <div class="seg"><${IconBtn} name="bold" active=${s.bold} onClick=${() => upd('b', (k) => { k.style.bold = !k.style.bold; })} title="Bold" /><${IconBtn} name="italic" active=${s.italic} onClick=${() => upd('i', (k) => { k.style.italic = !k.style.italic; })} title="Italic" /><${IconBtn} name="underline" active=${s.underline} onClick=${() => upd('u', (k) => { k.style.underline = !k.style.underline; })} title="Underline" /></div>

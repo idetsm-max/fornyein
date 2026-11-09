@@ -39,10 +39,13 @@ export function Player({ store, transport, fonts }) {
   const down = (e) => {                                          // drag the selected text on the frame
     const f = sel ? findClip(project, sel) : null; if (!f || f.track.locked) return;
     e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { x: e.clientX, y: e.clientY, px: f.clip.pos.x, py: f.clip.pos.y, rc: frameRef.current.getBoundingClientRect() };
+    drag.current = { mode: 'move', x: e.clientX, y: e.clientY, px: f.clip.pos.x, py: f.clip.pos.y, rc: frameRef.current.getBoundingClientRect() };
   };
+  const handleDown = (e, mode) => { const f = sel ? findClip(project, sel) : null; if (!f || f.track.locked) return; e.stopPropagation(); e.preventDefault(); e.currentTarget.setPointerCapture?.(e.pointerId); const rc = frameRef.current.getBoundingClientRect(); drag.current = { mode, x: e.clientX, y: e.clientY, rc, scale: f.clip.pos.scale || 1, rot: f.clip.pos.rot || 0, cx: rc.left + rc.width * f.clip.pos.x / 100, cy: rc.top + rc.height * f.clip.pos.y / 100 }; };
   const move = (e) => {
     const d = drag.current; if (!d) return;
+    if (d.mode === 'resize') { const scale = +clamp(d.scale + (e.clientX - d.x) / d.rc.width * 2, .25, 4).toFixed(3); store.edit((dr) => { const g = findClip(dr, sel); if (g) g.clip.pos.scale = scale; }, { key: 'scale:' + sel }); return; }
+    if (d.mode === 'rotate') { const a0 = Math.atan2(d.y - d.cy, d.x - d.cx), a1 = Math.atan2(e.clientY - d.cy, e.clientX - d.cx); const rot = +((d.rot + (a1 - a0) * 180 / Math.PI + 540) % 360 - 180).toFixed(1); store.edit((dr) => { const g = findClip(dr, sel); if (g) g.clip.pos.rot = rot; }, { key: 'rotate:' + sel }); return; }
     let nx = d.px + (e.clientX - d.x) / d.rc.width * 100, ny = d.py + (e.clientY - d.y) / d.rc.height * 100;
     if (Math.abs(nx - 50) < 1.2) nx = 50; if (Math.abs(ny - 50) < 1.2) ny = 50;
     nx = +clamp(nx, 0, 100).toFixed(2); ny = +clamp(ny, 0, 100).toFixed(2);
@@ -55,11 +58,11 @@ export function Player({ store, transport, fonts }) {
       <div class="frame" ref=${frameRef} style=${{ width: `min(100cqw, calc(100cqh * ${w / h}))`, aspectRatio: `${w} / ${h}` }} onPointerDown=${(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) store.select(null); }}>
         <canvas ref=${canvasRef} class="stagecanvas"></canvas>
         ${ov && html`<div class="sel" style=${{ left: (ov.x - ov.w / 2) + '%', top: (ov.y - ov.h / 2) + '%', width: ov.w + '%', height: ov.h + '%', transform: `rotate(${ov.rot}deg)` }}
-          onPointerDown=${down} onPointerMove=${move} onPointerUp=${up}>
+          onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onDblClick=${() => document.querySelector('.inspector textarea')?.focus()}>
           <div class="floatbar" onPointerDown=${(e) => e.stopPropagation()}>
             <${IconBtn} name="copy" size=${16} title="Duplicate · Ctrl+D" onClick=${() => duplicateSelected(store)} /><${IconBtn} name="trash" size=${16} title="Delete" onClick=${() => deleteSelected(store)} />
           </div>
-          ${['tl', 'tm', 'tr', 'ml', 'mr', 'bl', 'bm', 'br'].map((p) => html`<i class=${'h ' + p}></i>`)}</div>`}
+          ${['tl', 'tm', 'tr', 'ml', 'mr', 'bl', 'bm', 'br'].map((p) => html`<i class=${'h ' + p} onPointerDown=${(e) => handleDown(e, 'resize')}></i>`)}<i class="rotator" onPointerDown=${(e) => handleDown(e, 'rotate')}></i></div>`}
         ${dur === 0 && html`<div class="hint">Text tool မှာ <b>Add text</b> နှိပ်ပါ</div>`}
       </div>
     </div>

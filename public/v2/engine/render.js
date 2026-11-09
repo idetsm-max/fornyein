@@ -17,7 +17,7 @@ export function wrapText(ctx, text, maxW) {
 export const bboxes = new Map();   // clip id -> {cx, cy, w, h, rot, cw, ch} in canvas pixels (used by the selection box)
 
 function drawText(ctx, cw, ch, c, t) {
-  const s = c.style || {}, fs = Math.max(4, s.size * ch / 1080), maxW = cw * 0.86, lh = fs * 1.5;
+  const s = c.style || {}, fs = Math.max(4, s.size * ch / 1080) * (c.pos?.scale || 1), maxW = cw * 0.86, lh = fs * 1.5;
   ctx.font = `${s.italic ? 'italic ' : ''}${s.bold ? '700 ' : '400 '}${fs}px "${s.font}", "Noto Sans Myanmar", sans-serif`;
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.lineJoin = 'round';
   const lines = wrapText(ctx, c.text || ' ', maxW), widths = lines.map((l) => ctx.measureText(l).width), blockW = Math.max(...widths, 1), blockH = lines.length * lh;
@@ -57,7 +57,7 @@ export function drawFrame(ctx, cw, ch, project, t) {
 }
 // A text clip that is NOT playing right now still needs a selection box: measure it (same maths, nothing drawn)
 export function measureText(ctx, cw, ch, c) {
-  const s = c.style, fs = Math.max(4, s.size * ch / 1080), lh = fs * 1.5;
+  const s = c.style, fs = Math.max(4, s.size * ch / 1080) * (c.pos?.scale || 1), lh = fs * 1.5;
   ctx.font = `${s.italic ? 'italic ' : ''}${s.bold ? '700 ' : '400 '}${fs}px "${s.font}", "Noto Sans Myanmar", sans-serif`;
   const lines = wrapText(ctx, c.text || ' ', cw * 0.86), blockW = Math.max(...lines.map((l) => ctx.measureText(l).width), 1);
   return { cx: c.pos.x / 100 * cw, cy: c.pos.y / 100 * ch, w: blockW + fs * 0.4, h: lines.length * lh, rot: c.pos.rot || 0, cw, ch };
