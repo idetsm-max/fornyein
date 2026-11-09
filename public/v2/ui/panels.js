@@ -4,9 +4,10 @@ import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
-import { addText, addLines, addTimedLines, addMedia, textToSrt, syncTextClip } from '../engine/actions.js';
+import { addText, addLines, addTimedLines, addMedia, textToSrt, syncTextClip, insertPreset, splitTextClip, mergeTextClips, normalizeTextClip } from '../engine/actions.js';
 import { importFile, detectVoiceSegments } from '../engine/media.js';
 import { loadMedia } from '../engine/storage.js';
+import { PRESETS, EFFECTS, normalizeMyanmar } from '../engine/text.js';
 
 // ---------------- left panel: Text tool (real) · Media (still a demo until phase 3) · empty state for the rest ----------------
 const DEMO_MEDIA = [
@@ -35,12 +36,15 @@ function TextPanel({ store, transport }) {
     <div class="pbody scroll">
       <button type="button" class="uploadbtn" onClick=${() => addText(store, transport)}><${Icon} name="plus" size=${20} /><span>Add text</span></button>
       <div class="textbox"><textarea value=${poem} placeholder="ကဗျာ paste လုပ်ပါ — စာကြောင်းတစ်ကြောင်းကို clip တစ်ခုစီ ဖန်တီးပေးမယ်" onInput=${(e) => setPoem(e.target.value)} /></div>
+      <div class="presetrow">${Object.entries(PRESETS).map(([key, preset]) => html`<button type="button" class="chip" title=${preset.name} onClick=${() => insertPreset(store, transport, key)}>${preset.name}</button>`)}</div>
+      <div class="syncrow"><button type="button" class="btn ghost" disabled=${!poem.trim()} onClick=${() => setPoem(normalizeMyanmar(poem))}>Zawgyi → Unicode</button><button type="button" class="btn ghost" disabled=${!sel} onClick=${() => normalizeTextClip(store, sel)}>Normalize clip</button></div>
       <button type="button" class="btn ghost wide" disabled=${!poem.trim()} onClick=${() => { addLines(store, transport, poem.split('\n')); setPoem(''); }}><${Icon} name="text" size=${16} /><span>Add lines as clips</span></button>
       <button type="button" class="btn ghost wide" disabled=${!poem.trim() || !project.tracks.find((t) => t.kind === 'audio')?.clips.length || drafting} onClick=${autoDraft}><${Icon} name="wand" size=${16} /><span>${drafting ? 'Analyzing voice…' : 'Auto-draft from voice'}</span></button>
       <div class="syncrow"><button type="button" class=${cx('btn', syncing && 'on')} disabled=${!clips.length} onClick=${beginSync}>${syncing ? 'Tap next (Space)' : 'Start tap-sync'}</button>${syncing && html`<button type="button" class="btn ghost" onClick=${tapSync}>Tap ${syncIndex + 1}/${clips.length}</button>`}</div>
+      <div class="syncrow"><button type="button" class="btn ghost" disabled=${!sel} onClick=${() => splitTextClip(store, sel)}>Split caption</button><button type="button" class="btn ghost" disabled=${!sel || clips.findIndex((x) => x.id === sel) >= clips.length - 1} onClick=${() => { const i = clips.findIndex((x) => x.id === sel); mergeTextClips(store, [sel, clips[i + 1]?.id]); }}>Merge next</button></div>
       <button type="button" class="btn ghost wide" disabled=${!clips.length} onClick=${() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([textToSrt(project)], { type: 'text/plain;charset=utf-8' })); a.download = `${project.name || 'fornyein'}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500); }}><${Icon} name="download" size=${16} /><span>Export SRT</span></button>
       <div class="textlist">${clips.length === 0 ? html`<div class="menuempty">Text clip မရှိသေးပါ</div>` : clips.map((c, i) => html`<button type="button" class=${cx('titem', sel === c.id && 'on')} onClick=${() => pick(c)}>
-        <span class="n">${i + 1}</span><span class="tx">${c.text.split('\n')[0] || '…'}</span><em>${c.start.toFixed(1)}s</em></button>`)}</div>
+        <span class="n">${i + 1}</span><span class="tx">${c.text.split('\n')[0] || '…'}</span><em>${c.start.toFixed(1)}s · ${Math.round((c.confidence ?? 1) * 100)}%</em></button>`)}</div>
     </div>
   </section>`;
 }
@@ -83,6 +87,7 @@ export function Inspector({ store, fonts }) {
       ${tab === 'text' ? html`
         <div class="textbox"><textarea value=${c.text} maxlength="500" onInput=${(e) => upd('text', (k) => { k.text = e.target.value; })} placeholder="စာသား ရိုက်ပါ" /><span class="count">${c.text.length} / 500</span></div>
         <div class="reviewrow"><span>Review</span><${IconBtn} name="edit" active=${c.review === 'draft'} title="Draft" onClick=${() => upd('review-draft', (k) => { k.review = 'draft'; })} /><${IconBtn} name="check" active=${c.review === 'review'} title="Review" onClick=${() => upd('review', (k) => { k.review = 'review'; })} /><${IconBtn} name="lock" active=${!!c.locked} title="Lock" onClick=${() => upd('lock', (k) => { k.locked = !k.locked; })} /></div>
+        <${Field} label="Reveal" tip="Typewriter / Word reveal"><${Select} value=${c.reveal?.mode || 'none'} onChange=${(v) => upd('reveal', (k) => { k.reveal = { ...(k.reveal || {}), mode: v }; })} options=${[['none', 'None'], ['typewriter', 'Typewriter'], ['word', 'Word reveal']]}/><//>
         <${Field} label=${L('font')} tip=${H('font')}><${Select} value=${s.font} onChange=${(v) => upd('font', (k) => { k.style.font = v; })} options=${fontOpts} /><//>
         <${Field} label=${L('style')} tip=${H('style')}>
           <div class="seg"><${IconBtn} name="bold" active=${s.bold} onClick=${() => upd('b', (k) => { k.style.bold = !k.style.bold; })} title="Bold" /><${IconBtn} name="italic" active=${s.italic} onClick=${() => upd('i', (k) => { k.style.italic = !k.style.italic; })} title="Italic" /><${IconBtn} name="underline" active=${s.underline} onClick=${() => upd('u', (k) => { k.style.underline = !k.style.underline; })} title="Underline" /></div>
@@ -92,6 +97,7 @@ export function Inspector({ store, fonts }) {
         <${Field} label="Fill 2 / Gradient" tip="ဒုတိယအရောင်နှင့် gradient"><label class="switch"><input type="checkbox" checked=${!!s.gradient} onChange=${() => upd('gradient', (k) => { k.style.gradient = !k.style.gradient; })} /><i></i></label><label class="swatch"><input type="color" value=${s.fill2 || s.fill} onInput=${(e) => upd('fill2', (k) => { k.style.fill2 = e.target.value; })} /><span style=${{ background: s.fill2 || s.fill }}></span></label><//>
         <${Field} label="Shadow" tip="စာသားအရိပ်"><label class="switch"><input type="checkbox" checked=${!!s.shadow?.on} onChange=${() => upd('shadow', (k) => { k.style.shadow = { ...(k.style.shadow || {}), on: !k.style.shadow?.on }; })} /><i></i></label><//>
         <${Field} label="Glow" tip="စာသားအလင်းရောင်"><label class="switch"><input type="checkbox" checked=${!!s.glow?.on} onChange=${() => upd('glow', (k) => { k.style.glow = { ...(k.style.glow || {}), on: !k.style.glow?.on }; })} /><i></i></label><//>
+        <${Field} label="Effects" tip="စာသား effect ၁၅ ခု"><div class="effectgrid">${EFFECTS.map(([key, label]) => html`<button type="button" class=${cx('chip', (s.effects || []).includes(key) && 'on')} onClick=${() => upd('fx-' + key, (k) => { const a = k.style.effects || []; k.style.effects = a.includes(key) ? a.filter((x) => x !== key) : [...a, key]; })}>${label}</button>`)}</div><//>
         <${Field} label=${L('stroke')} tip=${H('stroke')}><label class="switch"><input type="checkbox" checked=${s.strokeOn} onChange=${() => upd('son', (k) => { k.style.strokeOn = !k.style.strokeOn; })} /><i></i></label><label class=${cx('swatch', !s.strokeOn && 'off')}><input type="color" value=${s.stroke} disabled=${!s.strokeOn} onInput=${(e) => upd('stroke', (k) => { k.style.stroke = e.target.value; })} /><span style=${{ background: s.stroke }}></span></label><//>
         <${Slider} label=${L('size')} tip=${H('size')} value=${s.size} min=${8} max=${240} onChange=${(v) => upd('size', (k) => { k.style.size = v; })} />
         <${Slider} label=${L('opacity')} tip=${H('opacity')} value=${s.opacity} min=${0} max=${100} onChange=${(v) => upd('op', (k) => { k.style.opacity = v; })} unit="%" />

@@ -1,5 +1,6 @@
 // The ONE drawing function. Preview and (later) export both call drawFrame(ctx, W, H, project, t).
 import { clipEnd } from './model.js';
+import { revealText } from './text.js';
 
 const seg = new Intl.Segmenter('my', { granularity: 'word' });
 export function wrapText(ctx, text, maxW) {
@@ -20,7 +21,9 @@ function drawText(ctx, cw, ch, c, t) {
   const s = c.style || {}, fs = Math.max(4, s.size * ch / 1080) * (c.pos?.scale || 1), maxW = cw * 0.86, lh = fs * 1.5;
   ctx.font = `${s.italic ? 'italic ' : ''}${s.bold ? '700 ' : '400 '}${fs}px "${s.font}", "Noto Sans Myanmar", sans-serif`;
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.lineJoin = 'round';
-  const lines = wrapText(ctx, c.text || ' ', maxW), widths = lines.map((l) => ctx.measureText(l).width), blockW = Math.max(...widths, 1), blockH = lines.length * lh;
+  const revealProgress = c.reveal?.mode && c.reveal.mode !== 'none' ? Math.max(0, Math.min(1, (t - c.start) / Math.max(.01, c.dur) * (c.reveal.speed || 1))) : 1;
+  const visibleText = revealText(c.text || ' ', revealProgress, c.reveal?.mode || 'none');
+  const lines = wrapText(ctx, visibleText || ' ', maxW), widths = lines.map((l) => ctx.measureText(l).width), blockW = Math.max(...widths, 1), blockH = lines.length * lh;
   const cx = c.pos.x / 100 * cw, cy = c.pos.y / 100 * ch;
   const a = c.anim || {}, local = Math.max(0, t - c.start), remaining = c.start + c.dur - t;
   let animAlpha = 1, scale = 1;
@@ -31,6 +34,7 @@ function drawText(ctx, cw, ch, c, t) {
   if (a.loop === 'pulse') { const p = (Math.sin(local * Math.PI * 2) + 1) / 2; scale *= .98 + p * .04; }
   if (a.loop === 'float') cy += Math.sin(local * Math.PI * 2) * ch * .012;
   ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, s.opacity / 100 * animAlpha)); ctx.translate(cx, cy); ctx.scale(scale, scale); ctx.rotate((c.pos.rot || 0) * Math.PI / 180);
+  const fx = s.effects || []; const filters = []; if (fx.includes('blur') || fx.includes('soft')) filters.push(`blur(${fx.includes('soft') ? 1 : 3}px)`); if (fx.includes('grayscale') || fx.includes('mono')) filters.push('grayscale(1)'); if (fx.includes('sepia') || fx.includes('warm')) filters.push('sepia(.7)'); if (fx.includes('invert')) filters.push('invert(1)'); if (fx.includes('contrast')) filters.push('contrast(1.35)'); if (fx.includes('bright')) filters.push('brightness(1.25)'); if (fx.includes('saturate') || fx.includes('neon')) filters.push('saturate(1.7)'); if (fx.includes('cool')) filters.push('hue-rotate(20deg)'); ctx.filter = filters.length ? filters.join(' ') : 'none';
   if (s.shadow?.on) { ctx.shadowColor = s.shadow.color || '#000'; ctx.shadowBlur = s.shadow.blur || 0; ctx.shadowOffsetX = s.shadow.x || 0; ctx.shadowOffsetY = s.shadow.y || 0; ctx.globalAlpha *= (s.shadow.opacity ?? 55) / 100; }
   if (s.glow?.on) { ctx.shadowColor = s.glow.color || s.fill; ctx.shadowBlur = s.glow.blur || 0; }
   const gradient = s.gradient ? ctx.createLinearGradient(-blockW / 2, 0, blockW / 2, 0) : null;
