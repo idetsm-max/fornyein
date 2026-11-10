@@ -19,7 +19,7 @@ const PRESETS_KEY = "Presets/presets.json";
 const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-cache", ...extra },
+      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-cache", "x-content-type-options": "nosniff", "x-frame-options": "DENY", "referrer-policy": "same-origin", ...extra },
   });
 
 function toBase64(buf: ArrayBuffer): string {
