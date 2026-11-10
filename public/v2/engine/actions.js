@@ -37,6 +37,12 @@ export function addTimedLines(store, transport, lines, segments) {
   const clips = list.map((text, i) => { const seg = segments[Math.min(i, segments.length - 1)]; const c = newTextClip(seg.start, normalizeMyanmar(text), Math.max(.1, seg.end - seg.start)); c.confidence = seg.confidence ?? .5; c.review = c.confidence < .55 ? 'review' : 'draft'; return c; });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start); return clips;
 }
+export function addAsrLines(store, transport, rows) {
+  const list = (rows || []).map((r) => ({ ...r, text: normalizeMyanmar(String(r.text || '').trim()) })).filter((r) => r.text && Number.isFinite(r.start) && Number.isFinite(r.end) && r.end > r.start);
+  if (!list.length) return [];
+  const clips = list.map((r) => { const c = newTextClip(Math.max(0, r.start), r.text, Math.max(.1, r.end - r.start)); c.confidence = r.confidence ?? .5; c.review = c.confidence < .65 ? 'review' : 'draft'; c.asr = { engine: 'cloudflare-workers-ai-whisper', language: r.language || 'my' }; return c; });
+  store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start); return clips;
+}
 export function syncTextClip(store, id, start, nextStart = null) {
   store.edit((d) => { const f = findClip(d, id); if (!f) return; f.clip.start = Math.max(0, +start.toFixed(3)); if (nextStart != null) f.clip.dur = Math.max(.1, +(nextStart - f.clip.start).toFixed(3)); }, { key: 'tap-sync:' + id });
 }

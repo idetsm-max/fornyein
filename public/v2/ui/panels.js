@@ -4,10 +4,11 @@ import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
-import { addText, addLines, addTimedLines, addMedia, addOverlayLogo, textToSrt, syncTextClip, insertPreset, splitTextClip, mergeTextClips, normalizeTextClip } from '../engine/actions.js';
+import { addText, addLines, addTimedLines, addAsrLines, addMedia, addOverlayLogo, textToSrt, syncTextClip, insertPreset, splitTextClip, mergeTextClips, normalizeTextClip } from '../engine/actions.js';
 import { importFile, detectVoiceSegments } from '../engine/media.js';
 import { loadMedia } from '../engine/storage.js';
 import { PRESETS, EFFECTS, normalizeMyanmar } from '../engine/text.js';
+import { checkAsr, transcribeAudio, wavChunk } from '../engine/asr.js';
 
 // ---------------- left panel: Text tool (real) · Media (still a demo until phase 3) · empty state for the rest ----------------
 const DEMO_MEDIA = [
@@ -24,12 +25,13 @@ function MediaPreview({ media }) {
 }
 function TextPanel({ store, transport }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
-  const [poem, setPoem] = useState(''), [syncing, setSyncing] = useState(false), [syncIndex, setSyncIndex] = useState(0), [drafting, setDrafting] = useState(false);
+  const [poem, setPoem] = useState(''), [syncing, setSyncing] = useState(false), [syncIndex, setSyncIndex] = useState(0), [drafting, setDrafting] = useState(false), [captioning, setCaptioning] = useState(false), [captionProgress, setCaptionProgress] = useState(0), [captionStatus, setCaptionStatus] = useState('');
   const clips = [...textTrack(project).clips].sort((a, b) => a.start - b.start);
   const pick = (c) => { store.select(c.id); transport.seek(c.start + 0.01); };
   const beginSync = () => { if (!clips.length) return; setSyncing(true); setSyncIndex(0); transport.seek(0); transport.play(); };
   const tapSync = () => { if (!syncing) return; const now = transport.t, current = clips[syncIndex], previous = clips[syncIndex - 1]; if (previous) syncTextClip(store, previous.id, previous.start, now); if (current) { syncTextClip(store, current.id, now); store.select(current.id); } if (syncIndex >= clips.length - 1) { transport.pause(); setSyncing(false); } else setSyncIndex(syncIndex + 1); };
   const autoDraft = async () => { const lines = poem.split('\n').map((x) => x.trim()).filter(Boolean), audio = project.tracks.find((t) => t.kind === 'audio')?.clips[0]; if (!lines.length || !audio) return; setDrafting(true); try { const blob = await loadMedia(audio.mediaId); const segments = await detectVoiceSegments(blob); addTimedLines(store, transport, lines, segments); setPoem(''); } finally { setDrafting(false); } };
+  const autoCaption = async () => { const audio = project.tracks.find((t) => t.kind === 'audio')?.clips[0]; if (!audio || captioning) return; setCaptioning(true); setCaptionProgress(0); setCaptionStatus('Worker Whisper စစ်ဆေးနေသည်…'); try { const health = await checkAsr(); if (!health.ready) throw new Error('Cloudflare Worker Whisper မရရှိသေးပါ'); const blob = await loadMedia(audio.mediaId); const result = await transcribeAudio(blob, { lang: 'my', chunker: wavChunk, onProgress: (p) => setCaptionProgress(Math.round(p * 100)) }); const rows = result.lines.filter((r) => r.text); if (!rows.length) throw new Error('အသံထဲမှ စာသားမတွေ့ပါ'); addAsrLines(store, transport, rows); setCaptionStatus(`${rows.length} caption clips draft အဖြစ်ထည့်ပြီး`); } catch (e) { setCaptionStatus(e.message || 'Auto Caption မအောင်မြင်ပါ'); } finally { setCaptioning(false); } };
   useEffect(() => { if (!syncing) return; const onKey = (e) => { if (e.code === 'Space') { e.preventDefault(); tapSync(); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [syncing, syncIndex, clips]);
   return html`<section class="panel media">
     <div class="phead"><b>${L('text')}</b></div>
@@ -40,6 +42,8 @@ function TextPanel({ store, transport }) {
       <div class="syncrow"><button type="button" class="btn ghost" disabled=${!poem.trim()} onClick=${() => setPoem(normalizeMyanmar(poem))}>Zawgyi → Unicode</button><button type="button" class="btn ghost" disabled=${!sel} onClick=${() => normalizeTextClip(store, sel)}>Normalize clip</button></div>
       <button type="button" class="btn ghost wide" disabled=${!poem.trim()} onClick=${() => { addLines(store, transport, poem.split('\n')); setPoem(''); }}><${Icon} name="text" size=${16} /><span>Add lines as clips</span></button>
       <button type="button" class="btn ghost wide" disabled=${!poem.trim() || !project.tracks.find((t) => t.kind === 'audio')?.clips.length || drafting} onClick=${autoDraft}><${Icon} name="wand" size=${16} /><span>${drafting ? 'Analyzing voice…' : 'Auto-draft from voice'}</span></button>
+      <button type="button" class="btn ghost wide" disabled=${!project.tracks.find((t) => t.kind === 'audio')?.clips.length || captioning} onClick=${autoCaption}><${Icon} name="wand" size=${16} /><span>${captioning ? `Whisper transcribing… ${captionProgress}%` : 'Auto Caption · Worker Whisper'}</span></button>
+      ${captionStatus && html`<small class="muted" role="status">${captionStatus}</small>`}
       <div class="syncrow"><button type="button" class=${cx('btn', syncing && 'on')} disabled=${!clips.length} onClick=${beginSync}>${syncing ? 'Tap next (Space)' : 'Start tap-sync'}</button>${syncing && html`<button type="button" class="btn ghost" onClick=${tapSync}>Tap ${syncIndex + 1}/${clips.length}</button>`}</div>
       <div class="syncrow"><button type="button" class="btn ghost" disabled=${!sel} onClick=${() => splitTextClip(store, sel)}>Split caption</button><button type="button" class="btn ghost" disabled=${!sel || clips.findIndex((x) => x.id === sel) >= clips.length - 1} onClick=${() => { const i = clips.findIndex((x) => x.id === sel); mergeTextClips(store, [sel, clips[i + 1]?.id]); }}>Merge next</button></div>
       <button type="button" class="btn ghost wide" disabled=${!clips.length} onClick=${() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([textToSrt(project)], { type: 'text/plain;charset=utf-8' })); a.download = `${project.name || 'fornyein'}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500); }}><${Icon} name="download" size=${16} /><span>Export SRT</span></button>
