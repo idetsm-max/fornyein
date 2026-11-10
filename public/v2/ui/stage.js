@@ -17,7 +17,7 @@ export function Player({ store, transport, fonts }) {
   const { t, playing } = useTransport(transport);
   const [w, h] = RATIOS[project.size], dur = projectDuration(project);
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
-  const [dim, setDim] = useState({ cw: 960, ch: 540 }), [ov, setOv] = useState(null);
+  const [dim, setDim] = useState({ cw: 960, ch: 540 }), [ov, setOv] = useState(null), lastPaint = useRef(0);
 
   useEffect(() => {                                              // canvas resolution follows the frame size on screen
     const el = frameRef.current; if (!el) return;
@@ -28,6 +28,7 @@ export function Player({ store, transport, fonts }) {
 
   useEffect(() => {                                              // draw + place the selection box
     const cv = canvasRef.current; if (!cv) return;
+    const now = performance.now(); if (playing && now - lastPaint.current < 1000 / 30) return; lastPaint.current = now;
     if (cv.width !== dim.cw) cv.width = dim.cw; if (cv.height !== dim.ch) cv.height = dim.ch;
     const ctx = cv.getContext('2d'); drawFrame(ctx, dim.cw, dim.ch, project, t);
     let b = null; const f = sel ? findClip(project, sel) : null;
