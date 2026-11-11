@@ -1,215 +1,248 @@
-# ForNyein — တည်ဆောက်မှု အစီအစဉ် (Plan.md)
+# ForNyein — တည်ဆောက်မှု အစီအစဉ် (Plan.md) · v3
 
-ဒီဖိုင်ဟာ **တစ်ခုတည်းသော အစီအစဉ်** ဖြစ်ပါတယ်။ chat memory မရှိတဲ့အတွက် session အသစ်တိုင်း ဒီဖိုင်ကို အရင်ဖတ်ပြီးမှ ဆက်လုပ်ပါ။
-အဆင့်တစ်ခု ပြီးတိုင်း ဒီဖိုင်ရဲ့ **§2 လက်ရှိအခြေအနေ** နဲ့ **§9 ဆုံးဖြတ်ချက်မှတ်တမ်း** ကို update လုပ်ပါ။
+ဒီဖိုင်ဟာ **တစ်ခုတည်းသော အစီအစဉ်** ဖြစ်ပါတယ်။ chat memory မရှိတဲ့အတွက် session အသစ်တိုင်း (လူ/AI မရွေး) **ဒီဖိုင်နဲ့ `docs/VERIFY.md` ကို အရင်ဖတ်ပြီးမှ** ဆက်လုပ်ပါ။
+v3 ပြင်ဆင်ချက် (Nov 2026): စစ်ဆေးမှု (`docs/VERIFY.md`) ရလဒ်နဲ့ ကိုက်အောင် status ကို ပြင်၊ **Timeline System v2 spec** (§5) ကို ရှာဖွေလေ့လာမှုအပေါ် အခြေခံပြီး အသစ်ထည့်၊ လမ်းပြမြေပုံ (§6) ကို **Stabilization အရင်** ဖြစ်အောင် ပြန်စီ၊ အလုပ်လုပ်ပုံစည်းမျဉ်း (§3) ကို တင်းကျပ်။
 
 ---
 
 ## ၁။ ရည်ရွယ်ချက်
 
-မြန်မာကဗျာ ဖတ်သံ/ဗီဒီယိုကို **CapCut လို အလုပ်လုပ်ပုံ** (Track → Clip၊ split/trim/ရွှေ့/ဖျက်/ကပ်၊ ညာဘက် Inspector) နဲ့ **ကိုယ်ပိုင် UI** (VidPro နမူနာအတိုင်း) ပါတဲ့ editor တစ်ခု၊ Browser ထဲမှာပဲ MP4 ထုတ်ပေးနိုင်ရမယ်။
+မြန်မာကဗျာ ဖတ်သံ/ဗီဒီယိုကို **CapCut လို အလုပ်လုပ်ပုံ** (Track → Clip၊ split/trim/ရွှေ့/ဖျက်/ကပ်၊ ညာဘက် Inspector) နဲ့ **ကိုယ်ပိုင် UI** (VidPro နမူနာအတိုင်း) ပါတဲ့ editor၊ Browser ထဲမှာပဲ MP4 ထုတ်ပေးနိုင်ရမယ်။
 
-**"ပြီးပြီ" ဆိုတာ ဒီအချက်တွေ အားလုံး မှန်တာ**
-1. ကဗျာတစ်ပုဒ် (ဖတ်သံ audio + စာသား) ကို ထည့်၊ စာတန်းတွေကို ချိန်ကိုက်၊ စာပုံစံ/animation ပြင်၊ Music/နောက်ခံ ထည့်ပြီး **MP4 ထုတ်လို့ရ** — အသံ၊ ပုံ ကိုက်ညီ၊ မြန်မာစာ မှန်။
-2. Page ပြန် reload လုပ်ရင် project မပျောက် (ဖိုင်တွေပါ ပြန်ပေါ်)။
-3. ဖြတ်၊ ဖျက်၊ undo/redo တိုင်း မကျိုး။
-4. Chrome/Edge (desktop) မှာ တည်ငြိမ်၊ preview ချောမွေ့။
+**"ပြီးပြီ" ဆိုတာ ဒီအချက်တွေ အားလုံး မှန်တာ (Release gate)**
+1. ကဗျာတစ်ပုဒ် (ဖတ်သံ + စာသား) ကို ထည့်၊ စာတန်းချိန်ကိုက်၊ စာပုံစံ/animation ပြင်၊ Music/နောက်ခံ ထည့်ပြီး **အသံပါ MP4 ထုတ်လို့ရ** — အသံ/ပုံ ကိုက်ညီ၊ **မြန်မာစာ ဘယ်အဆင့်မှာမှ မပျက်**။
+2. Reload လုပ်ရင် project + media မပျောက်။
+3. ဖြတ်/ဖျက်/ရွှေ့/trim/undo တိုင်း မကျိုး၊ **Preview ကြားရ/မြင်ရတာ = Export ထွက်တာ**။
+4. Chrome/Edge (desktop) မှာ တည်ငြိမ်၊ ၅ မိနစ်ကဗျာ project မှာ ချောမွေ့။
 5. ကိုယ်ပိုင် font (R2 private) သုံးလို့ရ။
 
 ---
 
-## ၂။ လက်ရှိအခြေအနေ (နောက်ဆုံး update: Nov 2026)
+## ၂။ လက်ရှိအခြေအနေ (စစ်ဆေးမှု အခြေခံ — Nov 2026)
 
-| အပိုင်း | အခြေအနေ |
-|---|---|
-| **v1 (`/app`)** | အလုပ်လုပ်ပေမဲ့ patch တွေ ပေါင်းထားတဲ့ ကုဒ်။ **အဆင့် ၇ မှာ အစားထိုးပြီး ဖျက်မယ်။** အခုထိ ထိမထား |
-| **v2 Phase 0 (Shell)** | ✅ Deploy ပြီး (`/v2/`)၊ သင့် screenshot နဲ့ စစ်ပြီး — layout/အရောင် နမူနာနဲ့ ကိုက်၊ dark/light ရ |
-| **v2 Phase 1 (Engine core)** | ✅ GitHub `main` သို့ တင်ပြီး။ Project store/undo-redo, IndexedDB autosave, Canvas renderer, transport, Text tool, poem lines, Inspector, real Player/Timeline ပါဝင်။ Integration bug ပြင်ပြီး local JS syntax + headless Chromium boot smoke test အောင်မြင် |
-| **v2 Phase 2 (Timeline)** | ✅ clip drag/move, edge trim, split, delete/ripple delete, snap toggle, Shift/Ctrl multi-select, keyboard shortcuts, zoom ပါဝင်။ Unit tests ၄/၄ နှင့် headless boot smoke test အောင်မြင်; user စစ်ဆေးပြီး |
-| **v2 Phase 3 (Media + Audio)** | ✅ Local import → IndexedDB Blob, audio metadata/waveform, audio clip, gain/fade/loop Inspector, local media preview, R2 Music library UI, microphone recording UI နှင့် basic audio preview controller ထည့်ပြီး။ Syntax/unit/boot smoke test အောင်မြင် |
-| **v2 Phase 4 (Text core + poem workflow)** | ✅ fill/fill2 gradient, stroke, shadow/glow, effect ၁၅ ခု, In/Out/Loop animation, per-clip font/style, Myanmar text rendering, resize/rotate handles, double-click edit focus, tap-sync, VAD auto-draft + confidence, review/lock/manual correction, split/merge caption tools, SRT export, Zawgyi→Unicode normalization, Typewriter/Word reveal နှင့် Title/Credits/Quote/Lower-third/Karaoke presets ပြီးစီး။ Unit tests ၉/၉ နှင့် boot smoke test အောင်မြင် |
-| **v2 Phase 5 (Audio Mixer + Visual effects)** | ✅ Web Audio graph၊ clip/track Volume၊ Pan၊ 3-band EQ၊ Compressor၊ Echo၊ ConvolverNode Reverb၊ Ducking၊ master limiter၊ analyser meter၊ DSP bypass၊ Fade/Slide transitions၊ R2 Music/BG + SE browser categories၊ audio/visual track routing၊ video/photo Canvas renderer၊ fit mode၊ brightness/contrast/saturation/blur filters၊ visual Inspector နှင့် Overlay logo/corner credit ပြီးစီး။ Unit tests ၁၆/၁၆ နှင့် boot smoke test အောင်မြင် |
-| **v2 Phase 6 (Export)** | ✅ Implementation ပြီးစီး — WebCodecs/Mediabunny video pipeline၊ 720p/1080p/9:16/1:1 presets၊ duration config၊ progress/cancel job၊ v1-like JSON → v3 importer၊ Canvas `drawFrame` → `VideoFrame`၊ MP4/WebM muxer၊ `OfflineAudioContext` Voice/Music/SE gain/fade/pan/ducking render၊ MP4 AAC/WebM Opus track mux၊ Export dialog၊ File System Access streaming + download fallback၊ 1/5-minute frame-count validation နှင့် `scripts/validate-export.mjs` ffprobe checker ပါဝင်။ 1-minute/5-minute 720p H.264/AAC validation artifacts တွင် duration/FPS/codecs/A-V drift `0ms` pass; production-device VLC/phone/YouTube check ကို deployment QA အဖြစ်သာ ဆက်ထား |
-| **v2 Phase 7 (Performance + quality optimization)** | 🚧 Final QA — project complexity metrics၊ 30fps frame-budget utility၊ render stats၊ Player 30fps render throttle၊ visual media cache error handling + explicit URL cleanup၊ canvas/app accessibility labels၊ project JSON export/import manager actions၊ keyboard shortcut help panel၊ runtime error banner၊ `/app` → `/v2` redirect၊ v1 `public/legacy/` preservation နှင့် long-timeline benchmark ပါဝင်။ Unit tests ၂၇/၂၇၊ 10,000-clip complexity scan 32ms နှင့် v2 boot/route smoke tests အောင်မြင်; deployment accessibility audit နှင့် final regression sign-off ဆက်စစ်ရန် ကျန် |
-| **v2 Phase 8 (Auto caption + security)** | 🚧 Text panel integration ပြီး — Cloudflare Workers AI Whisper (`@cf/openai/whisper-large-v3-turbo`) တစ်ခုတည်းသို့ fixed `/api/transcribe` adapter၊ Worker readiness check၊ 16kHz mono WAV chunking၊ Myanmar transcription၊ VAD segments → Whisper chunks → review-ready text clips flow၊ Worker JSON security headers (`nosniff`, `DENY`, `same-origin`) နှင့် ASR unit tests ထည့်ပြီး။ Local Whisper၊ remote ASR URL နှင့် ASR key အားလုံး ဖယ်ရှား; Unit tests ၃၀/၃၀ နှင့် v2 boot smoke test အောင်မြင်; real Myanmar speech benchmark၊ Cloudflare Access `ACCESS_AUD` production configuration နှင့် security deployment audit ဆက်လုပ်ရန် ကျန် |
-| Auto caption (ASR) | 🚧 Cloudflare Workers AI Whisper only — Text panel ရှိ `Auto Caption · Worker Whisper` ခလုတ်က audio clip ကို VAD ခွဲ၊ 16kHz WAV chunk များပို့၊ Myanmar text clips (`draft`/`review`) ဖန်တီးပေးပြီး; real Myanmar speech benchmark မပြီးသေး |
-| Cloudflare Access | ⏸ မဖွင့်ရသေး (AUD tag မရှိသေး) — `/api/*` အားလုံး public |
-| `local-asr/` (ကိုယ့်ကွန်ပျူတာ Whisper server) | ပြင်ဆင်ထား၊ မစမ်းရသေး |
+**Status စကားလုံး (အစဉ်အလာ ပြောင်း)**: 🟡 = ကုဒ်ရေးပြီး (မစစ်/တစ်စိတ်တစ်ပိုင်းစစ်) · 🟢 = **စစ်ပြီး** (ဘယ်သူ၊ ဘာနဲ့ စစ်ကြောင်း မှတ်) · 🔴 = အမှားတွေ့/ပိတ်ဆို့ · ⏸ = ရပ်ထား။ **အထောက်အထားမပါဘဲ 🟢/✅ မရေးရ။**
+
+| အပိုင်း | အခြေအနေ | အထောက်အထား / မှတ်ချက် |
+|---|---|---|
+| v1 (`/app`) | ⏸ `/v2` သို့ redirect လုပ်ပြီး၊ ကုဒ်ကို `public/legacy/` မှာ သိမ်း | ဖျက်ခွင့် = Release gate ပြီးမှ |
+| Shell (UI/theme) | 🟢 | user screenshot + sandbox screenshot (dark/light) |
+| Engine core (store/undo/autosave/render/transport) | 🟢 | unit ၈ + e2e ၁၄ pass (VERIFY §1) |
+| Timeline ops (move/trim/split/ripple/snap/multi-select/zoom) | 🔴 | action အဆင့် pass (text split+undo, ripple, lock, trim limit)၊ **B4** (audio in-point) နဲ့ **B7** (clip ထပ်လို့ရ) ကျ။ Mouse gesture မစစ်ရသေး |
+| Media import + audio clip + waveform | 🟡 | import→tile→audio clip ပေါ်တာ pass။ **B5** (preview re-seek ~8/s) |
+| Text tools + poem workflow | 🔴 | preset ခလုတ်၊ Auto-draft (±0.02 s)၊ SRT pass။ **B1: မှန်တဲ့ Unicode စာကို `normalizeMyanmar` က ဖျက်** |
+| Audio mixer (EQ/comp/reverb/echo/duck) preview | 🟡 | UI ရှိ၊ အသံ နားနဲ့ မစစ်ရသေး |
+| Visual (video/photo/filters/overlay logo/transitions) | 🟡 | မစစ်ရသေး |
+| **Export (MP4/WebM)** | 🔴 | အသံမပါ MP4 pass (ffprobe H.264 1280×720 30fps 180f 6.0s)။ **အသံပါရင် မအောင် (B2)၊ WebM class နာမည်မှား (B3)၊ AAC→Opus fallback မရှိ (B8)၊ export အသံက EQ/reverb/echo/loop မသုံး (B6)** |
+| Auto caption (Cloudflare Workers AI Whisper) | 🔴/⏸ | Workers AI Whisper က မြန်မာအသံကို တခြားစာလုံး (Georgian/Cyrillic) နဲ့ ပြန်ထုတ်ကြောင်း စမ်းပြီး (Nov 2026)။ ကုဒ်ရှိနေပေမဲ့ **မြန်မာအတွက် အသုံးမကျ** — §6 အဆင့် A ရဲ့ benchmark မှာ ပြန်စစ် |
+| Cloudflare Access | ⏸ မဖွင့်ရသေး | `/api/*` public (origin စစ်ပဲ ရှိ) |
+| `local-asr/` | ⏸ ပြင်ဆင်ထား၊ မစမ်းရ | |
+
+**ဖြစ်ရပ်မှတ်**: repo ကို session နှစ်ခုက တစ်ပြိုင်နက် ရေးရင် ဖိုင်ထပ်ရေးခံရတာ ၂ ကြိမ်ကြုံ။ ပြီးခဲ့တဲ့ ✅ တွေကို VERIFY နဲ့ ပြန်တိုက်ပြီး အပေါ်ကလို ပြင်ထားတယ်။
 
 ---
 
-## ၃။ အလုပ်လုပ်မယ့် နည်းလမ်း (ဒါကို တိတိကျကျ လိုက်နာမယ်)
+## ၃။ အလုပ်လုပ်မယ့် နည်းလမ်း (တင်းကျပ်)
 
-1. **အဆင့်တစ်ခုချင်း push → သင်စစ် → နောက်တစ်ဆင့်။** "အကုန်ပြီးမှ စမ်း" မလုပ်ဘူး။
-2. **ကျွန်တော် push မလုပ်ခင်** sandbox ထဲမှာ အလိုအလျောက်စမ်းစစ်မှု (node syntax check + headless Chromium e2e: ခလုတ်နှိပ်၊ စာရိုက်၊ undo၊ reload၊ screenshot) ကို run ပြီး အမှားမရှိမှ တင်မယ်။ စမ်းစစ်မှု script တွေကို `tests/` ထဲ ထည့်ထားမယ်။
-3. **သင့်ဘက်က** အစစ် Chrome မှာ စစ်ပြီး screenshot / error စာသား ပို့ — ကျွန်တော် browser အစစ်ကို မမြင်နိုင်လို့ ဒါက မရှိမဖြစ်။
-4. အဆင့်တိုင်းမှာ **လက်ခံစစ်ဆေးချက်စာရင်း (Acceptance checklist)** ရှိမယ် (§5)။ အားလုံး ✓ မှ ပြီးတယ်လို့ သတ်မှတ်မယ်။
-5. `/v2/` မှာပဲ ဆောက်မယ်၊ **အဆင့် ၇ မပြီးမချင်း `/app` (v1) ကို မဖျက်ဘူး** (အလုပ်လုပ်နေတာကို မဆုံးရှုံးအောင်)။
-6. ဖိုင်တစ်ခုကို ~၃၀၀ လိုင်းအောက် module သေးသေးလေးတွေနဲ့ ရေး (ကျိုးရင် ရှာလွယ်အောင်)။
-7. Binary ဖိုင် (font၊ ပုံ) ကို GitHub connector နဲ့ မတင်နိုင်လို့ သင်ကိုယ်တိုင် R2 / GitHub web မှာ တင်ရမယ်။
+1. **Writer တစ်ယောက်ပဲ**: repo မှာ တစ်ချိန်တည်း ရေးသူ တစ်ဦးတည်း။ မရေးခင် `git pull`/နောက်ဆုံး main ကို ဖတ်၊ ဖိုင်ကို SHA နဲ့မှ update။ **Feature ကြီးတွေကို branch (`feat/...`) မှာ လုပ်ပြီး စစ်ပြီးမှ main သို့ merge** (PR)။
+2. **စမ်းမှ တင်**: node syntax + unit + `known-bugs.mjs` + e2e (`public/v2/tests/`)။ **Export ပြောင်းရင် ffprobe နဲ့ အသံ/ပုံ ပါ/မပါ၊ duration စစ်** ဖို့ မဖြစ်မနေ။
+3. **စစ်ပြီးသားဆိုတာ အထောက်အထားနဲ့**: Plan §2 ကို ပြင်တိုင်း "ဘာနဲ့ စစ်" ရေး (`tests/...`, screenshot, ffprobe output)။
+4. **သင့် Chrome မှာ စစ်** (မြန်မာ font၊ အသံကြား၊ mouse gesture၊ အစစ် export) — sandbox မှာ မရတာတွေကို `docs/VERIFY.md` §3 ထဲ စာရင်းသွင်းထား။
+5. **CI**: `.github/workflows/test.yml` မှာ unit + known-bugs ကို push တိုင်း run (ပျက်ရင် merge မလုပ်)။ (အဆင့် S မှာ ထည့်)
+6. **ကုဒ်ပုံစံ**: ဖိုင် ~၃၀၀ လိုင်းအောက်၊ **လိုင်းတစ်ခု ~၁၆၀ လုံးအောက်** (အခု one-liner ရှည်တွေက review မလုပ်နိုင်လို့)။ Module တစ်ခုက တာဝန်တစ်ခု။
+7. Binary ဖိုင် (font/ပုံ) ကို connector နဲ့ မတင်နိုင် — သင်ကိုယ်တိုင် R2 / GitHub web မှာ တင်။
+8. **Definition of Done**: unit test + e2e (သို့ ffprobe) + လက်ဖြင့်စစ်စာရင်း ✓ + docs update။ တစ်ခုမပြည့်ရင် 🟡 ပဲ။
 
 ---
 
 ## ၄။ ဖွဲ့စည်းပုံ (Architecture)
 
 ### ၄.၁ Tech
-- Build tool မရှိ (Cloudflare Workers static assets က `public/` ကို တိုက်ရိုက်ပေး)။ Native ES modules။
-- UI: **Preact + htm** (jsDelivr မှာ version ပုံသေ)၊ icon = inline SVG၊ စာလုံးအားလုံး `ui/strings.js` တစ်နေရာထဲ။
-- Preview/Export: **Canvas 2D** (`drawFrame` တစ်ခုတည်း)၊ **Web Audio**၊ MP4 = **Mediabunny** (WebCodecs)။
-- သိမ်းဆည်း: **IndexedDB** (project JSON + import လုပ်ထားတဲ့ media Blob)။ Library = **R2 (private)**။
-- Worker (`worker/src/index.ts`): `/api/library/:type`၊ `/api/asset/:type/:name`၊ `/api/presets`၊ `/api/transcribe` (ASR၊ ရပ်ထား)၊ Cloudflare Access JWT စစ် (AUD ထည့်မှ ဖွင့်)။
+- Build tool မရှိ (Workers static assets က `public/` ကို တိုက်ရိုက်ပေး)။ Native ES modules။ UI = **Preact + htm** (CDN ပုံသေ version)။
+- Preview/Export = **Canvas 2D `drawFrame`** တစ်ခုတည်း၊ အသံ = **Web Audio** graph builder တစ်ခုတည်း (Preview + OfflineAudioContext)၊ MP4/WebM = **Mediabunny** (WebCodecs)။
+- သိမ်း = **IndexedDB** (project JSON + media Blob + waveform/thumbnail cache)၊ Library = **R2 private**၊ Worker = `/api/library|asset|presets|transcribe`။
+- `navigator.storage.persist()` ကို တောင်းပြီး browser က IndexedDB ကို မဖျက်အောင်။
 
-### ၄.၂ ဖိုင်အစီအစဉ် (`public/v2/`)
+### ၄.၂ Project model (JSON v3 → **v3.1: source range ထည့်**)
 ```
-index.html  main.js  styles.css  editor.css
-engine/   model.js store.js storage.js transport.js render.js fonts.js actions.js        (ရှိပြီး)
-          timeline.js (clip ops)  media.js  audio.js  export.js  myanmar.js  captions.js  (နောက်ပိုင်း)
-ui/       deps.js icons.js strings.js widgets.js hooks.js chrome.js panels.js stage.js   (ရှိပြီး)
-tests/    unit/*.mjs  e2e/*.js  harness.md
+project = { version:3, id, name, size, fps:30, tracks:[track], markers:[{id,t,label}], media:{id:{name,kind,dur,src}} , links:{} }
+track   = { id, kind:'text'|'video'|'overlay'|'audio', name, hidden, locked, muted, solo, height:'s|m|l', magnet?:bool, clips:[clip] }
+clip    = { id, kind, start, dur,                       // timeline range (စက္ကန့်၊ frame ကို quantize)
+            src?: { mediaId, in, out, speed:1 },        // SOURCE range (OTIO source_range လို) — media clip အားလုံးမှာ မဖြစ်မနေ
+            link?: groupId, ...kind ဆိုင်ရာ }
+  text  : { text, style:{...}, anim:{in,out,loop}, pos:{x%,y%,rot}, state:'draft|review|locked', conf }
+  audio : { role:'voice|music|sfx', gain, fade:{in,out}, fx:{eq,comp,reverb,echo}, loop }
+  video/image: { fit, filters:{...}, pos, scale, opacity }
 ```
+- **dur = (src.out − src.in) / speed** (loop မဟုတ်ရင်)။ **Split** = နှစ်ပိုင်းစလုံး `src.in/out` ခွဲ၊ **trim-left** = `src.in += Δ`၊ **slip** = start/dur မပြောင်းဘဲ `src.in/out` ရွှေ့။ (B4 ကို အရင်းကပြင်။)
+- **Time quantize**: edit တိုင်းမှာ `start/dur` ကို `round(t·fps)/fps` (`engine/time.js`)။ အကြောင်းရင်း: float drift၊ frame-accurate export၊ SRT။ (နောက်ပိုင်းမှာ integer frame / rational ပြောင်းဖို့ ချန်ထား။)
+- **Schema migration**: `migrate(project)` (v1→v3→v3.1)၊ project ဖွင့်တိုင်း validate၊ မှားရင် ပြင်/တိုင်ကြား (ပျောက်မသွားစေ)။
+- Undo = snapshot history (အခုအတိုင်း၊ ≤ ၅၀၀၀ clip အထိ ပြဿနာမရှိ)၊ **drag တစ်ခုလုံး = undo ၁ ဆင့်**၊ undo label (e.g. "Split clip") ကို tooltip မှာ ပြ။
 
-### ၄.၃ Project model (JSON v3)
-```
-project = { version:3, id, name, size:'16:9|9:16|1:1|4:5', fps:30, tracks:[track], markers:[], media:{ <id>: {name,kind,dur,src:{type:'idb'|'r2',key}} } }
-track   = { id, kind:'text'|'video'|'overlay'|'audio', name, hidden, locked, muted, clips:[clip] }
-clip    = { id, kind, start, dur, in(source offset) , ...kind ဆိုင်ရာ }
-  text   : { text, style:{font,size,fill,fill2,k,strokeOn,stroke,opacity,bold,italic,underline,align,fx[]}, anim:{in,out,loop,dur}, pos:{x%,y%,rot} }
-  audio  : { mediaId, gain, fade:{in,out}, fx:{eq,comp,reverb,echo,duck}, loop }
-  video  : { mediaId, fit:'cover|contain', speed, filters:{brightness,contrast,saturation,blur} }
-  image  : (overlay) { mediaId, pos, scale, opacity }
-```
-- Clip အားလုံး split / trim / move / delete / ripple / snap ကို **တူညီစွာ** သုံး (`engine/timeline.js`)။
-- Time က စက္ကန့် (float)၊ ပုံ/စာ နေရာက **% ဖြစ်လို့** aspect ratio ပြောင်းလည်း layout မပျက်။
-- Undo/redo = project snapshot history (`engine/store.js`၊ ရှိပြီး)။ `edit(fn,{key})` နဲ့ slider/စာရိုက် တစ်ခါတည်း undo step။
-
-### ၄.၄ Engine ပိုင်းတွေ
-- **render.js**: `drawFrame(ctx,W,H,project,t)` — Preview နဲ့ Export တူတူသုံး၊ ကျပန်း (random) မသုံး (seeded)၊ font မဖွင့်ခင် မဆွဲ။
-- **transport.js**: အခု frame timer၊ **Phase 3 မှာ audio clock ကို master** လုပ်မယ်။
-- **audio.js**: `buildGraph(ctx, project)` တစ်ခုတည်းကို Preview (AudioContext) နဲ့ Export (OfflineAudioContext) နှစ်ခုလုံးသုံး (v1 မှာ အလုပ်ဖြစ်ခဲ့တဲ့ ပုံစံ)။
-- **export.js**: frame တိုင်း `await` နဲ့ decode/render → Mediabunny `CanvasSource` + `AudioBufferSource`၊ progress/cancel၊ AAC မရရင် Opus။
-- **media.js**: ဖိုင် import → Blob ကို IndexedDB ထဲ သိမ်း (reload လုပ်လည်း ပြန်ပေါ်)၊ decode cache၊ waveform peaks cache၊ video thumbnails။
-- **myanmar.js**: syllable ခွဲ၊ Zawgyi→Unicode၊ `Intl.Segmenter('my')` word wrap၊ (grapheme ကို မသုံးရ — သရအမှတ်တွေ ပြတ်)။
+### ၄.၃ Engine ပိုင်းများ
+`model.js` `store.js` `storage.js` `transport.js` `render.js` `fonts.js` `actions.js` (ရှိပြီး) · **အသစ်/ပြင်**: `time.js` (quantize)၊ `timeline.js` (clip ops တစ်နေရာထဲ)၊ `audio-graph.js` (Preview/Export မျှဝေ)၊ `peaks.js` (waveform LOD)၊ `myanmar.js` (syllable/Zawgyi)၊ `migrate.js`။
 
 ---
 
-## ၅။ အဆင့်များ (အသေးစိတ် + လက်ခံစစ်ဆေးချက်)
+## ၅။ Timeline System v2 — ရှာဖွေလေ့လာမှုအပေါ် အခြေခံ spec
 
-### အဆင့် ၀ — Shell ✅
-နမူနာ layout၊ dark/light၊ ခလုတ်/tab တွေ အတု demo။ *(ပြီး)*
+လေ့လာမှု: DaVinci Resolve / Final Cut / Nuke-Hiero ရဲ့ edit mode များ၊ OpenTimelineIO (source range + rational time)၊ CapCut desktop (magnetic main track, snapping, split/delete-left/right)၊ web editor များ (OpenCut, OpenReel, Kapwing, Editframe) ရဲ့ performance ဗျူဟာ။
 
-### အဆင့် ၁ — Engine core ⚙️ (ကုဒ်ပြီး၊ မတင်ရသေး)
-**ပါတာ**: project model၊ store+undo/redo၊ autosave (IndexedDB)၊ My Projects menu (New/Open/Delete)၊ Canvas renderer (text clip)၊ transport (Play/Pause/seek)၊ Text tool (Add text၊ ကဗျာ paste → စာကြောင်းတစ်ကြောင်း clip တစ်ခု)၊ Inspector (font/style/color/stroke/size/opacity/position/rotate/timing)၊ canvas ပေါ်မှာ စာကို ဆွဲရွှေ့ + center snap၊ keyboard (Space/Del/Ctrl+Z/Y/D/←→)၊ R2 fonts အလိုအလျောက် တင်။
-**စစ်ဆေးချက်**: ☐ Add text → clip ပေါ်၊ canvas မှာ စာမြင် ☐ Inspector ပြင် → canvas ချက်ချင်းပြောင်း ☐ Ctrl+Z/Y ☐ ကဗျာ paste → clip များ ☐ Play → time ပြေး ☐ Reload → ဗလာ၊ My Projects ကနေ ပြန်ဖွင့် → ပြန်ပေါ် ☐ မြန်မာစာ မှန် (သင့်ကွန်ပျူတာမှာ)။
-**တိုးတက်ဖို့ ပြင်စရာ (Phase 1.5)**: Add text/lines က **အရင် clip နဲ့ မထပ်ရ** (လက်ရှိ playhead မှာ ထည့်လို့ ထပ်နေတာ တွေ့ပြီး) — အဆုံးကနေ ဆက်ထည့်၊ ထပ်ရင် lane အသစ်။
+### ၅.၁ အချိန်နဲ့ Clip model (အခြေခံ — T1)
+- §၄.၂ ရဲ့ `src {in,out}` + frame-quantized time။ **Audio/video clip ကို split/trim လုပ်ရင် အသံ/ပုံ မရွေ့၊ မပြန်စ။**
+- Clip မှာ တူညီသော ပြင်ဆင်မှု API (`timeline.js`): `move / trim(side) / split / slip / slide / roll / ripple* / delete(ripple?) / duplicate / insert / overwrite`။ UI၊ keyboard၊ test အားလုံး ဒီ API ကိုပဲ ခေါ်။
 
-### အဆင့် ၂ — Timeline (CapCut လို clip အလုပ်)
-- Clip **ဆွဲရွှေ့**၊ **အစွန်းဆွဲ trim**၊ **Split** (Ctrl+B/S playhead မှာ)၊ **Delete / Shift+Delete (ကွက်လပ်ပိတ်)**၊ **Delete left/right (Q/W)**၊ **Snap** (playhead/clip အစွန်း၊ Shift=ပိတ်)၊ **Multi-select** (Shift/Ctrl+click၊ box select)၊ **Duplicate**၊ Marker (M)။
-- Track အတွင်း clip ထပ်တာကို ကာကွယ် (lane အလိုအလျောက် ထပ်ထည့် သို့ တွန်း)။ Track hide/lock/mute အလုပ်လုပ်။
-- **Zoom** (Ctrl+wheel၊ slider၊ Fit)၊ ဘယ်ညာ scroll၊ playhead လိုက် scroll၊ Ruler scrub။
-- Track အသစ်ထည့်/ဖျက်/နာမည်ပြောင်း။
-**စစ်ဆေးချက်**: ☐ clip ဆွဲ/trim/split/delete တိုင်း Ctrl+Z နဲ့ ပြန်ရ ☐ မထပ် ☐ ၂၀၀ clip ရှိလည်း ချောမွေ့ ☐ Zoom ချဲ့/ချုံ့ ☐ ကီးဘုတ် shortcut များ။
+### ၅.၂ Track နဲ့ lane စည်းမျဉ်း (B7 ကိုဖြေ — T1)
+- **တစ်ခု lane မှာ clip မထပ်ရ။** ထပ်မယ့် drop/move ဆိုရင် (က) text/overlay = **lane အသစ် အလိုအလျောက်ဖွဲ့** (CapCut လို track အသစ်)၊ (ခ) main track = နောက်ကို တွန်း (insert) သို့ ပယ်။
+- **Main track (Video) magnetic** ဖွင့်/ပိတ် (CapCut `P`): ဖွင့်ရင် ဖျက်တာ၊ trim တာ ကွက်လပ်မကျန်အောင် ကပ်လာ။
+- Track control: hide / lock / **mute / solo** / ပြန်စီ (drag) / height S-M-L / collapse / နာမည်ပြောင်း / ဖျက်။ Lock = ဘယ်လုပ်ဆောင်ချက်မှ မထိ (အခု ပြီး)။
+- **Link group** (`clip.link`): ဖတ်သံ clip + ၎င်းကနေ ထုတ်ထားတဲ့ စာတန်းတွေကို ချိတ် — ဖတ်သံကို ရွှေ့/ဖြတ်ရင် စာတန်းပါ လိုက် (v1 "စာတန်းပါလိုက်")၊ link ဖြုတ်လို့ရ။
 
-### အဆင့် ၃ — Media + Audio (အသံ clock = master)
-- **Local import** (ဖိုင်ရွေး/ဆွဲချ) → IndexedDB ထဲ Blob သိမ်း၊ **Library tab** = R2 (Music/BG/Logo/SE) tiles + preview။
-- **Record tab** (microphone → ကဗျာဖတ်သံ clip)။
-- Audio clip: waveform၊ gain၊ fade in/out၊ mute၊ loop (Music)။ Video/Photo clip: thumbnail strip၊ fit၊ speed။
-- Preview audio = Web Audio (clip အကုန် schedule)၊ **audio clock က time ကို ထိန်း** (v1 နည်းအတိုင်း)၊ seek/scrub အဆင်ပြေ။
-- Video ဖိုင်ကို ပင်မအဖြစ်သုံးရင် ပုံကို clip နဲ့အတူ ဖြတ်/ရွှေ့လို့ရ (v1 မှာ မရသေးတာ)။
-**စစ်ဆေးချက်**: ☐ ဖတ်သံ import → Timeline မှာ waveform ☐ Reload → ဖိုင် ပြန်ရွေးစရာမလို ☐ Play → အသံ၊ playhead ကိုက် ☐ Record → clip ☐ R2 Music tile → ထည့်လို့ရ။
-
-### အဆင့် ၄ — Text စနစ် ပြည့်စုံ + ကဗျာ workflow
-- Style အားလုံး: **အရောင်နှစ်မျိုး (fill/fill2/k)**၊ stroke ပါ/မပါ၊ shadow/glow/gradient စသည့် **effect ၁၅ ခု**၊ animation **In / Out / Loop** (clip တစ်ခုချင်း)၊ per-clip font၊ canvas ပေါ်မှာ **ချဲ့/လှည့် handle**၊ double-click ပြင်။
-- ကဗျာ workflow: paste → စာကြောင်းခွဲ → **Tap-sync** → **Auto-draft (VAD)** → confidence/Review/Lock → split/merge စာတန်း၊ SRT export၊ Zawgyi→Unicode၊ syllable အလိုက် Typewriter/Word reveal။
-- Presets/Templates (Title card၊ Credits၊ ရှိပြီးသား 5 ခု)။
-**စစ်ဆေးချက်**: ☐ အချိန်ကိုက် (ဖတ်သံနဲ့ စာတန်း ±၂၀၀ms အတွင်း) ☐ Preview ≈ Export (တူ) ☐ မြန်မာသရ/သတ် မှန် (effect ၁၅ ခု မှာပါ စမ်း)။
-
-### အဆင့် ၅ — Audio Mixer + Visual effects
-- Track တစ်ခုချင်း **EQ / Compressor / Reverb / Echo / Pan / Volume**၊ **Ducking** (ဖတ်သံပေါ်မှာ Music ချ)၊ SE clip (R2)၊ Limiter၊ Meter၊ Bypass compare — v1 `audio.js` ကို clip model အပေါ် ပြန်တည်ဆောက်။
-- Video/Photo **Filters/Adjust** (brightness/contrast/saturation/blur)၊ Transitions အခြေခံ (fade/slide)၊ Overlay logo (corner credit)။
-
-### အဆင့် ၆ — Export
-- Mediabunny MP4 (H.264 + AAC)၊ progress/cancel၊ Resolution ရွေး (720p/1080p/9:16 …)၊ **Preview နဲ့ Export တူညီ**၊ အသံ offline render (ဖတ်သံ/Music/SE/ducking)။
-- ရှည်တဲ့ export အတွက် File System Access API streaming (option)။
-- **အဟောင်း (v1) project JSON → v3 ပြောင်းယူ** importer။
-**စစ်ဆေးချက်**: ☐ ၁ မိနစ်၊ ၅ မိနစ် export ☐ VLC / ဖုန်း / YouTube တင်လို့ ☐ ffprobe နဲ့ A/V sync ≤ ၄၀ms ☐ ၉:၁၆ ☐ မြန်မာစာ မှန်။
-
-### အဆင့် ၇ — Polish + v1 အစားထိုး
-- Project manager (rename/duplicate/export-import JSON)၊ Shortcut စာရင်း (? panel)၊ Performance (≥30fps)၊ Memory (decode buffer ကို လိုအပ်မှ ထိန်း)၊ Error banner၊ Accessibility အခြေခံ။
-- `/app` ကို `/v2` ကို ညွှန်ပြ၊ v1 ကို `public/legacy/` သို့ ရွှေ့၊ တည်ငြိမ်ပြီးမှ ဖျက်။
-
-### အဆင့် ၈ — Auto caption (ASR) + လုံခြုံရေး
-- **ဆုံးဖြတ်ချက်ဂိတ်**: (က) ကိုယ့်ကွန်ပျူတာမှာ မြန်မာ fine-tune Whisper (`local-asr/`)၊ (ခ) အခကြေးငွေပေး API၊ (ဂ) မလုပ်ဘဲ Tap-sync/Auto-draft နဲ့ပဲ။ ပိုကောင်းတဲ့ model ရှာ၊ တကယ်ကဗျာဖတ်သံနဲ့ တိုင်းတာပြီးမှ ရွေး။
-- အလုပ်လုပ်ပုံ: pause နဲ့ chunk ဖြတ် → ASR → (A) စာသားထုတ်၊ (B) **ကိုယ့်စာသားကို syllable alignment နဲ့ ချိန်ကိုက်** (ကုဒ်က v1 `autocaption.js` မှာ ရှိပြီး — အဆင့် ၄ clip model အပေါ် ပြောင်းသုံး)။
-- **Cloudflare Access ဖွင့်** + `ACCESS_AUD` ထည့် — `/api/*` ကာကွယ်။
-
----
-
-## ၆။ v1 → v2 အင်္ဂါရပ် လွှဲပြောင်းမှု (မကျန်ရစ်အောင်)
-
-| v1 | v2 မှာ ဘယ်အဆင့် |
+### ၅.၃ Edit tools (CapCut + DaVinci "smart trim" — T2)
+| လုပ်ဆောင်ချက် | အပြုအမူ |
 |---|---|
-| Tap-sync၊ Auto-draft (VAD)၊ Review/Lock | ၄ |
-| စာ effect ၁၅ ခု၊ animation၊ preset | ၄ |
-| အရောင်နှစ်မျိုး၊ stroke on/off၊ per-line style | ၄ |
-| Zawgyi→Unicode၊ syllable ကိရိယာ | ၄ (`myanmar.js`) |
-| Font (R2 `Fonts/`၊ ကိုယ်ပိုင်ဖိုင်) | ၁ ✅ (R2) / ၄ (ကိုယ်ပိုင်ဖိုင် ခလုတ်) |
-| R2 Music/BG/Logo/SE tiles | ၃ |
-| အသံသွင်း | ၃ |
-| Audio Mixer (EQ/comp/reverb/echo/duck/SE/limiter) | ၅ |
-| Credits/Title card၊ corner credit | ၄–၅ (template) |
-| SRT export | ၄ |
-| MP4 export (AAC→Opus fallback) | ၆ |
-| Voice split/trim/ဖြတ်ထုတ်၊ undo | ၂ (clip အားလုံးအတွက်) |
-| 9:16 safe-area guide | ၄ (overlay) |
+| Select/Move | clip အလယ်ကို ဆွဲ၊ **Shift = snap ပိတ်၊ Alt = copy** |
+| Trim | အစွန်း ၉ px ဆွဲ၊ **modifier မပါ = normal၊ Shift = ripple trim (နောက်က ကပ်ရွှေ့)၊ Ctrl/Cmd = roll (ကပ်နေတဲ့ clip နှစ်ခုကြားနယ်ကို ရွှေ့)** |
+| Slip / Slide | media clip အလယ်ကို **Alt+ဆွဲ = slip** (အကြောင်းအရာရွှေ့)၊ **Ctrl+Alt = slide** |
+| Razor / Split | `B` tool၊ `Ctrl+B`/`S` playhead မှာ ရွေးထားတာ (မရွေးရင် under-playhead အားလုံး)၊ `Ctrl+Shift+B` = track အားလုံး |
+| Delete | `Del` = ကွက်လပ်ချန်၊ `Shift+Del` = ripple၊ `Q`/`W` = playhead ရဲ့ ဘယ်/ညာ ဖျက် |
+| In/Out range | `I`/`O` မှတ် → **Lift (ကွက်လပ်ချန်) / Extract (ripple) ဖြတ်ထုတ်** (`X`/`Shift+X`)၊ ဖတ်သံထဲက မလိုတဲ့အပိုင်းဖြတ်ရန် v1 အလုပ် |
+| Drop media | Timeline ပေါ် drop = **Overwrite** (ပုံမှန်)၊ `Ctrl` = **Insert** (ripple) |
+| Multi-select | Shift/Ctrl+click၊ **box select**၊ select-all-right (`Alt+→`)၊ ရွေးထားတာအားလုံး တူညီစွာ ရွှေ့/ဖျက်/trim |
+| Nudge | ရွေးထားတာကို `←/→` = ၁ frame၊ `Shift+←/→` = ၁ s |
+| Marker | `M` (playhead)၊ marker ကို snap point အဖြစ်သုံး၊ ruler မှာ ပြ |
+
+### ၅.၄ Snapping
+- Snap points: playhead၊ clip အစ/အဆုံး (track အားလုံး)၊ marker၊ In/Out၊ **ဖတ်သံ VAD phrase boundary** (စာတန်းကို ဖတ်သံနဲ့ ကပ်ဖို့)၊ ruler grid။
+- Threshold **၈ px** (zoom မှ မူတည်)၊ ဖြူမျဉ်း guide၊ **Shift = ပိတ်**၊ toolbar ရဲ့ Snap toggle (`N`)။ Snap ရလဒ်ကို frame ကို quantize။
+
+### ၅.၅ Playhead / Scrub / Playback
+- **အသံ = Web Audio schedule** (`AudioBufferSourceNode.start(when, offset=src.in+..., dur)`)၊ **`<audio>.currentTime` ကို play နေစဉ် ထပ်ထပ်မပြင်** (B5)။ Play/seek/edit-during-play မှာပဲ reschedule။ AudioContext clock = master။
+- **Audio scrubbing** (ruler ဆွဲတဲ့အခါ ၈၀–၁၅၀ ms အသံတိုထွက်) — ဖတ်သံအစရှာဖို့ အရေးကြီး။
+- Shortcut: `Space` play/pause၊ `J/K/L` shuttle (နောက်/ရပ်/ရှေ့၊ ထပ်နှိပ် = မြန်)၊ `←/→` frame၊ `↑/↓` ရှေ့/နောက် edit point၊ `Home/End`၊ `\` loop selection၊ "play around cursor"။
+- Follow-playhead: Auto (ညာစွန်းရောက်မှ) / Smooth / Off။
+
+### ၅.၆ Zoom / Scroll / Layout
+- Zoom: Ctrl+wheel (cursor ဗဟို)၊ `+/-`၊ **Fit (`Shift+Z`)၊ Zoom to selection**၊ slider။ **ပုံမှန် pps = ၆၀** (အခု ၁၀ — clip ကျဉ်းလွန်း)၊ ကဗျာ project ဖွင့်ချိန် Fit မဟုတ်ဘဲ ရွေးထားတဲ့အပိုင်းကို ပြ။
+- Minimap/overview bar (ကဗျာရှည်ရင် လွယ်)၊ ဒေါင်လိုက် scroll (track များရင်)၊ sticky track header။
+
+### ၅.၇ Performance (ရှာဖွေတွေ့ချက် — T5)
+- **Virtualize**: မျက်နှာပြင်ပေါ်က clip ကိုပဲ render (windowing)၊ clip ≥ ၃၀၀ ဆိုရင် **canvas timeline** သို့ ပြောင်းသုံးဖို့ ပြင်ဆင်။ Playhead ကို သီးသန့် component (ရှိပြီး) — transport tick တိုင်း အားလုံး re-render မလုပ်။
+- **Waveform LOD pyramid**: peaks ကို ၁×/၄×/၁၆×/၆၄× ဖြင့် တစ်ခါတည်းတွက် (Worker)၊ IndexedDB မှာ cache၊ zoom အလိုက် level ရွေး။
+- **Video thumbnails**: WebCodecs/`<video>` နဲ့ Worker ထဲ၊ viewport အတွက်ပဲ၊ LRU + IndexedDB cache။ **Frame ghosting** (scrub ချိန် မဲမဲ frame မပေါ်) ။
+- Preview: **adaptive resolution** (frame-budget ကျော်ရင် canvas scale လျော့)၊ Perf HUD (fps, render ms) ကို dev toggle။
+- **Budget**: clip ၁၀၀၀ မှာ pan/zoom ≥ ၆၀ fps၊ ကဗျာ ၅ မိနစ် (စာတန်း ~၆၀ + ဖတ်သံ + music) preview ≥ ၃၀ fps၊ project ဖွင့် ≤ ၃ s။
+
+### ၅.၈ ကဗျာအတွက် သီးသန့် Caption lane tools (T6)
+- **စာတန်းကို timeline ထဲမှာပဲ ပြင်** (double-click inline)၊ စာရင်းနဲ့ timeline နှစ်ဘက်ပြောင်း sync။
+- Bulk: **ရွေးထားတာကို ±frame/၁ s ရွှေ့**၊ "ဒီနေရာကနောက် အားလုံးရွှေ့ (ripple captions)"၊ **ဖတ်သံ phrase boundary သို့ ကပ် (snap-to-voice)**။
+- **Confidence အရောင်** (အနီ/ဝါ/စိမ်း)၊ Review next (`R`)၊ Lock (`L`)၊ Tap-sync (အရင် v1 အတိုင်း — live)၊ Auto-draft (ရှိပြီး)။
+- **Word/syllable အဆင့် timing** (Karaoke) ကို clip အတွင်း keyframe အဖြစ် (နောက်ပိုင်း)။
+- မြန်မာစာ မပျက်ရေး: caption ပြုပြင်ရေး tool တွေက **စာသားကို မပြောင်း** (B1 ပြင်ပြီးမှ)။
+
+### ၅.၉ Accessibility + Discoverability
+- Clip ကို keyboard focus (Tab)၊ nudge/trim/delete keyboard နဲ့၊ `aria-label` (track, clip, time)၊ `?` = shortcut စာရင်း (ရှိပြီး)၊ Tooltip မှာ shortcut ပါ။
 
 ---
 
-## ၇။ စမ်းသပ်မှု ဗျူဟာ
+## ၆။ လမ်းပြမြေပုံ (ပြန်စီ — Stabilization အရင်)
 
-- **Unit** (`tests/unit`, node): model/store (undo coalescing)၊ clip operations (split/trim/ripple/snap)၊ myanmar.js (syllable/Zawgyi)၊ alignment။
-- **E2E** (`tests/e2e`, headless Chromium + local bundle): ခလုတ်နှိပ်/စာရိုက်/ဆွဲ/undo/reload/project ပြန်ဖွင့်/export တစ်ခုချင်းကို screenshot နဲ့ စစ်။
-- **Golden frames**: render ထားတဲ့ frame တွေကို reference နဲ့ နှိုင်း (Preview = Export အတွက်)။
-- **လက်ဖြင့် (သင်)**: အဆင့်တိုင်း checklist၊ Windows Chrome/Edge၊ မြန်မာ font ကိုယ်တိုင်ကြည့်။
-- Headless sandbox မှာ မြန်မာ font မရှိလို့ စာပုံသဏ္ဍာန် မှန်/မမှန်ကို **သင့် browser မှာပဲ** စစ်နိုင်တယ်။
+### Phase S — Stabilization (ယခု၊ **feature အသစ် မထည့်ခင်**)
+| # | လုပ်ရန် | ပိတ်ကွင်း (done when) |
+|---|---|---|
+| S1 | **B1** `normalizeMyanmar` ဖယ် (စာမပြောင်း)၊ Zawgyi→Unicode = `rabbit-node` ကို ခလုတ်/ခန့်မှန်းပြီး confirm | `known-bugs.mjs` B1 PASS၊ UI မှာ Unicode ကဗျာ paste ပြီး စာမပြောင်း |
+| S2 | **B2+B3+B8** Export: audio render → track နှစ်ခုလုံးထည့် → `start()`၊ `WebMOutputFormat`၊ AAC မရရင် Opus | **ffprobe: video + audio stream နှစ်ခုပါ**၊ duration ±၀.၁ s၊ MP4 + WebM နှစ်မျိုး (`scripts/validate-export.mjs` ကို ဖတ်သံပါ project နဲ့) |
+| S3 | **B4** clip `src{in,out}` မော်ဒယ် + migration၊ split/trim ကို ပြင်၊ preview/export offset | known-bugs B4 PASS၊ split ပြီး Play → ညာတစ်ဝက် အဆက်ပြတ်မရှိ (ဖတ်သံ ၂ ပိုင်းခွဲ → ပေါင်းနားထောင်ရင် မူရင်းနဲ့ တူ) |
+| S4 | **B5** audio scheduling ကို `AudioBufferSourceNode` (သို့ seek-on-demand) | play ၂ s အတွင်း `currentTime` ပြင်ကြိမ် ≤ ၃၊ သင့်နားနဲ့ stutter မရှိ |
+| S5 | **B7** lane စည်းမျဉ်း (no overlap၊ auto lane) | known-bugs B7 PASS |
+| S6 | **B6** Preview/Export အသံ graph ကို `audio-graph.js` တစ်ခုတည်း | EQ/reverb ဖွင့်ထား project ကို export → preview နဲ့ spectrum ကွာခြားမှု ≤ ၃ dB (offline test) |
+| S7 | CI (`.github/workflows/test.yml`)၊ ကုဒ်ပုံစံ (လိုင်းအရှည်)၊ SRT BOM | CI စိမ်း |
+| S8 | **သင့် Chrome မှာ regression စစ်** (VERIFY §3 စာရင်း) | စာရင်းအားလုံး ✓ |
+
+> Phase S မပြီးမချင်း 🟢 မထည့်၊ အသစ်ထည့်တဲ့ feature မရှိ။
+
+### Phase T — Timeline v2 (§၅)
+T1 အချိန်/clip model + lane (S3/S5 နဲ့ ပေါင်း) → T2 edit tools (razor/ripple/roll/slip/range/magnetic) → T3 selection + link group + marker → T4 playhead/scrub/J-K-L + audio scrub → T5 performance (virtualize, waveform LOD, thumbnails) → T6 caption lane tools။
+**စစ်ဆေးချက်**: ☐ ကိရိယာတိုင်း Ctrl+Z ပြန်ရ ☐ clip မထပ် ☐ ၁၀၀၀ clip ≥ ၆၀ fps ☐ audio scrub ☐ ဖတ်သံ split/ripple/slip လုပ်ပြီး export → အသံ/စာတန်း ကိုက် ☐ keyboard-only နဲ့ editing ဖြစ်။
+
+### Phase E — Export hardening
+Preview=Export parity (golden frames + audio graph test)၊ ၁/၅/၁၀ မိနစ် export (ffprobe A/V drift ≤ ၄၀ ms)၊ VLC/ဖုန်း/YouTube၊ ရှည်တဲ့ export အတွက် File System Access streaming + memory ကန့်သတ်၊ VP9/WebM fallback၊ cancel/resume၊ 9:16/1:1/4:5။
+
+### Phase M — Myanmar quality
+Font matrix (R2 fonts အားလုံး × effect ၁၅ ခု × မြန်မာ သရ/သတ်/ပေါင်းစပ်)၊ wrap (`Intl.Segmenter`) စမ်း၊ syllable-aware Typewriter/Word reveal၊ Zawgyi ထောက်လှမ်း + ပြောင်း၊ ကိုယ်ပိုင် font ဖိုင်ခလုတ်၊ 9:16 safe-area guide။ **ဒီအဆင့်ကို user Chrome မှာပဲ စစ်ရ။**
+
+### Phase A — Auto caption (ဆုံးဖြတ်ချက်ဂိတ် — benchmark အရင်)
+1. **Benchmark protocol**: user ရဲ့ တကယ်ကဗျာဖတ်သံ ၁၀ ခု (၃၀–၉၀ s) + မှန်တဲ့စာသားနဲ့ **CER** တိုင်း။ ယှဉ်: (က) Workers AI Whisper (ပြီးပြီ — ညံ့)၊ (ခ) မြန်မာ fine-tune Whisper (`local-asr/`)၊ (ဂ) အခကြေးငွေ API (ဥပမာ ElevenLabs Scribe/Google)။
+2. **လက်ခံမယ့်စံ**: alignment mode (ကိုယ့်စာသားကို အချိန်ရှာ) အတွက် CER ≤ ၃၀% ၊ စာသားထုတ် mode အတွက် CER ≤ ၂၀% — မရရင် **VAD + Tap-sync (ရှိပြီး)** ကိုပဲ အဓိကထား။
+3. ရလဒ်တိုင်းကို confidence နဲ့ `draft|review` ပြ၊ **အသံကို ပို့တာ privacy သတိပေး**။
+
+### Phase R — Release
+Cloudflare Access ဖွင့် + `ACCESS_AUD`၊ CSP header (`script-src 'self' cdn.jsdelivr.net`)၊ accessibility audit၊ `/v2` → ပင်မလိပ်စာ၊ **Release gate (§၁) အားလုံး ✓ မှ `public/legacy/` ဖျက်**။
 
 ---
 
-## ၈။ အန္တရာယ်များ + ကာကွယ်ရေး
+## ၇။ v1 → v2 အင်္ဂါရပ် လွှဲပြောင်းမှု (အခြေအနေ)
+
+| v1 | v2 အခြေအနေ |
+|---|---|
+| Tap-sync၊ Auto-draft (VAD)၊ Review/Lock | 🟡 (Auto-draft 🟢) |
+| စာ effect ၁၅ ခု၊ animation၊ preset၊ အရောင်နှစ်မျိုး၊ stroke | 🟡 (မြန်မာ rendering — Phase M) |
+| Zawgyi→Unicode | 🔴 B1 |
+| Font (R2 `Fonts/`၊ ကိုယ်ပိုင်ဖိုင်) | 🟡 |
+| R2 Music/BG/Logo/SE tiles၊ အသံသွင်း | 🟡 မစစ်ရ |
+| Audio Mixer + Ducking | 🟡 preview / 🔴 export parity (B6) |
+| Credits/Title card၊ SRT | 🟢 SRT / 🟡 Title |
+| MP4 export | 🔴 B2 |
+| ဖတ်သံ split/trim/ဖြတ်ထုတ်/undo | 🔴 B4 → T2 |
+| 9:16 safe-area guide | ⏸ Phase M |
+
+---
+
+## ၈။ စမ်းသပ်မှု ဗျူဟာ
+
+- **Unit** (`public/v2/tests/unit`): model/store/timeline ops (property-style: ကျပန်း ops ၁၀၀၀ ကြိမ်လုပ်ပြီး invariant — clip မထပ်၊ dur ≥ min၊ `src` range မကျော်၊ undo ပြန်လည်ကိုက်)၊ time quantize၊ myanmar.js (Unicode မပြောင်း)၊ alignment။
+- **Known-bugs** (`tests/verify/known-bugs.mjs`): ပြင်ပြီးသား bug တိုင်းအတွက် စစ်ချက် ထပ်ထည့် (regression)။
+- **E2E** (`tests/e2e`, headless Chromium + local bundle): UI flow၊ **import audio → split → export → ffprobe** အပါအဝင်။
+- **Export validation**: `scripts/validate-export.mjs` ကို **အသံပါ project** နဲ့ပါ run၊ A/V drift၊ stream count၊ duration။
+- **Golden**: frame (စာပါတဲ့ canvas) hash နှိုင်း၊ audio render spectrum နှိုင်း (preview vs export)။
+- **လက်ဖြင့် (သင့် Chrome)**: VERIFY §3 စာရင်း၊ မြန်မာ font၊ အသံကြား၊ mouse gesture။
+
+---
+
+## ၉။ အန္တရာယ်များ + ကာကွယ်ရေး
 
 | အန္တရာယ် | ကာကွယ်ပုံ |
 |---|---|
-| Browser အစစ်မှာ ကျိုးတာ ကျွန်တော် မမြင်ရ | Error banner (စာမျက်နှာပေါ်မှာ ပြ)၊ အဆင့်သေးသေး၊ screenshot ပို့ခိုင်း |
-| မြန်မာစာ rendering (သရ/သတ်၊ font မရှိ) | Font အရင်ဖွင့်မှ ဆွဲ၊ grapheme မသုံး၊ `Intl.Segmenter`၊ effect တစ်ခုချင်း စမ်း |
-| Preview နဲ့ Export မတူ | `drawFrame` တစ်ခုတည်း၊ ကျပန်းမသုံး၊ golden frame |
-| A/V မကိုက် | audio clock master၊ encoder delay calibration၊ ffprobe စစ် |
-| မှတ်ဉာဏ် (ဖတ်သံရှည် AudioBuffer) | လိုအပ်မှ decode၊ peaks cache၊ ဖုံးမထားတာ ပြန်ဖြန့်ချိ |
-| Project ပျောက် | Autosave၊ JSON export/import၊ undo history |
-| ဒေတာ/Font လိုင်စင် | Font ကို private R2 ထဲပဲ၊ public repo မထည့်ရ |
-| `/api/*` public | အဆင့် ၈ မတိုင်ခင် **Access ဖွင့်** ဖို့ အကြံပြု |
-| အကြီးကြီး ပြန်ရေးလို့ v1 အင်္ဂါရပ် ပျောက် | §၆ စာရင်းအတိုင်း၊ v1 ကို အဆင့် ၇ အထိ မဖျက် |
+| "✅ ပြီး" လို့ ပြောပြီး အမှန်တကယ် မစစ်ထားတာ | §၂ status စကားလုံး၊ အထောက်အထားမပါရင် 🟡၊ VERIFY ကို တိုက်ဆိုင်စစ် |
+| Writer နှစ်ယောက် ပြိုင်ရေးလို့ ဖိုင်ထပ်ရေးခံရ | §၃(1) writer တစ်ယောက်၊ branch၊ SHA update |
+| မြန်မာစာ ပျက် (normalizer၊ font၊ shaping) | စာသားကို မပြောင်းတဲ့ policy၊ unit test (Unicode မပြောင်း)၊ Phase M |
+| Export ကို sandbox မှာပဲ စစ်ပြီး အစစ်မှာ ကွာ | ffprobe + သင့်စက် VLC/ဖုန်း၊ AAC/Opus fallback၊ H.264 မရတဲ့စက်အတွက် VP9 |
+| Preview ≠ Export | graph/renderer တစ်ခုတည်း၊ golden test |
+| Timeline မှာ clip များလာရင် နှေး | virtualize၊ LOD peaks၊ thumbnail worker/cache၊ budget |
+| Project ပျောက် / schema ပြောင်းလို့ ဖွင့်မရ | `migrate()`၊ autosave၊ JSON export/import၊ `storage.persist()` |
+| ကုဒ် ဖတ်မရအောင် one-liner ရှည် | ကုဒ်ပုံစံ စည်းမျဉ်း + CI |
+| `/api/*` public၊ ASR မှာ အသံပို့ | Access ဖွင့် (Phase R)၊ origin စစ်၊ privacy သတိပေး |
+| Font လိုင်စင် | Private R2 `Fonts/` ပဲ |
 
 ---
 
-## ၉။ ဆုံးဖြတ်ချက် မှတ်တမ်း
+## ၁၀။ ဆုံးဖြတ်ချက် မှတ်တမ်း
 
-- UI အသွင်အပြင် = VidPro နမူနာ၊ အလုပ်လုပ်ပုံ = CapCut။ ခလုတ်/tab စာလုံး **English**၊ ရှင်းလင်းချက်/tooltip **မြန်မာ** (`ui/strings.js` မှာ ပြောင်းလို့ရ)။
-- Library = Preact + htm (CDN ပုံသေ version)၊ build tool မသုံး။
-- Project data = Track → Clip (v3)၊ နေရာ % ၊ အချိန် စက္ကန့်။
-- Local media ကို IndexedDB ထဲ Blob သိမ်း (v1 လို ပြန်ရွေးစရာ မလို)။
-- Auto caption: Cloudflare Workers AI Whisper = **မြန်မာမှာ သုံးမရ** (စမ်းပြီး)။ Hugging Face Docker Space = အခု **အခကြေးငွေ (PRO) လို**။ ကျန်လမ်း = ကိုယ့်ကွန်ပျူတာ (`local-asr/`) ဒါမှမဟုတ် အခကြေးငွေ API → အဆင့် ၈ မှာ ဆုံးဖြတ်။
-- Font (AJ Kunheing, Aka02) = လိုင်စင်မရှင်းလို့ **private R2 `Fonts/` ထဲပဲ**။
-- Cloudflare Access = ပြီးမှ (AUD tag လို)။
+- UI အသွင်အပြင် = VidPro နမူနာ၊ အလုပ်လုပ်ပုံ = CapCut။ Label **English**၊ tooltip **မြန်မာ** (`ui/strings.js`)။
+- Preact + htm (CDN ပုံသေ)၊ build tool မသုံး။ Project = Track → Clip၊ **v3.1 မှာ `src{in,out}` + frame-quantized time** (Nov 2026 ထည့်)။
+- Local media = IndexedDB Blob။ Font (AJ Kunheing, Aka02) = **private R2 ပဲ**။
+- **Auto caption**: Workers AI Whisper = မြန်မာအတွက် **မအောင်** (စမ်းပြီး)၊ HF Docker Space = PRO လို၊ ကျန်လမ်း = `local-asr/` / အခကြေးငွေ API → **Phase A benchmark မှာ ဆုံးဖြတ်**။
+- Cloudflare Access = Phase R မှာ။
+- **Phase S ကို feature အသစ်မတိုင်ခင် ပြီးရမယ် (Nov 2026 ဆုံးဖြတ်)**။
 
 ### ဆုံးဖြတ်ရန် ကျန်သေး
-- Stickers / Transitions tool တွေ လိုအပ်မလား (ကဗျာဗီဒီယိုအတွက်)။
-- UI တစ်ခုလုံး မြန်မာလို ပြောင်းမလား (အခု English labels)။
-- ASR လမ်းကြောင်း (အဆင့် ၈)။
+- Stickers / Transitions (ကဗျာဗီဒီယိုမှာ လိုမလား)။ UI အားလုံး မြန်မာလို ပြောင်းမလား။
+- Main-track magnet ကို မူလ ON ထားမလား (CapCut လို) သို့ OFF။
+- Frame ကို integer သိမ်း (v4) သို့ စက္ကန့် float + quantize ပဲ (လက်ရှိ)။
 
 ---
 
-## ၁၀။ နောက်ထပ် လုပ်ရမယ့်အရာ (ချက်ချင်း)
+## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ (ချက်ချင်း)
 
-1. **Phase 1 ကို user Chrome မှာ စစ်** — Text tool → Add text/poem lines၊ Inspector ပြင်၊ canvas drag၊ Play/Pause/seek၊ Undo/Redo၊ project Save/Open/reload နှင့် မြန်မာစာ rendering။
-2. **အဆင့် ၂ (Timeline) ကို user Chrome မှာ စစ်** — clip drag/trim/split/delete/ripple-delete/snap/multi-select/zoom နှင့် Ctrl+B, Delete, Shift+Delete shortcuts။
-3. အဆင်ပြေရင် **အဆင့် ၃ (Media + Audio)** စ — local import, IndexedDB Blob, waveform, record, R2 library နှင့် audio clock ကို ဆက်တည်ဆောက်မယ်။
-3. သင်ပြင်ဆင်ရန်: R2 `Fonts/` ထဲ font တင်၊ စမ်းသပ်ဖို့ ကဗျာဖတ်သံ audio ၁–၂ မိနစ် (ကိုယ့်ဖတ်သံ) ပြင်ထား၊ (လိုရင်) Cloudflare Access AUD tag။
+1. **Phase S (S1→S8)** ကို ပြီးအောင် — အစဉ်: S1, S2 (အလုပ်ရဖို့ အရေးကြီးဆုံး) → S3 → S4 → S5 → S6 → S7 → S8။
+2. S ပြီးမှ **T1→T6**။ ကိရိယာတစ်ခုချင်း branch → စစ် → merge။
+3. သင်ပြင်ဆင်ရန်: ကိုယ့်ကဗျာဖတ်သံ audio ၁–၂ မိနစ် (စမ်းဖို့)၊ ASR benchmark အတွက် ၁၀ ခု + မှန်တဲ့စာသား၊ R2 `Fonts/` ထဲ font၊ Cloudflare Access AUD tag၊ VERIFY §3 ရဲ့ သင့် Chrome စစ်စာရင်း။
