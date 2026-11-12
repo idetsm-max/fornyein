@@ -1,6 +1,6 @@
 // User actions shared by buttons, keyboard, canvas and Timeline.
 import { newTextClip, newAudioClip, newVisualClip, newOverlayClip, textTrack, audioTrack, visualTrack, findClip, uid, freeSlot, clipEnd, projectDuration } from './model.js';
-import { PRESETS, normalizeMyanmar } from './text.js';
+import { PRESETS } from './text.js';
 const MIN_DUR = 0.1;
 const snapTime = (value, project, ignoreId, enabled = true) => {
   if (!enabled) return Math.max(0, value);
@@ -15,7 +15,7 @@ export function addText(store, transport, text = 'စာသား ရိုက�
   store.edit((d) => { textTrack(d).clips.push(c); }); store.select(c.id); transport.seek(c.start); return c;
 }
 export function addLines(store, transport, lines, dur = 3) {
-  const list = lines.map((l) => normalizeMyanmar(l).trim()).filter(Boolean); if (!list.length) return;
+  const list = lines.map((line) => String(line ?? '').trim()).filter(Boolean); if (!list.length) return;
   let at = freeSlot(textTrack(store.get().project), transport.t, dur * list.length);
   const clips = list.map((text) => { const c = newTextClip(at, text, dur); at += dur; return c; });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start);
@@ -29,16 +29,15 @@ export function mergeTextClips(store, ids) {
   store.edit((d) => { const f = d.tracks.find((t) => t.kind === 'text'); if (!f) return; const picked = f.clips.filter((c) => chosen.has(c.id) && c.kind === 'text' && !c.locked).sort((a, b) => a.start - b.start); if (picked.length < 2) return; const first = picked[0]; merged = { ...first, text: picked.map((c) => c.text).join('\n'), dur: clipEnd(picked.at(-1)) - first.start }; f.clips = f.clips.filter((c) => !chosen.has(c.id)); f.clips.push(merged); }); if (merged) store.select(merged.id); return merged;
 }
 export function insertPreset(store, transport, key) { const preset = PRESETS[key]; if (!preset) return; const c = newTextClip(freeSlot(textTrack(store.get().project), transport.t, 3), preset.text); Object.assign(c.style, preset.style); c.preset = key; store.edit((d) => { textTrack(d).clips.push(c); }); store.select(c.id); transport.seek(c.start); return c; }
-export function normalizeTextClip(store, id) { store.edit((d) => { const f = findClip(d, id); if (f?.clip.kind === 'text') f.clip.text = normalizeMyanmar(f.clip.text); }); }
 const srtTime = (s) => { const ms = Math.max(0, Math.round(s * 1000)); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60, milli = ms % 1000; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')},${String(milli).padStart(3, '0')}`; };
 export function textToSrt(project) { return textTrack(project).clips.slice().sort((a, b) => a.start - b.start).map((c, i) => `${i + 1}\n${srtTime(c.start)} --> ${srtTime(clipEnd(c))}\n${c.text || ''}\n`).join('\n'); }
 export function addTimedLines(store, transport, lines, segments) {
   const list = lines.map((x) => x.trim()).filter(Boolean); if (!list.length || !segments?.length) return;
-  const clips = list.map((text, i) => { const seg = segments[Math.min(i, segments.length - 1)]; const c = newTextClip(seg.start, normalizeMyanmar(text), Math.max(.1, seg.end - seg.start)); c.confidence = seg.confidence ?? .5; c.review = c.confidence < .55 ? 'review' : 'draft'; return c; });
+  const clips = list.map((text, i) => { const seg = segments[Math.min(i, segments.length - 1)]; const c = newTextClip(seg.start, text, Math.max(.1, seg.end - seg.start)); c.confidence = seg.confidence ?? .5; c.review = c.confidence < .55 ? 'review' : 'draft'; return c; });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start); return clips;
 }
 export function addAsrLines(store, transport, rows) {
-  const list = (rows || []).map((r) => ({ ...r, text: normalizeMyanmar(String(r.text || '').trim()) })).filter((r) => r.text && Number.isFinite(r.start) && Number.isFinite(r.end) && r.end > r.start);
+  const list = (rows || []).map((r) => ({ ...r, text: String(r.text ?? '').trim() })).filter((r) => r.text && Number.isFinite(r.start) && Number.isFinite(r.end) && r.end > r.start);
   if (!list.length) return [];
   const clips = list.map((r) => { const c = newTextClip(Math.max(0, r.start), r.text, Math.max(.1, r.end - r.start)); c.confidence = r.confidence ?? .5; c.review = c.confidence < .65 ? 'review' : 'draft'; c.asr = { engine: 'cloudflare-workers-ai-whisper', language: r.language || 'my' }; return c; });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start); return clips;

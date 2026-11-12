@@ -15,6 +15,16 @@ const here = (p) => fs.readFileSync(fileURLToPath(new URL(p, import.meta.url)), 
 for (const s of ['တွေကို', 'ရေကို', 'မြန်မာစာ', 'ဗုဒ္ဓ', 'မန္တလေး', 'ကျွန်တော် သူငယ်ချင်းတွေကို ချစ်တယ်']) {
   const o = normalizeMyanmar(s); log(o === s, `B1 normalizeMyanmar keeps "${s}"`, o === s ? '' : 'became ' + o);
 }
+{
+  const text = 'တွေကို ရေကို ဗုဒ္ဓ မန္တလေး';
+  const s = createStore(M.newProject()), tr = { t: 0, seek(value) { this.t = value; } };
+  A.addLines(s, tr, [text]);
+  A.addTimedLines(s, tr, [text], [{ start: 5, end: 7 }]);
+  A.addAsrLines(s, tr, [{ text, start: 8, end: 10 }]);
+  const saved = M.textTrack(s.get().project).clips.map((clip) => clip.text);
+  log(saved.length === 3 && saved.every((value) => value === text),
+    'B1 text, auto-draft, and ASR caption paths preserve Unicode');
+}
 // B4 — splitting / trimming an AUDIO clip must keep the position inside the file
 {
   const s = createStore(M.newProject()); A.addMedia(s, tr, { id: 'm1', kind: 'audio', name: 'v.wav', dur: 8 });
@@ -37,6 +47,7 @@ for (const s of ['တွေကို', 'ရေကို', 'မြန်မာစ
   log(!/WebmOutputFormat/.test(job), 'B3 uses the real Mediabunny class name WebMOutputFormat');
   const iStart = job.indexOf('output.start()'), iAudio = job.indexOf('addAudioTrack');
   log(iAudio >= 0 && iStart > iAudio, 'B2 audio track is added BEFORE output.start()', `start@${iStart} addAudioTrack@${iAudio}`);
-  log(/opus/.test(job) && /isConfigSupported/.test(src), 'B8 falls back to Opus when AAC is not supported');
+  const selector = src.slice(src.indexOf('export async function selectAudioCodec'), src.indexOf('export async function createMediabunnyJob'));
+  log(/opus/.test(selector) && /getFirstEncodableAudioCodec/.test(selector) && /isConfigSupported/.test(selector), 'B8 falls back to Opus when AAC is not supported');
 }
 console.log(failed ? `\n${failed} known bug check(s) still failing` : '\nall known-bug checks pass'); process.exit(failed ? 1 : 0);
