@@ -2,6 +2,8 @@
 
 ဒီဖိုင်ဟာ **တစ်ခုတည်းသော အစီအစဉ်** ဖြစ်ပါတယ်။ chat memory မရှိတဲ့အတွက် session အသစ်တိုင်း (လူ/AI မရွေး) **ဒီဖိုင်နဲ့ `docs/VERIFY.md` ကို အရင်ဖတ်ပြီးမှ** ဆက်လုပ်ပါ။
 v3 ပြင်ဆင်ချက် (Nov 2026): စစ်ဆေးမှု (`docs/VERIFY.md`) ရလဒ်နဲ့ ကိုက်အောင် status ကို ပြင်၊ **Timeline System v2 spec** (§5) ကို ရှာဖွေလေ့လာမှုအပေါ် အခြေခံပြီး အသစ်ထည့်၊ လမ်းပြမြေပုံ (§6) ကို **Stabilization အရင်** ဖြစ်အောင် ပြန်စီ၊ အလုပ်လုပ်ပုံစည်းမျဉ်း (§3) ကို တင်းကျပ်။
+Nov 12 2026 မှတ်တမ်း: S1 ၏ B1 code/regression နှင့် browser UI Unicode check၊ unit ၄၀ ခု၊ E2E ၁၄ ခုလုံး pass။ S2 ၏ B2/B3/B8 code Chromium MP4/WebM export + ffprobe စစ်ချက် pass.
+Code commit `54a692f` ကို `feat/stabilization-s1-s2` branch အဖြစ် push လုပ်ပြီးနောက် ဤ Plan update ကို ထည့်ထားသည်။ အသုံးပြုသူ၏ Chrome စမ်းသပ်ချက်၊ Rabbit live conversion၊ B4/B7/B6 နှင့် Phase S ကျန်အပိုင်းများ မပြီးသေးပါ။ အသေးစိတ်အထောက်အထားကို `docs/VERIFY.md` တွင်ထားသည်။
 
 ---
 
@@ -28,11 +30,11 @@ v3 ပြင်ဆင်ချက် (Nov 2026): စစ်ဆေးမှု (`d
 | Shell (UI/theme) | 🟢 | user screenshot + sandbox screenshot (dark/light) |
 | Engine core (store/undo/autosave/render/transport) | 🟢 | unit ၈ + e2e ၁၄ pass (VERIFY §1) |
 | Timeline ops (move/trim/split/ripple/snap/multi-select/zoom) | 🔴 | action အဆင့် pass (text split+undo, ripple, lock, trim limit)၊ **B4** (audio in-point) နဲ့ **B7** (clip ထပ်လို့ရ) ကျ။ Mouse gesture မစစ်ရသေး |
-| Media import + audio clip + waveform | 🟡 | import→tile→audio clip ပေါ်တာ pass။ **B5** (preview re-seek ~8/s) |
-| Text tools + poem workflow | 🔴 | preset ခလုတ်၊ Auto-draft (±0.02 s)၊ SRT pass။ **B1: မှန်တဲ့ Unicode စာကို `normalizeMyanmar` က ဖျက်** |
+| Media import + audio clip + waveform | 🟡 | import→tile→audio clip browser test pass။ **B5** (preview re-seek ~8/s) မပြင်၊ နားဖြင့်မစစ်ရသေး |
+| Text tools + poem workflow | 🟡 | B1 ပြင်ပြီး: Unicode string မပြောင်း၊ Add lines/Auto-draft/ASR path regression pass၊ browser UI Add-lines စစ်ချက် pass။ Rabbit live conversion နှင့် သင့် Chrome စစ်ချက် မလုပ်ရသေး |
 | Audio mixer (EQ/comp/reverb/echo/duck) preview | 🟡 | UI ရှိ၊ အသံ နားနဲ့ မစစ်ရသေး |
 | Visual (video/photo/filters/overlay logo/transitions) | 🟡 | မစစ်ရသေး |
-| **Export (MP4/WebM)** | 🔴 | အသံမပါ MP4 pass (ffprobe H.264 1280×720 30fps 180f 6.0s)။ **အသံပါရင် မအောင် (B2)၊ WebM class နာမည်မှား (B3)၊ AAC→Opus fallback မရှိ (B8)၊ export အသံက EQ/reverb/echo/loop မသုံး (B6)** |
+| **Export (MP4/WebM)** | 🟡 | B2/B3/B8 ပြင်ပြီး၊ Chromium export + ffprobe: MP4 H.264+Opus 6.0135s, drift 13.5ms; WebM VP9+Opus 6.02s။ **B6** (EQ/reverb/echo/loop parity) မပြင်ရသေး၊ WebM stream-level drift metadata မရ |
 | Auto caption (Cloudflare Workers AI Whisper) | 🔴/⏸ | Workers AI Whisper က မြန်မာအသံကို တခြားစာလုံး (Georgian/Cyrillic) နဲ့ ပြန်ထုတ်ကြောင်း စမ်းပြီး (Nov 2026)။ ကုဒ်ရှိနေပေမဲ့ **မြန်မာအတွက် အသုံးမကျ** — §6 အဆင့် A ရဲ့ benchmark မှာ ပြန်စစ် |
 | Cloudflare Access | ⏸ မဖွင့်ရသေး | `/api/*` public (origin စစ်ပဲ ရှိ) |
 | `local-asr/` | ⏸ ပြင်ဆင်ထား၊ မစမ်းရ | |
@@ -149,8 +151,8 @@ clip    = { id, kind, start, dur,                       // timeline range (စ�
 ### Phase S — Stabilization (ယခု၊ **feature အသစ် မထည့်ခင်**)
 | # | လုပ်ရန် | ပိတ်ကွင်း (done when) |
 |---|---|---|
-| S1 | **B1** `normalizeMyanmar` ဖယ် (စာမပြောင်း)၊ Zawgyi→Unicode = `rabbit-node` ကို ခလုတ်/ခန့်မှန်းပြီး confirm | `known-bugs.mjs` B1 PASS၊ UI မှာ Unicode ကဗျာ paste ပြီး စာမပြောင်း |
-| S2 | **B2+B3+B8** Export: audio render → track နှစ်ခုလုံးထည့် → `start()`၊ `WebMOutputFormat`၊ AAC မရရင် Opus | **ffprobe: video + audio stream နှစ်ခုပါ**၊ duration ±၀.၁ s၊ MP4 + WebM နှစ်မျိုး (`scripts/validate-export.mjs` ကို ဖတ်သံပါ project နဲ့) |
+| S1 | **B1** `normalizeMyanmar` ဖယ် (စာမပြောင်း)၊ Zawgyi→Unicode = `rabbit-node` ကို ခလုတ်/ခန့်မှန်းပြီး confirm | `known-bugs.mjs` B1 PASS၊ browser UI မှာ Unicode စာ Add-lines လုပ်ပြီး မပြောင်း။ **ကုဒ်နှင့်စစ်ချက်အောင်; Rabbit live conversion/သင့် Chrome စစ်ချက် မလုပ်ရသေး၊ 🟡** |
+| S2 | **B2+B3+B8** Export: audio render → track နှစ်ခုလုံးထည့် → `start()`၊ `WebMOutputFormat`၊ AAC မရရင် Opus | **ပြီး** — browser export MP4 ffprobe H.264+Opus၊ 6.0135s၊ drift 0.0135s; WebM VP9+Opus၊ container 6.02s (`docs/VERIFY.md`)။ WebM stream-level duration/drift metadata မရှိတာကို validator မမှားယွင်းစေရ |
 | S3 | **B4** clip `src{in,out}` မော်ဒယ် + migration၊ split/trim ကို ပြင်၊ preview/export offset | known-bugs B4 PASS၊ split ပြီး Play → ညာတစ်ဝက် အဆက်ပြတ်မရှိ (ဖတ်သံ ၂ ပိုင်းခွဲ → ပေါင်းနားထောင်ရင် မူရင်းနဲ့ တူ) |
 | S4 | **B5** audio scheduling ကို `AudioBufferSourceNode` (သို့ seek-on-demand) | play ၂ s အတွင်း `currentTime` ပြင်ကြိမ် ≤ ၃၊ သင့်နားနဲ့ stutter မရှိ |
 | S5 | **B7** lane စည်းမျဉ်း (no overlap၊ auto lane) | known-bugs B7 PASS |
@@ -243,6 +245,7 @@ Cloudflare Access ဖွင့် + `ACCESS_AUD`၊ CSP header (`script-src 'sel
 
 ## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ (ချက်ချင်း)
 
-1. **Phase S (S1→S8)** ကို ပြီးအောင် — အစဉ်: S1, S2 (အလုပ်ရဖို့ အရေးကြီးဆုံး) → S3 → S4 → S5 → S6 → S7 → S8။
-2. S ပြီးမှ **T1→T6**။ ကိရိယာတစ်ခုချင်း branch → စစ် → merge။
-3. သင်ပြင်ဆင်ရန်: ကိုယ့်ကဗျာဖတ်သံ audio ၁–၂ မိနစ် (စမ်းဖို့)၊ ASR benchmark အတွက် ၁၀ ခု + မှန်တဲ့စာသား၊ R2 `Fonts/` ထဲ font၊ Cloudflare Access AUD tag၊ VERIFY §3 ရဲ့ သင့် Chrome စစ်စာရင်း။
+1. **Push ပြီး:** `feat/stabilization-s1-s2` branch, code commit `54a692f` — S1/B1 code+regression+browser UI Unicode check; S2/B2/B3/B8 code+MP4/WebM ffprobe check; unit ၄၀/၄၀ နှင့် E2E ၁၄/၁၄ pass. S1 ကို 🟢 မတင်မီ Rabbit conversion ကို live စမ်းရန်။
+2. နောက်တစ်ဆင့် **S3 → S4 → S5 → S6 → S7 → S8** ကို အစဉ်လိုက်လုပ်ရန်။ ယခုထိ **B4, B7, B6** မပြီး၊ known-bugs စစ်ချက် ၃ ခု ကျနေဆဲ။ S3–S7 ပြီးမှ **S8 သင့် Chrome regression** ကို စစ်ရန်။
+3. S ပြီးမှ **T1→T6**။ ကိရိယာတစ်ခုချင်း branch → စစ် → merge။
+4. သင်ပြင်ဆင်ရန်: ကိုယ့်ကဗျာဖတ်သံ audio ၁–၂ မိနစ် (စမ်းဖို့)၊ ASR benchmark အတွက် ၁၀ ခု + မှန်တဲ့စာသား၊ R2 `Fonts/` ထဲ font၊ Cloudflare Access AUD tag၊ VERIFY §3 ရဲ့ သင့် Chrome စစ်စာရင်း။
