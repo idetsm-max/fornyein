@@ -18,6 +18,8 @@ let failed = 0; const ok = (name, cond, extra = '') => { if (!cond) failed++; co
   await p.click('.uploadbtn'); await sleep(200);
   let c = await clips(); ok('second Add text does not overlap the first', c.length === 2 && c[1].l >= c[0].l + c[0].w - 1, JSON.stringify(c));
   await p.click('.inspector textarea', { clickCount: 3 }); await p.keyboard.type('Hello'); await sleep(200);
+  await p.evaluate(() => document.querySelector('.playbtn').click()); await sleep(500);
+  await p.evaluate(() => document.querySelector('.playbtn').click()); await sleep(50);
   const white = await p.evaluate(() => { const cv = document.querySelector('.stagecanvas'), d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 200 && d[i + 1] > 200 && d[i + 2] > 200) n++; return n; });
   ok('canvas draws the text', white > 50, 'white px ' + white);
   await p.evaluate(() => { const r = document.querySelector('.inspector input.range'); r.value = 150; r.dispatchEvent(new Event('input', { bubbles: true })); }); await sleep(100);
