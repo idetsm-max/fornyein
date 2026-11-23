@@ -2,7 +2,8 @@ import { html, useState, useEffect } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
 import { useStore } from './hooks.js';
-import { L, H } from './strings.js'; import { LayoutToggles } from './layout.js';
+import { L, H } from './strings.js';
+import { toggleLocale, useLocale } from './locale.js'; import { LayoutToggles } from './layout.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
 import { ExportDialog } from './export-dialog.js';
@@ -29,6 +30,7 @@ function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
 export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout, transport }) {
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
   const undoLabel = useStore(store, (s) => s.undoLabel), redoLabel = useStore(store, (s) => s.redoLabel);
+  const locale = useLocale();
   const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false);
   useEffect(() => {
     const toggleShortcuts = () => setShortcuts((v) => !v);
@@ -54,7 +56,8 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
       <${IconBtn} name="undo" title=${L('undo') + (undoLabel ? ': ' + undoLabel : '') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} />
       <${IconBtn} name="redo" title=${L('redo') + (redoLabel ? ': ' + redoLabel : '') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} />
       <span class="vsep"></span>
-      <${Select} value=${zoom} onChange=${setZoom} options=${['50%', '75%', '100%', '150%', '200%']} title="Zoom" cls="compact" />
+      <${Select} value=${zoom} onChange=${(v) => { setZoom(v); window.dispatchEvent(new CustomEvent('fornyein:zoom', { detail: parseInt(v, 10) })); }} options=${['50%', '75%', '100%', '150%', '200%']} title="Preview zoom" cls="compact" />
+      <button type="button" class="langbtn" title="UI language" aria-label="Toggle UI language" onClick=${() => toggleLocale()}>${locale === 'my' ? 'မြ' : 'EN'}</button>
       <${IconBtn} name="maximize" title=${L('fullscreen') + ' · ' + H('fullscreen')} /><button type="button" class="helpbtn" title="Keyboard shortcuts" onClick=${() => setShortcuts(true)}>?</button>
       <${LayoutToggles} layout=${layout} setLayout=${setLayout} />
     </div>

@@ -2,6 +2,10 @@
 
 For Nyein — Burmese poem video maker. Browser-only render (WebCodecs), Cloudflare Pages + Worker + private R2.
 
+## UI language
+
+EN / မြ toggle ကို top bar ညာဘက်မှာ နှိပ်ပါ — ရွေးချယ်မှုကို `localStorage` မှာ သိမ်းထားသည်။
+
 ## Layout
 - `public/` — app (Cloudflare Pages). `public/spike.html` = Stage S capability check. `public/fonts/` + `fonts.json` = fonts.
 - `worker/` — Cloudflare Worker (R2 binding): `/api/library/:type`, `/api/asset/:type/:name`, `/api/presets`.

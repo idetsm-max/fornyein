@@ -1,3 +1,5 @@
+import { getLocale } from './locale-core.js';
+
 // Labels are English (like the design); the second value is the Burmese tooltip. Change here to re-label the whole app.
 const S = {
   home: ['Home', 'ပင်မစာမျက်နှာ'], projects: ['My Projects', 'ကျွန်ုပ်၏ project များ'], preview: ['Preview', 'ကြည့်မယ်'], export: ['Export', 'MP4 ထုတ်မယ်'],
@@ -14,5 +16,14 @@ const S = {
   saved: ['Auto Saved', 'အလိုအလျောက် သိမ်းပြီး'], project: ['Project', 'Project'], resolution: ['Resolution', 'Resolution'], save: ['Save Project', 'Project သိမ်း'], exportVideo: ['Export Video', 'ဗီဒီယို ထုတ်မယ်'],
   trackText: ['Text', 'စာတန်း track'], trackVideo: ['Video', 'ဗီဒီယို / နောက်ခံ track'], trackOverlay: ['Overlay', 'Overlay / Logo track'], trackAudio: ['Audio', 'အသံ track'],
 };
-export const L = (k) => (S[k] ? S[k][0] : k);   // label
+const MY = {
+  home: 'ပင်မ', projects: 'ပရောဂျက်', preview: 'ကြည့်မည်', export: 'ထုတ်မည်', undo: 'နောက်ပြန်', redo: 'ပြန်လုပ်', fullscreen: 'အပြည့်မျက်နှာပြင်',
+  media: 'မီဒီယာ', audio: 'အသံ', text: 'စာတန်း', stickers: 'စတစ်ကာ', effects: 'သက်ရောက်မှု', transitions: 'ကူးပြောင်းမှု', filters: 'ဖီလတာ',
+  adjust: 'ချိန်ညှိ', templates: 'တင်းပလိတ်', more: 'နောက်ထပ်', local: 'ကိုယ့်ကွန်ပျူတာ', library: 'စာကြည့်တိုက်', record: 'အသံသွင်း', upload: 'ဖိုင်တင်',
+  all: 'အားလုံး', videos: 'ဗီဒီယို', photos: 'ဓာတ်ပုံ', audios: 'အသံ', addMore: 'ထပ်ထည့်', tText: 'စာသား', tAnimation: 'လှုပ်ရှားမှု', tTiming: 'အချိန်',
+  font: 'စာလုံးပုံစံ', style: 'ပုံစံ', color: 'အရောင်', stroke: 'အနားကွပ်', size: 'အရွယ်', opacity: 'ထင်ရှားမှု', position: 'နေရာ', rotate: 'လှည့်',
+  trending: 'လူကြိုက်များ', basic: 'အခြေခံ', retro: 'ရက်ထရို', bw: 'အဖြူအမည်း', blur: 'ဝါးမှုန်', saved: 'သိမ်းပြီး', project: 'ပရောဂျက်',
+  resolution: 'ကြည်လင်မှု', save: 'သိမ်းမည်', exportVideo: 'ဗီဒီယို ထုတ်မည်', trackText: 'စာတန်း', trackVideo: 'ဗီဒီယို', trackOverlay: 'အပေါ်ထပ်', trackAudio: 'အသံ',
+};
+export const L = (k) => (getLocale() === 'my' && MY[k]) || (S[k] ? S[k][0] : k);   // label
 export const H = (k) => (S[k] ? S[k][1] : '');  // Burmese tooltip
