@@ -82,6 +82,7 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **T4**: ←/→ (Shift = ၁ စက္ကန့်)၊ Home/End၊ J/K/L (J = pause + ၁ စက္ကန့် နောက်ဆုတ်)။ e2e စစ်ပြီး။
 - **T2**: Shift-drag = ripple trim၊ Alt-drag edge = roll၊ Alt-drag body = slip၊ Ctrl-drag body = slide၊ N = snap။ e2e roll စစ်ပြီး။
 - **T3 select**: marquee drag on empty timeline area (`ui/marquee.js`)၊ Alt+→ = clips right of playhead။ e2e စစ်ပြီး။
+- **S8 gate**: `scripts/test-all.sh` — lint + unit + known-bugs + e2e အားလုံး တစ်ချက်တည်း; CI မှာ e2e job ပါ။
 - **E1 export**: `engine/export-range.js` (`trimProject`/`stripCaptions`)၊ dialog မှာ Range (I/O) နှင့် Captions (burn/SRT)။ unit ၄ + e2e။
 - **T6 captions**: `engine/captions.js` (`parseSrt`/`importSrt`)၊ Text panel SRT import၊ caption clip ကို `caption:true` + dashed outline။ unit ၄ + e2e။
 - **T5 perf**: `engine/virtual.js` viewport filter၊ `ui/tl-scroll.js` (scroll sync + shift-wheel)၊ waveform bars ကို clip width အလိုက် လျှော့။ unit ၄ + e2e။
@@ -90,7 +91,7 @@ Container ကခွင့်ပြုသော audio codec များအနက
 
 ### မပြီးသေးသည့်အချက်များ
 
-S8 (final stabilization)။ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
+U7–U13။ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
 
 ## ၃။ User Chrome တွင် လက်ဖြင့်စစ်ရန်
 

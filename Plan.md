@@ -44,7 +44,8 @@
 | အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay/Filters | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
 | Auto caption (Workers AI Whisper) | 🔴/⏸ | မြန်မာမှာ တခြားစာလုံးထွက် — M7 benchmark |
 | Cloudflare Access | ⏸ | `/api/*` public |
-| **S7 CI/lint** | 🟡 | `scripts/lint-lines.mjs` ratchet ✅; `.github/workflows/test.yml` ကို token `workflow` scope မရှိ၍ local မှာသာ ထားရ |
+| **S7 CI/lint** | 🟢 | `scripts/lint-lines.mjs` ratchet ✅; `.github/workflows/test.yml` (unit/lint/syntax/e2e) ကို token `workflow` scope မရှိ၍ repo မတင်၊ local သာ |
+| **S8 stabilization** | 🟢 | `scripts/test-all.sh` gate (lint+unit+known-bugs+e2e)၊ CI e2e job (Chromium + puppeteer-core) |
 | **U1–U3 (G1–G3)** | 🟢 | Inspector registry၊ context menu/clipboard၊ drag & drop — headless e2e `tests/e2e/ux.js` ✅ |
 | **U4–U6** | 🟢 | Splitters/collapse (localStorage)၊ track mute/solo/rename/height၊ razor/fit/Q/W — e2e `tests/e2e/layout.js` ✅ |
 | **T1 command layer** | 🟢 | `engine/timeline.js` + undo labels (`history.js`)၊ unit ၁၃ + property checks |
@@ -261,7 +262,7 @@ D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ C
 ## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ
 
 1. **Plan ကို ဆက်မြှင့်**: **L2b — CapCut-like UI/UX Detailed Spec** (§၃ ကို screen/state/interaction table အဆင့်သို့ — panel တစ်ခုချင်း၊ context-menu item တစ်ခုချင်း၊ shortcut တစ်ခုချင်း၊ state (hover/active/disabled/error)၊ wireframe ASCII) → L4 test catalog (UX test ပါ) → L5 M2–M8 → L6 release/ops။
-2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1–S7 (CI file မှလွဲ၍), T1, T2 (drag modes/in-out/loop)၊ T3 (link/markers)၊ T4 (keys)၊ U1–U6။ **နောက်**: S8 (final stabilization)။
+2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1–S7 (CI file မှလွဲ၍), T1, T2 (drag modes/in-out/loop)၊ T3 (link/markers)၊ T4 (keys)၊ U1–U6။ **နောက်**: U7–U13 (Plan အသစ် ဖြည့်လာသည်အထိ)။
 3. သင်ပြင်ဆင်ရန်: CapCut-user test အတွက် task ၁၀ ခုကို စစ်ကြည့်ရန် အချိန်၊ ကိုယ့်ကဗျာဖတ်သံ၊ Access AUD tag။
 
 ---
