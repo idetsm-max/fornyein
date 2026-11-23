@@ -6,10 +6,10 @@ import { L, H } from './strings.js'; import { LayoutToggles } from './layout.js'
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
 import { ExportDialog } from './export-dialog.js';
+import { ShortcutsDialog } from './shortcuts-dialog.js';
 
 const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? 'just now' : s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
-function ShortcutsDialog({ onClose }) { return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && onClose()}><div class="exportbox shortcutbox"><div class="exporthead"><b>Keyboard shortcuts</b><button type="button" class="x" onClick=${onClose}>×</button></div><div class="shortcutlist"><span><kbd>Space</kbd> Play / pause</span><span><kbd>Ctrl/Cmd + Z</kbd> Undo</span><span><kbd>Ctrl/Cmd + Y</kbd> Redo</span><span><kbd>Ctrl/Cmd + D</kbd> Duplicate selected clip</span><span><kbd>Ctrl/Cmd + B</kbd> Split at playhead</span><span><kbd>Delete</kbd> Delete selected clip</span><span><kbd>Shift + Delete</kbd> Ripple delete</span></div></div></div>`; }
 function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
   const [open, setOpen] = useState(false), [items, setItems] = useState([]);
   useEffect(() => { if (!open) return; const close = () => setOpen(false); const id = setTimeout(() => document.addEventListener('click', close), 0); return () => { clearTimeout(id); document.removeEventListener('click', close); }; }, [open]);
@@ -30,6 +30,19 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
   const undoLabel = useStore(store, (s) => s.undoLabel), redoLabel = useStore(store, (s) => s.redoLabel);
   const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false);
+  useEffect(() => {
+    const toggleShortcuts = () => setShortcuts((v) => !v);
+    const openExport = () => setExporting(true);
+    const closeShortcuts = () => setShortcuts(false);
+    window.addEventListener('fornyein:shortcuts', toggleShortcuts);
+    window.addEventListener('fornyein:export', openExport);
+    window.addEventListener('fornyein:escape', closeShortcuts);
+    return () => {
+      window.removeEventListener('fornyein:shortcuts', toggleShortcuts);
+      window.removeEventListener('fornyein:export', openExport);
+      window.removeEventListener('fornyein:escape', closeShortcuts);
+    };
+  }, []);
   const label = save.status === 'saving' ? 'Saving…' : save.status === 'dirty' ? 'Unsaved changes' : save.status === 'error' ? 'Save failed' : save.status === 'saved' ? L('saved') : 'New project';
   return html`<header class="topbar">
     <div class="brand" title="For Nyein"><span class="logo"><${Icon} name="play" size=${15} /></span><span class="brandname">For Nyein</span></div>

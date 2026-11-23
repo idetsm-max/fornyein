@@ -52,7 +52,7 @@
     "long": 1
   },
   "public/v2/main.js": {
-    "lines": 43,
+    "lines": 44,
     "long": 6
   },
   "public/v2/styles.css": {
@@ -96,8 +96,8 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 74,
-    "long": 13
+    "lines": 87,
+    "long": 12
   },
   "public/v2/ui/export-dialog.js": {
     "lines": 34,
@@ -114,6 +114,10 @@
   "public/v2/ui/panels.js": {
     "lines": 211,
     "long": 86
+  },
+  "public/v2/ui/shortcuts-dialog.js": {
+    "lines": 9,
+    "long": 1
   },
   "public/v2/ui/stage.js": {
     "lines": 131,

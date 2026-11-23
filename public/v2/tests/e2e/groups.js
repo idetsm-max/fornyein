@@ -134,6 +134,20 @@ const box = (p, sel) => p.evaluate((s) => {
   const caps = await page.evaluate(() => document.querySelectorAll('.clip.caption').length);
   ok('SRT import adds caption clips', caps === 2, String(caps));
 
+  const clipsBeforeSave = await page.evaluate(() => document.querySelectorAll('.clip').length);
+  await page.keyboard.down('Control'); await page.keyboard.press('KeyS'); await page.keyboard.up('Control'); await sleep(300);
+  const clipsAfterSave = await page.evaluate(() => document.querySelectorAll('.clip').length);
+  ok('Ctrl+S saves without splitting', clipsBeforeSave === clipsAfterSave, `${clipsBeforeSave}/${clipsAfterSave}`);
+  await page.keyboard.press('?'); await sleep(200);
+  const scGroups = await page.evaluate(() => document.querySelectorAll('.shortcutbox .scgroup').length);
+  ok('? opens the shortcut list', scGroups >= 4, String(scGroups));
+  await page.keyboard.press('Escape'); await sleep(150);
+  const scClosed = await page.evaluate(() => !document.querySelector('.shortcutbox'));
+  ok('Esc closes the shortcut list', scClosed);
+  await page.keyboard.down('Control'); await page.keyboard.press('KeyE'); await page.keyboard.up('Control'); await sleep(200);
+  ok('Ctrl+E opens export', await page.evaluate(() => !!document.querySelector('.exportbox')));
+  await page.evaluate(() => document.querySelector('.exportbox .x').click()); await sleep(120);
+
   await page.evaluate(() => document.querySelector('.topbar .btn.primary').click()); await sleep(200);
   const labels = await page.evaluate(() => [...document.querySelectorAll('.exportbody label')].map((l) => l.textContent.trim()));
   ok('export dialog offers range and captions', labels.some((l) => l.startsWith('Range')) && labels.some((l) => l.startsWith('Captions')), labels.join('|'));

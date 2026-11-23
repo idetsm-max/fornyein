@@ -9,7 +9,7 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Ctrl+Shift+Z / Ctrl+Y | Redo | ✅ |
 | Ctrl+C / Ctrl+X / Ctrl+V | Copy / cut / paste clips (lane-safe) | ✅ |
 | Ctrl+D | Duplicate selected clip | ✅ |
-| Ctrl+B / S | Split selected clip at playhead | ✅ |
+| Ctrl+B / S | Split selected clip at playhead (plain S, not Ctrl+S) | ✅ |
 | Delete / Backspace | Delete selected clip | ✅ |
 | Shift+Delete | Ripple delete | ✅ |
 | Right-click clip | Cut · Copy · Paste · Duplicate · Delete · Ripple delete · Split | ✅ |
@@ -18,8 +18,8 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Esc | Close context menu | ✅ |
 | Drag media tile → timeline | Add clip at drop time | ✅ |
 | Drag file → Media panel | Import media | ✅ |
-| Ctrl+S | Save project | ⬜ planned (M1, T2) |
-| Ctrl+E | Export | ⬜ planned (M1, U10) |
+| Ctrl+S | Save project now (autosave also runs) | ✅ |
+| Ctrl+E | Open the export dialog | ✅ |
 | B / V | Razor / select tool | ✅ |
 | Text panel → SRT import | Import captions as clips | ✅ |
 | Shift+wheel / trackpad swipe | Scroll timeline horizontally | ✅ |
@@ -40,7 +40,7 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Loop button | Loop in–out playback | ✅ |
 | Shift+Z | Zoom to fit | ✅ |
 | F | Fullscreen preview | ⬜ planned (M1, U7) |
-| ? | Shortcut dialog | ⬜ planned (M1, U11) |
+| ? | Shortcut dialog (Esc closes) | ✅ |
 | J / K / L | Pause + step back 1 s / pause / play | 🟡 shuttle speeds not yet |
 | ← / → | Nudge one frame (Shift = 1 s) | ✅ |
 | Home / End | Go to start / end | ✅ |

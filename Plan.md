@@ -193,7 +193,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | U8 | **Left panels အပြည့်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates) + "demo panel" ဖယ် | G4, G5 | M2–M6 |
 | U9 | **Keyframes UI** (◆, curve editor, timeline keyframe row) | G9 | M3 |
 | U10 | **Export dialog** (preset/format/range/captions) | – | S2 |
-| U11 | **Shortcuts dialog + CapCut keymap + registry** | – | T-all |
+| U11 | **Shortcuts dialog + CapCut keymap + registry** ✅ (`ui/keymap.js`, `ui/shortcuts-dialog.js`) | – | T-all |
 | U12 | **Toast/Coach marks/Empty-state CTA/Microcopy (မြန်မာ)** | G11, G13 | – |
 | U13 | **A11y + responsive (၁၂၈၀×၇၂၀)** | – | M8 |
 
@@ -262,7 +262,7 @@ D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ C
 ## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ
 
 1. **Plan ကို ဆက်မြှင့်**: **L2b — CapCut-like UI/UX Detailed Spec** (§၃ ကို screen/state/interaction table အဆင့်သို့ — panel တစ်ခုချင်း၊ context-menu item တစ်ခုချင်း၊ shortcut တစ်ခုချင်း၊ state (hover/active/disabled/error)၊ wireframe ASCII) → L4 test catalog (UX test ပါ) → L5 M2–M8 → L6 release/ops။
-2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1–S7 (CI file မှလွဲ၍), T1, T2 (drag modes/in-out/loop)၊ T3 (link/markers)၊ T4 (keys)၊ U1–U6။ **နောက်**: U7–U13 (Plan အသစ် ဖြည့်လာသည်အထိ)။
+2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1–S8 (CI file မှလွဲ၍), T1–T6, E1, U1–U6, U10, U11။ **နောက်**: U7–U13 (Plan အသစ် ဖြည့်လာသည်အထိ)။
 3. သင်ပြင်ဆင်ရန်: CapCut-user test အတွက် task ၁၀ ခုကို စစ်ကြည့်ရန် အချိန်၊ ကိုယ့်ကဗျာဖတ်သံ၊ Access AUD tag။
 
 ---
