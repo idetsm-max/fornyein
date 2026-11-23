@@ -4,6 +4,7 @@ import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
+import { importSrt } from '../engine/captions.js';
 import { addText, addLines, addTimedLines, addAsrLines, addMedia, addOverlayLogo, textToSrt, syncTextClip, insertPreset, splitTextClip, mergeTextClips } from '../engine/actions.js';
 import { importFile, detectVoiceSegments } from '../engine/media.js';
 import { loadMedia } from '../engine/storage.js';
@@ -72,6 +73,7 @@ function TextPanel({ store, transport }) {
       ${captionStatus && html`<small class="muted" role="status">${captionStatus}</small>`}
       <div class="syncrow"><button type="button" class=${cx('btn', syncing && 'on')} disabled=${!clips.length} onClick=${beginSync}>${syncing ? 'Tap next (Space)' : 'Start tap-sync'}</button>${syncing && html`<button type="button" class="btn ghost" onClick=${tapSync}>Tap ${syncIndex + 1}/${clips.length}</button>`}</div>
       <div class="syncrow"><button type="button" class="btn ghost" disabled=${!sel} onClick=${() => splitTextClip(store, sel)}>Split caption</button><button type="button" class="btn ghost" disabled=${!sel || clips.findIndex((x) => x.id === sel) >= clips.length - 1} onClick=${() => { const i = clips.findIndex((x) => x.id === sel); mergeTextClips(store, [sel, clips[i + 1]?.id]); }}>Merge next</button></div>
+      <label class="btn ghost wide srtlabel"><${Icon} name="upload" size=${16} /><span>SRT import</span><input class="srtimport" type="file" accept=".srt,text/plain" onChange=${(e) => { const f = e.target.files?.[0]; if (f) f.text().then((t) => importSrt(store, transport, t)).catch(() => {}); e.target.value = ''; }} /></label>
       <button type="button" class="btn ghost wide" disabled=${!clips.length} onClick=${() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF' + textToSrt(project)], { type: 'text/plain;charset=utf-8' })); a.download = `${project.name || 'fornyein'}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500); }}><${Icon} name="download" size=${16} /><span>Export SRT</span></button>
       <div class="textlist">${clips.length === 0 ? html`<div class="menuempty">Text clip မရှိသေးပါ</div>` : clips.map((c, i) => html`<button type="button" class=${cx('titem', sel === c.id && 'on')} onClick=${() => pick(c)}>
         <span class="n">${i + 1}</span><span class="tx">${c.text.split('\n')[0] || '…'}</span><em>${c.start.toFixed(1)}s · ${Math.round((c.confidence ?? 1) * 100)}%</em></button>`)}</div>

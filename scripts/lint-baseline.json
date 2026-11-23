@@ -56,8 +56,8 @@
     "long": 6
   },
   "public/v2/styles.css": {
-    "lines": 210,
-    "long": 26
+    "lines": 211,
+    "long": 27
   },
   "public/v2/tests/e2e/layout.js": {
     "lines": 85,
@@ -108,8 +108,8 @@
     "long": 1
   },
   "public/v2/ui/panels.js": {
-    "lines": 209,
-    "long": 85
+    "lines": 211,
+    "long": 86
   },
   "public/v2/ui/stage.js": {
     "lines": 131,

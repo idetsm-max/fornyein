@@ -1,6 +1,7 @@
 // E2E for T3/T4: link groups, markers and transport keys (Home/End/M).
 // BASE=... PUPPETEER=... CHROME=... node public/v2/tests/e2e/groups.js
 const puppeteer = require(process.env.PUPPETEER || 'puppeteer');
+const fs = require('fs'), os = require('os'), path = require('path');
 const BASE = process.env.BASE || 'http://localhost:8765';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;
@@ -123,6 +124,15 @@ const box = (p, sel) => p.evaluate((s) => {
   ok('End seeks to the project end', !/^00:00:00:00/.test(await tcode()));
   await page.keyboard.press('Home'); await sleep(120);
   ok('Home seeks to zero', /^00:00:00:00/.test(await tcode()));
+
+  await page.evaluate(() => document.querySelector('.rail .railbtn:nth-child(3)').click()); await sleep(150);
+  const srtPath = path.join(os.tmpdir(), 'fn-captions.srt');
+  fs.writeFileSync(srtPath, '1\n00:00:00,500 --> 00:00:02,000\nပထမ\n\n2\n00:00:02,500 --> 00:00:04,000\nဒုတိယ\n');
+  const fileInput = await page.$('.srtimport');
+  await fileInput.uploadFile(srtPath);
+  await sleep(250);
+  const caps = await page.evaluate(() => document.querySelectorAll('.clip.caption').length);
+  ok('SRT import adds caption clips', caps === 2, String(caps));
 
   ok('no page errors', errors.length === 0, JSON.stringify(errors));
   await browser.close();

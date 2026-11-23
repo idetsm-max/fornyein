@@ -208,3 +208,4 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .ctxitem kbd{color:var(--dim);font:11px/1 inherit}
 .ctxsep{height:1px;background:var(--line);margin:4px 6px}
 .dropline{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);box-shadow:0 0 8px var(--accent);z-index:6;pointer-events:none}
+.srtlabel{display:flex;align-items:center;gap:8px;cursor:pointer}.srtimport{display:none}.clip.caption{outline:1px dashed #f7b955}.srtlabel{display:flex;align-items:center;gap:8px;cursor:pointer}.srtimport{display:none}.clip.caption{outline:1px dashed #f7b955}
