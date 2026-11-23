@@ -91,7 +91,7 @@ async function startElementClip(ctx, mixer, clip, event, blob) {
 
 export function createPlaybackEngine(transport, getProject, store) {
   let ctx = null, mixer = null, handles = [], cache = new Map(), token = 0;
-  let wasPlaying = false, lastT = 0, lastTick = 0, editTimer = null, disposed = false;
+  let wasPlaying = false, lastT = 0, lastTick = 0, editTimer = null, disposed = false, scrubTimer = 0;
 
   const ensure = () => {
     if (!ctx) {
@@ -108,11 +108,11 @@ export function createPlaybackEngine(transport, getProject, store) {
     for (const [id, bus] of mixer?.buses || []) bus.apply(project.tracks.find((t) => t.id === id)?.mixer);
   };
 
-  async function scheduleFrom(t) {
+  async function scheduleFrom(t, { window: win = Infinity } = {}) {
     const mine = ++token, ac = ensure();
     stopAll();
     refreshBuses();
-    const project = getProject(), events = planSchedule(project, t);
+    const project = getProject(), events = planSchedule(project, t, { lookahead: win });
     let scheduled = 0;
     for (const event of events) {
       const found = findClip(project, event.clipId);
@@ -186,9 +186,16 @@ export function createPlaybackEngine(transport, getProject, store) {
       return out;
     },
     reschedule: () => scheduleFrom(transport.t),
+    scrub(t) {
+      if (disposed || transport.playing) return;
+      clearTimeout(scrubTimer);
+      scheduleFrom(t, { window: 0.14 });
+      scrubTimer = setTimeout(stopAll, 170);
+    },
     dispose() {
       disposed = true;
       clearTimeout(editTimer);
+      clearTimeout(scrubTimer);
       unsubTransport?.();
       unsubStore?.();
       document.removeEventListener('visibilitychange', onVisibility);

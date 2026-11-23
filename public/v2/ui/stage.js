@@ -7,7 +7,7 @@ import { RATIOS, findClip, projectDuration, fmtClock } from '../engine/model.js'
 import { drawFrame, bboxes, measureText } from '../engine/render.js';
 import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, trimClip, splitClip, addMediaAt } from '../engine/actions.js';
 import { splitClips } from '../engine/timeline.js'; import { applyClipDrag } from './clip-drag.js';
-import { marqueeStyle, useMarquee } from './marquee.js'; import { clipsRightOf } from './timeline-keys.js';
+import { marqueeStyle, useMarquee } from './marquee.js'; import { clipsRightOf } from './timeline-keys.js'; import { scrubSeek } from './scrub.js';
 import { addMarker, markers, removeMarker } from '../engine/markers.js'; import { linkClips } from '../engine/groups.js';
 import { TrackHead } from './track-head.js'; import { useTimelineKeys } from './timeline-keys.js';
 import { clipMediaId } from '../engine/clip.js';
@@ -91,18 +91,18 @@ export function Player({ store, transport, fonts, onMenu }) {
 // ---------------- bottom: Timeline (Phase 2 clip operations) ----------------
 function Wave({ peaks = [] }) { const n = peaks.length || 48; const d = Array.from({ length: n }, (_, i) => { const v = peaks[i] ?? (0.2 + Math.abs(Math.sin(i * .73)) * .6); const x = i / n * 100; return `M${x.toFixed(2)} ${(50 - v * 44).toFixed(1)}V${(50 + v * 44).toFixed(1)}`; }).join(''); return html`<svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none"><path d=${d} /></svg>`; }
 function Playhead({ transport, pps }) { const { t } = useTransport(transport); return html`<div class="playhead" style=${{ left: (t * pps) + 'px' }}><i></i></div>`; }
-export function Timeline({ store, transport, pps, setPps, onMenu }) {
+export function Timeline({ store, transport, pps, setPps, onMenu, audio }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
   const [selectedIds, setSelectedIds] = useState(() => sel ? [sel] : []), [snap, setSnap] = useState(true), [drop, setDrop] = useState(null);
   const [razor, setRazor] = useState(false), [renaming, setRenaming] = useState(null); useTransport(transport);
-  const scrollRef = useRef(), gesture = useRef(null), scrubbing = useRef(false);
+  const scrollRef = useRef(), gesture = useRef(null), scrubbing = useRef(false), scrubAt = useRef(0);
   useEffect(() => { if (sel && !selectedIds.includes(sel)) setSelectedIds([sel]); }, [sel]);
   const dur = Math.max(30, projectDuration(project) + 5), width = Math.round(dur * pps);
   const step = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s * pps >= 70) || 300;
   const marks = []; for (let i = 0; i * step <= dur; i++) marks.push(i * step);
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}${step < 1 ? '.5' : ''}`;
-  const seekFromEvent = (e) => { const el = scrollRef.current, r = el.getBoundingClientRect(); transport.seek(Math.max(0, (e.clientX - r.left + el.scrollLeft) / pps)); };
+  const seekFromEvent = (e) => scrubSeek({ transport, project, pps, snap, scrollEl: scrollRef.current, clientX: e.clientX, audio, last: scrubAt });
   const pick = (e, c) => { e.stopPropagation(); const multi = e.shiftKey || e.ctrlKey || e.metaKey; const ids = multi ? (selectedIds.includes(c.id) ? selectedIds.filter((x) => x !== c.id) : [...selectedIds, c.id]) : [c.id]; setSelectedIds(ids); store.select(c.id); transport.seek(c.start + .01); };
   const downClip = (e, c) => { pick(e, c); const r = e.currentTarget.getBoundingClientRect(); if (razor) { splitClips(store, [c.id], c.start + (e.clientX - r.left) / pps, { snap }); return; } const edge = e.clientX - r.left < 9 ? 'left' : r.right - e.clientX < 9 ? 'right' : 'move'; gesture.current = { id: c.id, edge, x: e.clientX, start: c.start, end: c.start + c.dur, pps, shift: e.shiftKey, alt: e.altKey, ctrl: e.ctrlKey, applied: 0 }; e.currentTarget.setPointerCapture?.(e.pointerId); };
   const moveClipEvent = (e) => { const g = gesture.current; if (g) applyClipDrag(store, g, e.clientX, snap); };

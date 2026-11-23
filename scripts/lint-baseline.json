@@ -52,8 +52,8 @@
     "long": 1
   },
   "public/v2/main.js": {
-    "lines": 42,
-    "long": 5
+    "lines": 43,
+    "long": 6
   },
   "public/v2/styles.css": {
     "lines": 210,
@@ -113,7 +113,7 @@
   },
   "public/v2/ui/stage.js": {
     "lines": 130,
-    "long": 24
+    "long": 23
   },
   "public/v2/ui/strings.js": {
     "lines": 18,

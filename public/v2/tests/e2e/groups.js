@@ -71,6 +71,13 @@ const box = (p, sel) => p.evaluate((s) => {
   ok('Alt-drag rolls the shared edit point', Math.abs((left1.w - left0.w) - 40) < 3 && Math.abs((right1.left - right0.left) - 40) < 3,
     `${left1.w - left0.w} / ${right1.left - right0.left}`);
 
+  const edge = (await clipBoxes()).find((c) => c.id === right0.id).x;
+  const readT = () => page.evaluate(() => document.querySelector('.tcode').textContent);
+  await page.mouse.click(edge, ruler.y + ruler.h / 2); await sleep(120);
+  const exact = await readT();
+  await page.mouse.click(edge + 4, ruler.y + ruler.h / 2); await sleep(120);
+  ok('scrub snaps to clip edges', exact === (await readT()), `${exact} vs ${await readT()}`);
+
   await page.keyboard.press('Home'); await sleep(80);
   await page.keyboard.press('i'); await sleep(80);
   await page.keyboard.press('End'); await sleep(80);
