@@ -53,6 +53,15 @@ const ok = (name, cond, extra = '') => {
   ok('preview zoom changes', zoomBefore !== zoomAfter, zoomBefore + ' -> ' + zoomAfter);
 
   ok('clips are keyboard reachable', (await page.evaluate(() => document.querySelector('.clip')?.tabIndex)) === 0);
+  await page.click('.langbtn'); await sleep(250);
+  ok('language toggle switches the rail to Burmese', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'မီဒီယာ');
+  ok('language choice persists', (await page.evaluate(() => localStorage.getItem('fornyein.locale'))) === 'my');
+  await page.click('.langbtn'); await sleep(250);
+  ok('language toggles back to English', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'Media');
+
+  await page.select('.topctl select', '150%'); await sleep(200);
+  ok('top bar zoom drives the preview', (await page.evaluate(() => [...document.querySelectorAll('.zoomchip')][1]?.textContent)) === '150%');
+
   ok('no page errors', errors.length === 0, errors.join(' | '));
 
   await browser.close();

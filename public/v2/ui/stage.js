@@ -29,6 +29,7 @@ export function Player({ store, transport, fonts, onMenu }) {
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
   const [dim, setDim] = useState({ cw: 960, ch: 540 }), [ov, setOv] = useState(null), lastPaint = useRef(0);
   const [safe, setSafe] = useState(false), [zoomPct, setZoomPct] = useState(100), [guides, setGuides] = useState({ v: false, h: false });
+  useEffect(() => { const onZoom = (e) => setZoomPct(Math.min(200, Math.max(25, +e.detail || 100))); window.addEventListener('fornyein:zoom', onZoom); return () => window.removeEventListener('fornyein:zoom', onZoom); }, []);
 
   useEffect(() => {                                              // canvas resolution follows the frame size on screen
     const el = frameRef.current; if (!el) return;

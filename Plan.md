@@ -61,7 +61,7 @@
 **CapCut နဲ့ ကွာတာ (GAP)**
 | # | GAP | သက်ရောက်မှု |
 |---|---|---|
-| G1 | **Inspector tab တွေက clip အမျိုးအစားနဲ့ မကိုက်** — Audio clip ရွေးတာတောင် "Text / Animation / Timing" tab ပြ | selection-driven မဟုတ်၊ အသုံးပြုသူ ရှုပ် |
+| G1 ✅ **ပိတ်ပြီး** (kind→tabs registry) — မူလ: **Inspector tab တွေက clip အမျိုးအစားနဲ့ မကိုက်** — Audio clip ရွေးတာတောင် "Text / Animation / Timing" tab ပြ | selection-driven မဟုတ်၊ အသုံးပြုသူ ရှုပ် |
 | G2 | **Right-click context menu မရှိ** | CapCut သုံးသူ အကျင့်နဲ့ မကိုက် |
 | G3 | **Media tile ကို Timeline ပေါ်ဆွဲချလို့မရ** (`draggable` မရှိ၊ click ပဲ) | CapCut ရဲ့ အဓိကအလုပ်လုပ်ပုံ ပျက် |
 | G4 | **Rail tool ၈ ခုက panel အလွတ်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates, More) — Media/Text ပဲ အလုပ်လုပ် | ခလုတ်နှိပ်ရင် ဘာမှမရှိ |
@@ -72,8 +72,8 @@
 | G9 | **Keyframe ◆** မရှိ၊ **Player handle** က scale/rotate/crop အပြည့်အစုံ မအလုပ်လုပ်ကြောင်း မသေချာ (စစ်ရန်) | |
 | G10 | **Snap guide/safe-area/grid/zoom-fit** controls မရှိ (Player) | |
 | G11 | **Toast/notification**၊ onboarding hint၊ empty-state CTA မညီညာ | |
-| G12 | **Top bar** ရဲ့ zoom select (50–200%) က ဘာကိုထိန်းလဲ မရှင်း | |
-| G13 | Burmese UI ကိစ္စ: label English၊ error/tooltip မြန်မာ — ရောပြန်ရင်းနေ | |
+| G12 ✅ **ပိတ်ပြီး** — zoom select က preview zoom ကို ထိန်း (`fornyein:zoom`) — မူလ: **Top bar** ရဲ့ zoom select က ဘာကိုထိန်းလဲ မရှင်း | |
+| G13 🟡 တစ်ဝက် — UI မြန်မာ/English toggle 🟢 (`ui/locale.js`)၊ ကျန် hardcoded စာသား ဘာသာပြန်ရန် ကျန် | |
 
 > **ပိတ်ပြီး (v5.1, 2026-11-23)**: **G1** (Inspector registry — U1)၊ **G2** (right-click context menu + clipboard — U2)၊ **G3** (media → timeline/player drag & drop — U3)။ အထောက်အထား = `public/v2/tests/e2e/ux.js` (headless Chromium)။
 
@@ -189,13 +189,13 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | U4 | **Splitters + collapse + layout persist + Player-only mode** | G6 | – |
 | U5 | **Track header** (mute/solo/rename/height/reorder/add) | G7 | S5 |
 | U6 | **Timeline toolbar** အပြည့် (Razor, Magnet, Link, Marker, In/Out, Delete L/R, Fit) | G8 | T2–T3 |
-| U7 | **Player** handles (scale/rotate/crop) + snap guides + guides/safe-area + canvas zoom/ratio + inline text edit + floating toolbar | G9, G10 | M3 |
-| U8 | **Left panels အပြည့်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates) + "demo panel" ဖယ် | G4, G5 | M2–M6 |
-| U9 | **Keyframes UI** (◆, curve editor, timeline keyframe row) | G9 | M3 |
-| U10 | **Export dialog** (preset/format/range/captions) | – | S2 |
+| U7 | **Player** handles + snap guides + safe-area + canvas zoom/ratio + floating toolbar 🟢 (safe area၊ center guide၊ zoom 25–200%၊ F၊ visual box) | G9, G10 | M3 |
+| U8 | **Left panels အပြည့်** 🟢 (`panels-tools.js` — Audio/Stickers/Effects/Transitions/Filters/Adjust/Templates/More၊ demo panel ဖယ်ပြီး) | G4, G5 | M2–M6 |
+| U9 | **Keyframes UI** 🟢 (`keyframes.js`၊ ◆၊ timeline diamond၊ inspector) — curve editor ကျန် | G9 | M3 |
+| U10 | **Export dialog** (preset/format/range/captions) ✅ (E1) | – | S2 |
 | U11 | **Shortcuts dialog + CapCut keymap + registry** ✅ (`ui/keymap.js`, `ui/shortcuts-dialog.js`) | – | T-all |
 | U12 | **Toast/Coach marks/Empty-state CTA/Microcopy (မြန်မာ)** 🟢 toast၊ empty-state card၊ ၅ ဆင့် coach tour | G11, G13 | – |
-| U13 | **A11y + responsive (၁၂၈၀×၇၂၀)** | – | M8 |
+| U13 | **A11y + responsive (၁၂၈၀×၇၂၀)** 🟢 (focus-visible၊ aria၊ tabIndex၊ media query၊ e2e tools) | – | M8 |
 
 | Milestone | Engine | **UX (U)** | ထွက်ပေါက်စံ |
 |---|---|---|---|
@@ -206,7 +206,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | noise reduction (WASM)၊ loudness၊ speed time-map | Inspector Audio/Speed tab၊ Mixer panel | A/V drift ≤၄၀ ms (speed ပါ) |
 | **M6 Templates & Assets** | project/text template၊ asset relink၊ stickers | U8 (Templates/Stickers) | template ၅ ခု |
 | **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |
-| **M8 Polish & Release** | proxy/OPFS/large project၊ perf၊ Access ဖွင့် | **U13**၊ onboarding အပြည့်၊ UI မြန်မာ toggle | Release gate (§၈) |
+| **M8 Polish & Release** | proxy/OPFS/large project၊ perf၊ Access ဖွင့် | **U13** 🟢၊ onboarding 🟢၊ UI မြန်မာ toggle 🟢 | Release gate (§၈) |
 **v1.0 = M1 + M2**။ M3+ ကို အစဉ်လိုက်။ M1 မပြီးမချင်း M2+ မစ။
 
 ---

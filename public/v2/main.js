@@ -2,6 +2,7 @@ import { html, render, useEffect, useRef, useState } from './ui/deps.js';
 import { TopBar, Rail, StatusBar } from './ui/chrome.js';
 import { Toaster, toast } from './ui/toast.js';
 import { CoachTour, TOUR_KEY } from './ui/tour.js';
+import { useLocale } from './ui/locale.js';
 import { MediaPanel, Inspector, EffectsPanel } from './ui/panels.js';
 import { Player, Timeline } from './ui/stage.js';
 import { newProject, projectDuration } from './engine/model.js';
@@ -39,6 +40,7 @@ function App() {
   useEffect(() => { const audio = createAudioController(transport, () => store.get().project, store); audioRef.current = audio; return () => { audio.dispose(); audioRef.current = null; }; }, []);
   useEffect(() => { const onKey = (e) => { const typing = /input|textarea/i.test(e.target.tagName), mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase(); if (key === 'escape') { setMenu(null); window.dispatchEvent(new Event('fornyein:escape')); return; } if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? store.redo() : store.undo(); } else if (mod && key === 'y') { e.preventDefault(); store.redo(); } else if (mod && key === 'c' && !typing) { e.preventDefault(); copyClips(store); } else if (mod && key === 'x' && !typing) { e.preventDefault(); cutClips(store); } else if (mod && key === 'v' && !typing) { e.preventDefault(); pasteClips(store, transport); } else if (mod && key === 'd' && !typing) { e.preventDefault(); duplicateSelected(store); } else if (mod && key === 's' && !typing) { e.preventDefault(); saveNow(); } else if (mod && key === 'e' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:export')); } else if (e.key === '?' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:shortcuts')); } else if (((mod && key === 'b') || (!mod && key === 's')) && !typing) { e.preventDefault(); const id = store.get().selection; if (id) splitClip(store, id, transport.t); } else if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) { e.preventDefault(); deleteSelected(store, { ripple: e.shiftKey }); } else if (e.code === 'Space' && !typing) { e.preventDefault(); transport.toggle(); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
   const saveNow = async () => { setSave('saving'); try { await saveProject(store.get().project); setSave('saved', Date.now()); toast('သိမ်းပြီးပါပြီ', 'ok'); } catch { setSave('error'); toast('သိမ်းလို့ မရပါ', 'error'); } };
+  useLocale();
   const [tour, setTour] = useState(() => { try { return !localStorage.getItem(TOUR_KEY); } catch { return false; } });
   useEffect(() => { const open = () => setTour(true); window.addEventListener('fornyein:tour', open); return () => window.removeEventListener('fornyein:tour', open); }, []);
   const closeTour = () => { setTour(false); try { localStorage.setItem(TOUR_KEY, '1'); } catch { /* private mode */ } };
