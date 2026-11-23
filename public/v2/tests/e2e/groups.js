@@ -134,6 +134,11 @@ const box = (p, sel) => p.evaluate((s) => {
   const caps = await page.evaluate(() => document.querySelectorAll('.clip.caption').length);
   ok('SRT import adds caption clips', caps === 2, String(caps));
 
+  await page.evaluate(() => document.querySelector('.topbar .btn.primary').click()); await sleep(200);
+  const labels = await page.evaluate(() => [...document.querySelectorAll('.exportbody label')].map((l) => l.textContent.trim()));
+  ok('export dialog offers range and captions', labels.some((l) => l.startsWith('Range')) && labels.some((l) => l.startsWith('Captions')), labels.join('|'));
+  await page.evaluate(() => document.querySelector('.exportbox .x').click()); await sleep(100);
+
   ok('no page errors', errors.length === 0, JSON.stringify(errors));
   await browser.close();
   console.log(failed ? `\n${failed} FAILED` : '\nall passed');

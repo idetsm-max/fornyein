@@ -96,8 +96,12 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 79,
-    "long": 16
+    "lines": 74,
+    "long": 13
+  },
+  "public/v2/ui/export-dialog.js": {
+    "lines": 34,
+    "long": 2
   },
   "public/v2/ui/hooks.js": {
     "lines": 13,

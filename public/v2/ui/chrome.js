@@ -1,11 +1,11 @@
-import { html, useState, useEffect, useRef } from './deps.js';
+import { html, useState, useEffect } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js'; import { LayoutToggles } from './layout.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
-import { createMediabunnyJob, saveExportResult } from '../engine/export.js';
+import { ExportDialog } from './export-dialog.js';
 
 const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? 'just now' : s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
@@ -26,12 +26,7 @@ function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
   </div>`;
 }
 
-function ExportDialog({ project, onClose }) {
-  const [preset, setPreset] = useState('720p'), [format, setFormat] = useState('mp4'), [progress, setProgress] = useState(0), [running, setRunning] = useState(false), [error, setError] = useState(''), job = useRef(null);
-  const start = async () => { setError(''); setProgress(0); setRunning(true); try { const j = await createMediabunnyJob(project, preset, { format, onProgress: setProgress }); job.current = j; const result = await j.run(); await saveExportResult(result, `${project.name || 'fornyein'}.${format}`); } catch (e) { setError(e?.message || String(e)); } finally { setRunning(false); } };
-  return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && !running && onClose()}><div class="exportbox"><div class="exporthead"><b>Export video</b><button type="button" class="x" disabled=${running} onClick=${onClose}>×</button></div><div class="exportbody"><label>Resolution<${Select} value=${preset} onChange=${setPreset} options=${['720p', '1080p', '9:16', '1:1']} /></label><label>Format<${Select} value=${format} onChange=${setFormat} options=${['mp4', 'webm']} /></label>${running && html`<div class="exportprogress"><div><span>Rendering…</span><b>${Math.round(progress * 100)}%</b></div><progress max="1" value=${progress}></progress></div>`}${error && html`<p class="exporterror">${error}</p>`}</div><div class="exportfoot">${running ? html`<button type="button" class="btn ghost" onClick=${() => job.current?.cancel()}>Cancel</button>` : html`<button type="button" class="btn ghost" onClick=${onClose}>Close</button><button type="button" class="btn primary" onClick=${start}>Export</button>`}</div></div></div>`;
-}
-export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout }) {
+export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout, transport }) {
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
   const undoLabel = useStore(store, (s) => s.undoLabel), redoLabel = useStore(store, (s) => s.redoLabel);
   const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false);
@@ -56,7 +51,7 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
       <button type="button" class=${cx(theme === 'light' && 'on')} title="Light" onClick=${() => setTheme('light')}><${Icon} name="sun" size=${16} /></button>
       <button type="button" class=${cx(theme === 'dark' && 'on')} title="Dark" onClick=${() => setTheme('dark')}><${Icon} name="moon" size=${16} /></button>
     </div>
-    <div class="avatar" title="Account">N</div>${exporting && html`<${ExportDialog} project=${project} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}
+    <div class="avatar" title="Account">N</div>${exporting && html`<${ExportDialog} project=${project} transport=${transport} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}
   </header>`;
 }
 
