@@ -1,15 +1,15 @@
-import { html, useState, useEffect, useRef } from './deps.js';
+import { html, useState, useEffect } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
 import { useStore } from './hooks.js';
-import { L, H } from './strings.js';
+import { L, H } from './strings.js'; import { LayoutToggles } from './layout.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
-import { createMediabunnyJob, saveExportResult } from '../engine/export.js';
+import { ExportDialog } from './export-dialog.js';
+import { ShortcutsDialog } from './shortcuts-dialog.js';
 
 const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? 'just now' : s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
-function ShortcutsDialog({ onClose }) { return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && onClose()}><div class="exportbox shortcutbox"><div class="exporthead"><b>Keyboard shortcuts</b><button type="button" class="x" onClick=${onClose}>×</button></div><div class="shortcutlist"><span><kbd>Space</kbd> Play / pause</span><span><kbd>Ctrl/Cmd + Z</kbd> Undo</span><span><kbd>Ctrl/Cmd + Y</kbd> Redo</span><span><kbd>Ctrl/Cmd + D</kbd> Duplicate selected clip</span><span><kbd>Ctrl/Cmd + B</kbd> Split at playhead</span><span><kbd>Delete</kbd> Delete selected clip</span><span><kbd>Shift + Delete</kbd> Ripple delete</span></div></div></div>`; }
 function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
   const [open, setOpen] = useState(false), [items, setItems] = useState([]);
   useEffect(() => { if (!open) return; const close = () => setOpen(false); const id = setTimeout(() => document.addEventListener('click', close), 0); return () => { clearTimeout(id); document.removeEventListener('click', close); }; }, [open]);
@@ -26,14 +26,23 @@ function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
   </div>`;
 }
 
-function ExportDialog({ project, onClose }) {
-  const [preset, setPreset] = useState('720p'), [format, setFormat] = useState('mp4'), [progress, setProgress] = useState(0), [running, setRunning] = useState(false), [error, setError] = useState(''), job = useRef(null);
-  const start = async () => { setError(''); setProgress(0); setRunning(true); try { const j = await createMediabunnyJob(project, preset, { format, onProgress: setProgress }); job.current = j; const result = await j.run(); await saveExportResult(result, `${project.name || 'fornyein'}.${format}`); } catch (e) { setError(e?.message || String(e)); } finally { setRunning(false); } };
-  return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && !running && onClose()}><div class="exportbox"><div class="exporthead"><b>Export video</b><button type="button" class="x" disabled=${running} onClick=${onClose}>×</button></div><div class="exportbody"><label>Resolution<${Select} value=${preset} onChange=${setPreset} options=${['720p', '1080p', '9:16', '1:1']} /></label><label>Format<${Select} value=${format} onChange=${setFormat} options=${['mp4', 'webm']} /></label>${running && html`<div class="exportprogress"><div><span>Rendering…</span><b>${Math.round(progress * 100)}%</b></div><progress max="1" value=${progress}></progress></div>`}${error && html`<p class="exporterror">${error}</p>`}</div><div class="exportfoot">${running ? html`<button type="button" class="btn ghost" onClick=${() => job.current?.cancel()}>Cancel</button>` : html`<button type="button" class="btn ghost" onClick=${onClose}>Close</button><button type="button" class="btn primary" onClick=${start}>Export</button>`}</div></div></div>`;
-}
-export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson }) {
+export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout, transport }) {
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
+  const undoLabel = useStore(store, (s) => s.undoLabel), redoLabel = useStore(store, (s) => s.redoLabel);
   const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false);
+  useEffect(() => {
+    const toggleShortcuts = () => setShortcuts((v) => !v);
+    const openExport = () => setExporting(true);
+    const closeShortcuts = () => setShortcuts(false);
+    window.addEventListener('fornyein:shortcuts', toggleShortcuts);
+    window.addEventListener('fornyein:export', openExport);
+    window.addEventListener('fornyein:escape', closeShortcuts);
+    return () => {
+      window.removeEventListener('fornyein:shortcuts', toggleShortcuts);
+      window.removeEventListener('fornyein:export', openExport);
+      window.removeEventListener('fornyein:escape', closeShortcuts);
+    };
+  }, []);
   const label = save.status === 'saving' ? 'Saving…' : save.status === 'dirty' ? 'Unsaved changes' : save.status === 'error' ? 'Save failed' : save.status === 'saved' ? L('saved') : 'New project';
   return html`<header class="topbar">
     <div class="brand" title="For Nyein"><span class="logo"><${Icon} name="play" size=${15} /></span><span class="brandname">For Nyein</span></div>
@@ -42,11 +51,12 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
     <div class=${cx('savedpill', save.status)} title=${H('saved')}><${Icon} name="cloud" size=${18} /><span><b>${label}</b> ${save.at && save.status === 'saved' ? html`<em>${ago(save.at)}</em>` : ''}</span></div>
     <div class="spacer"></div>
     <div class="topctl">
-      <${IconBtn} name="undo" title=${L('undo') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} />
-      <${IconBtn} name="redo" title=${L('redo') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} />
+      <${IconBtn} name="undo" title=${L('undo') + (undoLabel ? ': ' + undoLabel : '') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} />
+      <${IconBtn} name="redo" title=${L('redo') + (redoLabel ? ': ' + redoLabel : '') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} />
       <span class="vsep"></span>
       <${Select} value=${zoom} onChange=${setZoom} options=${['50%', '75%', '100%', '150%', '200%']} title="Zoom" cls="compact" />
       <${IconBtn} name="maximize" title=${L('fullscreen') + ' · ' + H('fullscreen')} /><button type="button" class="helpbtn" title="Keyboard shortcuts" onClick=${() => setShortcuts(true)}>?</button>
+      <${LayoutToggles} layout=${layout} setLayout=${setLayout} />
     </div>
     <button type="button" class="btn ghost" title=${H('preview')}><${Icon} name="play" size=${15} /><span>${L('preview')}</span></button>
     <button type="button" class="btn primary" title=${H('export')} onClick=${() => setExporting(true)}><${Icon} name="export" size=${16} /><span>${L('export')}</span></button>
@@ -54,14 +64,14 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
       <button type="button" class=${cx(theme === 'light' && 'on')} title="Light" onClick=${() => setTheme('light')}><${Icon} name="sun" size=${16} /></button>
       <button type="button" class=${cx(theme === 'dark' && 'on')} title="Dark" onClick=${() => setTheme('dark')}><${Icon} name="moon" size=${16} /></button>
     </div>
-    <div class="avatar" title="Account">N</div>${exporting && html`<${ExportDialog} project=${project} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}
+    <div class="avatar" title="Account">N</div>${exporting && html`<${ExportDialog} project=${project} transport=${transport} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}
   </header>`;
 }
 
 const TOOLS = ['media', 'audio', 'text', 'stickers', 'effects', 'transitions', 'filters', 'adjust', 'templates', 'more'];
 export function Rail({ tool, setTool }) {
   return html`<nav class="rail" aria-label="Tools">${TOOLS.map((id) =>
-    html`<button type="button" class=${cx('railbtn', tool === id && 'on')} title=${H(id)} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
+    html`<button type="button" class=${cx('railbtn', tool === id && 'on')} title=${H(id)} aria-label=${L(id)} aria-pressed=${tool === id} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
 }
 
 export function StatusBar({ store, onSave }) {

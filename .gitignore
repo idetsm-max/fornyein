@@ -3,3 +3,7 @@ node_modules/
 .dev.vars
 .env
 *.log
+
+# e2e screenshots
+phase1.png
+ux.png

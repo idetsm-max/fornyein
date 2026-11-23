@@ -1,0 +1,150 @@
+{
+  "public/v2/editor.css": {
+    "lines": 40,
+    "long": 3
+  },
+  "public/v2/engine/actions.js": {
+    "lines": 207,
+    "long": 5
+  },
+  "public/v2/engine/asr.js": {
+    "lines": 9,
+    "long": 4
+  },
+  "public/v2/engine/fonts.js": {
+    "lines": 16,
+    "long": 1
+  },
+  "public/v2/engine/media.js": {
+    "lines": 24,
+    "long": 8
+  },
+  "public/v2/engine/model.js": {
+    "lines": 20,
+    "long": 10
+  },
+  "public/v2/engine/perf.js": {
+    "lines": 3,
+    "long": 3
+  },
+  "public/v2/engine/render.js": {
+    "lines": 79,
+    "long": 10
+  },
+  "public/v2/engine/storage.js": {
+    "lines": 18,
+    "long": 4
+  },
+  "public/v2/engine/store.js": {
+    "lines": 24,
+    "long": 1
+  },
+  "public/v2/engine/transport.js": {
+    "lines": 23,
+    "long": 1
+  },
+  "public/v2/engine/visual.js": {
+    "lines": 5,
+    "long": 2
+  },
+  "public/v2/index.html": {
+    "lines": 22,
+    "long": 2
+  },
+  "public/v2/main.js": {
+    "lines": 49,
+    "long": 8
+  },
+  "public/v2/styles.css": {
+    "lines": 211,
+    "long": 27
+  },
+  "public/v2/tests/e2e/layout.js": {
+    "lines": 85,
+    "long": 3
+  },
+  "public/v2/tests/e2e/phase1.js": {
+    "lines": 50,
+    "long": 5
+  },
+  "public/v2/tests/unit/engine.test.mjs": {
+    "lines": 35,
+    "long": 3
+  },
+  "public/v2/tests/unit/phase5.test.mjs": {
+    "lines": 13,
+    "long": 6
+  },
+  "public/v2/tests/unit/phase6.test.mjs": {
+    "lines": 28,
+    "long": 8
+  },
+  "public/v2/tests/unit/phase7.test.mjs": {
+    "lines": 9,
+    "long": 4
+  },
+  "public/v2/tests/unit/phase8.test.mjs": {
+    "lines": 7,
+    "long": 3
+  },
+  "public/v2/tests/unit/timeline.test.mjs": {
+    "lines": 34,
+    "long": 9
+  },
+  "public/v2/tests/verify/known-bugs.mjs": {
+    "lines": 53,
+    "long": 3
+  },
+  "public/v2/ui/chrome.js": {
+    "lines": 87,
+    "long": 12
+  },
+  "public/v2/ui/export-dialog.js": {
+    "lines": 36,
+    "long": 2
+  },
+  "public/v2/ui/hooks.js": {
+    "lines": 13,
+    "long": 1
+  },
+  "public/v2/ui/icons.js": {
+    "lines": 74,
+    "long": 1
+  },
+  "public/v2/ui/panels-tools.js": {
+    "lines": 104,
+    "long": 11
+  },
+  "public/v2/ui/panels.js": {
+    "lines": 215,
+    "long": 86
+  },
+  "public/v2/ui/shortcuts-dialog.js": {
+    "lines": 9,
+    "long": 1
+  },
+  "public/v2/ui/stage.js": {
+    "lines": 152,
+    "long": 28
+  },
+  "public/v2/ui/strings.js": {
+    "lines": 18,
+    "long": 4
+  },
+  "public/v2/ui/toast.js": {
+    "lines": 23,
+    "long": 1
+  },
+  "public/v2/ui/tour.js": {
+    "lines": 38,
+    "long": 1
+  },
+  "public/v2/ui/widgets.js": {
+    "lines": 32,
+    "long": 4
+  },
+  "scripts/validate-export.mjs": {
+    "lines": 35,
+    "long": 3
+  }
+}

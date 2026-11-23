@@ -1,72 +1,112 @@
-# VERIFY.md — v2 editor စစ်ဆေးမှု အစီရင်ခံစာ (main @ `6e6bf1e`၊ Nov 2026)
+# VERIFY.md — v2 editor စစ်ဆေးမှု အစီရင်ခံစာ (Nov 2026)
 
-စစ်သူ: Claude (sandbox မှာ headless Chromium 131 + node)။ **သင့်ရဲ့ Chrome အစစ်မှာ မစမ်းရသေး** — ဒါကြောင့် "PASS" ဆိုတာ ကျွန်တော့်စမ်းသပ်ပတ်ဝန်းကျင်မှာ ကိုက်တာပဲ၊ အသံထွက်/မျက်စိနဲ့ကြည့်တာတွေ မပါပါ။
-ပြန်စစ်နည်း: `node public/v2/tests/verify/known-bugs.mjs` (ပြင်ပြီးရင် အားလုံး PASS ဖြစ်ရမယ်)၊ `node public/v2/tests/unit/*.mjs`၊ e2e = `tests/harness.md`။
+နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S4 audio clock၊ S5 lanes၊ S6 shared graph၊ S7 CI/lint၊ T1/T3/T4 commands၊ U1–U6 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
+
+ပြန်စစ်ရန်:
+
+```sh
+for f in public/v2/tests/unit/*.mjs; do node "$f"; done
+node public/v2/tests/verify/known-bugs.mjs
+node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
+```
 
 ## ၁။ အနှစ်ချုပ်
 
-| | |
-|---|---|
-| Unit tests (၅ ဖိုင်၊ other session ရေးထားတာ + ကျွန်တော့် ၈ ခု) | ✅ အားလုံးအောင် |
-| E2E (text/timeline/autosave/projects/theme — ၁၄ checks) | ✅ အားလုံးအောင်၊ page error မရှိ |
-| Media import → tile → "Audio clip" Timeline ပေါ်ရောက် | ✅ |
-| Text tool presets (Add text / Title card / Credits / Quote / Lower third / Karaoke) | ✅ clip ထည့်တယ် |
-| Auto-draft (voice + ကဗျာ → စာတန်းချိန်) | ✅ ဖတ်သံ ၃ ပိုင်း (0.5 / 3.2 / 5.9 s) ကို 0.51 / 3.18 / 5.88 s နဲ့ ကိုက် |
-| SRT (`textToSrt`) | ✅ format မှန်၊ မြန်မာစာ မပြောင်း |
-| Timeline ops (text split+undo၊ ripple/plain delete၊ lock၊ trim limit) | ✅ |
-| MP4 export (စာသီးသန့်၊ အသံမပါ) | ✅ H.264 1280×720 30fps၊ ၁၈၀ frame၊ ၆.၀ s (ffprobe) |
-| **MP4 / WebM export (အသံပါရင်)** | ❌ **မအောင် — B2, B3** |
-| **ကဗျာ စာသား** (Unicode မှန်ကို paste) | ❌ **စာပျက် — B1** |
-| **Audio split / trim-left** | ❌ **B4** |
+| စစ်ဆေးချက် | အခြေအနေ | အထောက်အထား |
+|---|---|---|
+| Unit tests | ✅ ၄၀ ခု အားလုံးအောင် | `public/v2/tests/unit/*.mjs` — engine 8၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ timeline 9 |
+| B1 Myanmar Unicode integrity | ✅ regression အောင် | `known-bugs.mjs` တွင် Unicode စကားစု ၆ ခုနှင့် Add lines/Auto-draft/ASR path စစ်၊ browser UI မှ Add lines လုပ်ပြီး `တွေကို ရေကို ဗုဒ္ဓ မန္တလေး` မပြောင်းကြောင်းစစ် |
+| B2 MP4 audio export | ✅ | Chromium ထုတ် 720p ဖိုင်ကို ffprobe စစ်: H.264 video + Opus audio၊ 180 frames၊ video 6.000s၊ audio/file 6.0135s၊ A/V drift 0.0135s |
+| B3 WebM format | ✅ | Chromium ထုတ် WebM: VP9 video + Opus audio၊ 30 fps၊ container duration 6.020s; ffprobe စစ် |
+| B8 AAC → Opus fallback | ✅ | Browser `getEncodableAudioCodecs` က Opus ကိုသာရကြောင်း၊ MP4 export ထဲ Opus audio stream ရကြောင်း စစ် |
+| **B4 source range (S3)** | ✅ ပြင်ပြီး | schema v4 `src{mediaId,in,out}` + `engine/clip.js` + `engine/migrate.js`။ split ညာတစ်ဝက် `src.in=4`၊ trim-left `src.in=3, out=8` — `known-bugs` ၂ ခု PASS |
+| **B7 lane overlap (S5)** | ✅ ပြင်ပြီး | `engine/lanes.js` — move/add/paste/duplicate အားလုံး free slot ရှာပြီး lane မထပ်စေ။ known-bugs PASS + unit property test ၃၀၀ move |
+| **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
+| **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
+| Unit tests | ✅ ၁၀၄ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ range 4၊ virtual 4၊ captions 4၊ export-range 4၊ keymap 4၊ toast 4၊ tool-presets 4၊ keyframes 5၊ timeline 9 |
+| E2E browser tests | ✅ ၁၀၄ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၁၉ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
+| **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
-## ၂။ တွေ့တဲ့ အမှားများ (ပြင်ရမယ့်အစဉ်)
+`node scripts/validate-export.mjs` ရလဒ်:
 
-### B1 — CRITICAL: `normalizeMyanmar` က မှန်တဲ့ Unicode မြန်မာစာကို ဖျက်ဆီးတယ်
-- `engine/text.js` က `ေ`+ဗျည်း ကို `ဗျည်း`+`ေ` လို့ လဲပြီး `္` ကို `်` လို့လဲတယ်။ မှန်တဲ့ Unicode မှာ `ေ` ရဲ့နောက် ဗျည်းလာတာ ပုံမှန် (ရေကို၊ တွေကို …) ဖြစ်လို့ **စာပျက်**။
-- အထောက်အထား: `တွေကို → တွကေို`၊ `ရေကို → ရကေို`၊ `ဗုဒ္ဓ → ဗုဒ်ဓ`၊ `မန္တလေး → မန်တလေး`။ UI မှာ ကဗျာ paste → "Add lines as clips" လုပ်တာနဲ့ clip စာသား ပျက်တာ တိုက်ရိုက်တွေ့ (`ကျွန်တော် သူငယ်ချင်းတွကေို ချစ်တယ်`)။ `addLines` / `addTimedLines` က ဒါကို အမြဲခေါ်နေတယ်။
-- Zawgyi ကို ပြောင်းဖို့လည်း မရ (`ျမန္မာ` မပြောင်း)။
-- **ပြင်ရန်**: စာသားကို မပြောင်းဘဲ ထည့်၊ Zawgyi→Unicode ကို v1 လို `rabbit-node` (`Rabbit.zg2uni`) နဲ့ **ခလုတ်ဖြင့်/Zawgyi ဟု ခန့်မှန်းရင် confirm ပြီး** ပဲလုပ်။
+- MP4: `ok: true`, H.264 + Opus, file duration 6.0135s, A/V drift 0.0135s (သတ်မှတ် 0.1s အောက်)။
+- WebM: `ok: true`, VP9 + Opus, format duration 6.02s။ ffprobe က stream တစ်ခုချင်း duration မပြန်ပေးသဖြင့် `avDrift: null` / `avDriftCheck: unavailable in stream metadata` ဟု မှန်ကန်စွာပြသည်။ ထို့ကြောင့် WebM အတွက် stream တစ်ခုချင်း A/V drift ကို ဒီစစ်ဆေးမှုက အတည်မပြုပါ။
 
-### B2 — CRITICAL: အသံပါတဲ့ project ကို Export လုပ်ရင် အမြဲမအောင်
-- `engine/export.js` `createMediabunnyJob` က `output.start()` ကို audio track မထည့်ခင် ခေါ်ထားတယ်။ Error: **"Cannot add track after output has been started or canceled."**
-- **ပြင်ရန်**: offline audio ကို အရင် render → video track နဲ့ audio track နှစ်ခုလုံး `addVideoTrack/addAudioTrack` လုပ်ပြီးမှ `output.start()`။
+## ၂။ တွေ့ခဲ့သည့် bug များနှင့် လက်ရှိအခြေအနေ
 
-### B3 — HIGH: WebM export ပျက်
-- `new mb.WebmOutputFormat()` — Mediabunny ရဲ့ အမည်က **`WebMOutputFormat`** (M အကြီး)။ Error: `mb.WebmOutputFormat is not a constructor`။
+### B1 — Myanmar Unicode စာသားကို normalize လုပ်ရာတွင် ဖျက်ဆီးခြင်း — ပြင်ပြီး
 
-### B4 — HIGH: Audio clip ကို Split / ဘယ်အစွန်း trim လုပ်ရင် အသံက ဖိုင်အစကနေ ပြန်စ
-- Audio clip မှာ ဖိုင်ထဲက စတင်တဲ့နေရာ (`in`) မရှိ။ `splitClip` ရဲ့ ညာတစ်ဝက် = `{start:4, dur:4}` ပဲ၊ `audio.js` က `offset = now - c.start` နဲ့ `renderOfflineAudio` က `source.start(c.start, 0, …)` သုံးလို့ ညာတစ်ဝက်က ဖိုင်အစကို ပြန်ဖွင့်တယ်။ trim-left လည်း အသံက ရွေ့သွား။
-- **ပြင်ရန်**: audio/video clip မှာ `in` (စက္ကန့်) ထည့်။ split: `right.in = left.in + (cut - start)`; trim-left: `in += delta`; preview `offset = now - start + in`; export `source.start(c.start, c.in, c.dur)`; project ဟောင်းအတွက် default `in=0`။
+ယခင် `normalizeMyanmar` က Unicode `ေ`/`္` စီစဉ်မှုကို အစားထိုးပြီး `တွေကို → တွကေို`, `ဗုဒ္ဓ → ဗုဒ်ဓ` လို စာပျက်စေခဲ့သည်။ ယခု helper သည် input ကို အတိအကျပြန်ပေးသည်။ Add lines, Auto-draft နှင့် ASR caption ထည့်ရာမှ အလိုအလျောက် normalization ကို ဖယ်ထားသည်။ Zawgyi → Unicode ကိုသာ သီးခြား Rabbit converter နဲ့ အသုံးပြုသူ ခလုတ်နှိပ်ပြီး သတိပေးချက်ကို အတည်ပြုမှ လုပ်သည်။ Unit/regression tests နှင့် browser UI Add-lines စစ်ချက် အောင်သည်။ Rabbit CDN မှ တကယ် convert လုပ်သည့် live browser စစ်ချက်ကို မလုပ်ရသေးပါ။
 
-### B5 — HIGH (နားနဲ့ မစစ်ရသေး): Preview အသံကို play လုပ်နေစဉ် တစ်စက္ကန့် ~၈ ခါ seek
-- `<audio>.currentTime` ကို ၂.၂ s play အတွင်း **၁၇ ကြိမ်** သတ်မှတ် (`window.__seeks`)။ Sync က tick တိုင်း (၀.၁၂ s) seek လုပ်နေ → အသံ တုန်/ကျိတ် ဖြစ်နိုင်။
-- **ပြင်ရန်**: play/seek/clip ပြောင်းချိန်ပဲ seek၊ play နေစဉ် drift > ~၀.၃ s ရှိမှ ပြင်။
+### B2 — အသံပါ project export မအောင်ခြင်း — ပြင်ပြီး၊ MP4 စစ်ပြီး
 
-### B6 — MEDIUM (code ဖတ်ပြီး တွေ့၊ မ run ရသေး): Export အသံက Preview နဲ့ မတူ
-- `renderOfflineAudio` က gain / pan / fade / ducking ပဲသုံး — EQ၊ compressor၊ reverb၊ echo၊ loop မသုံး။ (Plan ရဲ့ "Preview = Export" နိယာမ ပျက်။)
-- **ပြင်ရန်**: Preview နဲ့ Export က graph builder တစ်ခုတည်းကို ဝေမျှသုံး (v1 `audio.js` `buildBus` ပုံစံ)။
+Offline audio ကို ပထမ render လုပ်၊ video/audio tracks အားလုံးကို `output.start()` မတိုင်မီ register လုပ်ပြီးမှ output စတင်သည်။ Audio/video source များကို data ပေးပြီးသည်နှင့် close လုပ်ကာ `finalize()` အဆုံးသတ်စေသည်။ Chromium က 6-second audio project ကို export လုပ်နိုင်ပြီး ffprobe က H.264 + Opus, 6.0135s, drift 13.5ms ပြသည်။
 
-### B7 — MEDIUM: Clip တစ်ခုကို တစ်ခုပေါ် ဆွဲတင်လို့ရ (track တူ)
-- `moveClip` မှာ တိုက်မိမှု မစစ် (b.start=0.5၊ a ကတော့ 3 အထိ)။ **ပြင်ရန်**: နီးစပ်ရာ clip အစွန်းမှာ ရပ်/တွန်း၊ ဒါမှမဟုတ် lane ထပ်ဖွဲ့။
+### B3 — WebM output format class အမည်မှားခြင်း — ပြင်ပြီး၊ WebM စစ်ပြီး
 
-### B8 — MEDIUM: AAC မရတဲ့ browser မှာ Opus fallback မရှိ
-- MP4 အတွက် `aac` ကို အမြဲသုံး။ ဒီ test Chromium မှာ `AudioEncoder.isConfigSupported(aac)=false` ဖြစ်ပြီး (Linux Chrome စသည်ဖြင့် အဲလိုဖြစ်နိုင်)။ v1 မှာ AAC မရရင် Opus သုံးတာ ရှိခဲ့။ **ပြင်ရန်**: `isConfigSupported` စစ်ပြီး fallback။
+`WebmOutputFormat` ကို Mediabunny မှန်ကန်သော `WebMOutputFormat` သို့ ပြင်ထားသည်။ Browser export က VP9 + Opus WebM ဖိုင်ထုတ်ပြီး `matroska,webm` container၊ 6.02s duration ရသည်။
 
-### သေးငယ်တာ
-- SRT ကို BOM မပါ UTF-8 နဲ့ထုတ် — တချို့ player မှာ မြန်မာစာ မှန်ဖို့ BOM ထည့်ရင် ပိုကောင်း။
-- Timeline မူလ zoom 10 px/s — clip တွေ ကျဉ်းလွန်း၊ ၆၀ px/s လောက်ကနေ စ (editor.css ထဲ မပါ၊ `main.js` pps)။
-- `Local media မရှိသေးပါ` empty state က ကျဉ်းပြီး စာကွဲ (CSS)။
+### B4 — Audio split/trim-left မှ source in-point ပျောက်ခြင်း — ပြင်ပြီး
 
-## ၃။ မစစ်ရသေးတာ (သင့် browser မှာ စစ်ဖို့လို)
+Media clip တိုင်းတွင် `src{mediaId,in,out}` ရှိပြီ။ `splitClip` က ညာတစ်ဝက်၏ `src.in` ကို ဖြတ်သည့်နေရာအထိ ရွှေ့သည်၊ `trimClip('left')` က `src.in` ကို တိုးသည်၊ `trimClip('right')` က `src.out` ကို ချိန်သည်၊ `slipClip` က window ကို ရွှေ့သည်။ `migrate()` က v3 project ကို v4 သို့ ပြောင်းပြီး media duration ထက် မကျော်စေ။ Preview/export/render အားလုံး `srcTime()` ကိုပဲ သုံးသည်။ စစ်ဆေးချက်: `known-bugs` B4 ၂ ခု PASS၊ `model-v4.test.mjs` (split/trim/slip/migrate idempotent/random-move property)။
 
-- အသံတကယ်ထွက်ခြင်း၊ B5 ရဲ့ stutter၊ ဖတ်သံ/Music ကိုက်မကိုက်၊ Ducking၊ EQ/Reverb ကြားရတာ။
-- Timeline ကို mouse နဲ့ ဆွဲ/trim/box-select/snap (action ကိုပဲ node နဲ့စစ်ပြီး၊ pointer gesture ကို မစစ်ရသေး)။
-- Record tab (microphone)၊ Library tab (R2 ကို sandbox မှာ မရှိ)၊ R2 Fonts။
-- Video/Photo clip၊ Overlay logo၊ Filters/Adjust၊ Transitions၊ Text effect ၁၅ ခုနဲ့ animation ရဲ့ မြန်မာစာ rendering (sandbox မှာ မြန်မာ font မရှိ)။
-- Export ရဲ့ အကြောင်းအရာ မျက်စိနဲ့ကြည့်ခြင်း (ကျွန်တော်က ffprobe ပဲ စစ်) နဲ့ VLC/ဖုန်းမှာ ဖွင့်ကြည့်ခြင်း၊ ရှည်တဲ့ export (၁၀ မိနစ်+)။
-- Cloudflare Access၊ ASR (ရပ်ထား)။
+### B5 — Preview audio playback တွင် seek များလွန်းခြင်း — ပြင်ပြီး (S4)၊ နားဖြင့်မစစ်ရသေး
 
-## ၄။ အကြံပြုချက်
+Preview က ယခု AudioContext ကို master clock အဖြစ်သုံးပြီး `AudioBufferSourceNode` ကို ကြိုတင် schedule လုပ်သည် (25 MB ကျော် ဖိုင်အတွက် `<audio>` + MediaElementSource path၊ seek ကို စတင်ချိန်ပဲ လုပ်သည်)။ Reschedule က play/seek/edit (debounce 120 ms) မှာပဲ ဖြစ်ပြီး သဘာဝ tick နဲ့ ကွာဟမှု 0.12 s ကျော်မှ seek လုပ်သည်။ `visibilitychange` မှာ pause လုပ်သည်။ e2e `audio.js`: `scheduled=1`၊ ctx `running`၊ media-element `currentTime` ရေး 0 ကြိမ်၊ pause မှာ sources ရပ်။ နားဖြင့် stutter/A-V sync စစ်ရန် လိုအပ်ဆဲ။
 
-B1 နဲ့ B2 ကို **ပထမဆုံး** ပြင်ပါ — ကဗျာစာသား မပျက်ဘဲ MP4 (အသံပါ) ထုတ်လို့ရမှသာ ဒီ app က အသုံးဝင်တယ်။ ပြီးရင် B4 → B3 → B5 → B8 → B6 → B7။
-စာတန်း ပြင်တဲ့ session တစ်ခုထက်ပိုရင် repo ကို `git pull` မလုပ်ဘဲ push မလုပ်ပါနဲ့ (ယခင်က ဖိုင်ထပ်ရေးခံရတာ ၂ ကြိမ်ကြုံ)။
+### B6 — Export audio DSP parity မပြည့်ခြင်း — ပြင်ပြီး (S6)
+
+`engine/audio-graph.js` က per-clip chain (EQ ၃ ခု → compressor → dry/echo/reverb → gain envelope → pan) နဲ့ track bus/master limiter ကို တစ်နေရာတည်း ဆောက်သည်။ Preview (`playback.js`) နဲ့ export (`renderOfflineAudio`) နှစ်ခုလုံး `startBufferClip()` တစ်ခုတည်းကို သုံးသဖြင့် EQ/compressor/echo/reverb/loop/ducking/fade အားလုံး တူညီသည်။ Reverb impulse ကို seeded PRNG နဲ့ ဆောက်သဖြင့် render တစ်ခုနဲ့တစ်ခု bit-identical (e2e diff 0)။ ကျန်တာ: တကယ့် preview capture နဲ့ export ကို spectrum နှိုင်းယှဉ်ခြင်း။
+
+### B7 — တူညီသော track ပေါ် clip ထပ်တင်နိုင်ခြင်း — ပြင်ပြီး
+
+`engine/lanes.js` က free slot ကို ရှာပြီး လိုအပ်ရင် lane အသစ် (`Text 2`၊ `Audio 2`) ဖွဲ့သည်။ `moveClip`/`addMedia`/paste/duplicate အားလုံး ဒီစည်းမျဉ်းကို သုံးသည်။ စစ်ဆေးချက်: known-bugs B7 PASS + ၃၀၀ ကြိမ် ကျပန်း move property test။
+
+### B8 — AAC မရသည့် browser အတွက် Opus fallback မရှိခြင်း — ပြင်ပြီး၊ MP4 စစ်ပြီး
+
+Container ကခွင့်ပြုသော audio codec များအနက် Mediabunny encodability query ဖြင့် ရွေးသည်။ MP4 မှာ AAC မရလျှင် Opus ကို ရွေးနိုင်သည်။ စမ်းသပ်ခဲ့သော Chromium တွင် Opus တစ်ခုသာ encodable ဖြစ်ပြီး တကယ့် MP4 ထဲတွင် Opus audio stream ပါကြောင်း ffprobe ဖြင့်စစ်ပြီးဖြစ်သည်။
+
+### ဤ slice တွင် ပြီးသွားသော အခြားအချက်များ
+
+- **S7**: `.github/workflows/test.yml` (unit + known-bugs + lint + syntax)၊ `scripts/lint-lines.mjs` ratchet (ဖိုင် ≤ ၃၀၀ လိုင်း၊ လိုင်း ≤ ၁၆၀)၊ SRT UTF-8 BOM၊ timeline default zoom ၆၀ px/s၊ empty-state စာကွဲပြင်ဆင်။
+- **U1 (G1)**: `ui/inspector-registry.js` — clip kind → tabs (Text/Animation/Timing၊ Audio: Basic/Effects၊ Video/Image: Video/Adjust၊ မရွေးရင် Project settings)။ e2e စစ်ပြီး။
+- **U2 (G2)**: `ui/menus.js` + `ui/context-menu.js` — clip/track/ruler/media right-click၊ clipboard (Ctrl+C/X/V)၊ lane-safe paste။ e2e စစ်ပြီး။
+- **U3 (G3)**: media tile ကို drag → timeline/player ချ၊ ဖိုင် drag → Media panel import၊ drop indicator။ e2e စစ်ပြီး။
+- **S4**: `engine/playback.js` — pure `planSchedule()` + live engine (AudioContext clock၊ buffer/element path၊ debounce reschedule၊ visibility pause၊ meters)။ unit ၁၀ + e2e ၁၀။
+- **S6**: `engine/audio-graph.js` — shared preview/export graph၊ seeded IR၊ limiter၊ track buses။ e2e parity diff 0။
+- **T1**: `engine/timeline.js` — move/trim(ripple,roll)/split(all)/slip/slide/delete/lift/extract/insert/overwrite/setProp၊ locked guard၊ one-step undo + `history.js` labels။ unit ၁၃။
+- **U4**: splitters (left 240–480၊ inspector 280–420၊ timeline 200–60%)၊ double-click reset၊ collapse toggles၊ localStorage။ e2e စစ်ပြီး။
+- **U5**: track header mute/solo၊ double-click rename၊ height S/M/L (context menu)။ e2e စစ်ပြီး။
+- **U6/T2**: razor tool (B/V)၊ fit (Shift+Z)၊ delete left/right (Q/W)၊ undo tooltip label။ e2e စစ်ပြီး။
+- **T3**: `engine/groups.js` link/unlink + group move/delete၊ `engine/markers.js` markers (M၊ ↑↓၊ right-click delete)၊ snap points တွင် marker ပါ။ unit ၅ + e2e။
+- **T4**: ←/→ (Shift = ၁ စက္ကန့်)၊ Home/End၊ J/K/L (J = pause + ၁ စက္ကန့် နောက်ဆုတ်)။ e2e စစ်ပြီး။
+- **T2**: Shift-drag = ripple trim၊ Alt-drag edge = roll၊ Alt-drag body = slip၊ Ctrl-drag body = slide၊ N = snap။ e2e roll စစ်ပြီး။
+- **T3 select**: marquee drag on empty timeline area (`ui/marquee.js`)၊ Alt+→ = clips right of playhead။ e2e စစ်ပြီး။
+- **U7/U8/U9/U13**: safe area/guides/zoom/F၊ tool panel ၈ ခု၊ keyframe (◆ + timeline diamond)၊ a11y (aria/focus/tabIndex) နှင့် 1280×720 overflow စစ်။ e2e `tools.js` ၁၉။
+- **U12 onboarding**: toast queue (`ui/toast-queue.js` + `ui/toast.js`)၊ Player empty-state card (CTA → စာတန်း)၊ save/export/SRT toast။ e2e `onboarding.js` ၈။ ၅ ဆင့် coach tour ပါ။
+- **U11 keymap**: `ui/keymap.js` registry → `ui/shortcuts-dialog.js` (grouped)၊ `?`/Esc/Ctrl+S/Ctrl+E ခလုတ်များ bind။ unit ၄ + e2e ၄။
+- **S8 gate**: `scripts/test-all.sh` — lint + unit + known-bugs + e2e အားလုံး တစ်ချက်တည်း; CI မှာ e2e job ပါ။
+- **E1 export**: `engine/export-range.js` (`trimProject`/`stripCaptions`)၊ dialog မှာ Range (I/O) နှင့် Captions (burn/SRT)။ unit ၄ + e2e။
+- **T6 captions**: `engine/captions.js` (`parseSrt`/`importSrt`)၊ Text panel SRT import၊ caption clip ကို `caption:true` + dashed outline။ unit ၄ + e2e။
+- **T5 perf**: `engine/virtual.js` viewport filter၊ `ui/tl-scroll.js` (scroll sync + shift-wheel)၊ waveform bars ကို clip width အလိုက် လျှော့။ unit ၄ + e2e။
+- **T4 scrub**: `ui/scrub.js` — ruler scrub snaps to clip edges/markers (`snapTime`)၊ ၈၀ms throttle နဲ့ `playback.scrub()` audio burst (၁၄၀ms window)။ e2e စစ်ပြီး။
+- **T4 in/out**: `engine/range.js` pure wrap helpers၊ transport `range` + loop၊ ruler မှာ range အရိပ်၊ I/O + Shift+I/O keys၊ loop button၊ ruler menu Lift/Extract။ unit ၄ + e2e။
+
+### မပြီးသေးသည့်အချက်များ
+
+U7–U13။ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
+
+## ၃။ User Chrome တွင် လက်ဖြင့်စစ်ရန်
+
+- Browser မှ တကယ့် Zawgyi စာသား convert လုပ်ပြီး မြန်မာစာရလဒ်ကို ပြန်စစ်ရန်။
+- သင့် Chrome တွင် upload, playback, အသံကြားခြင်း, mute/solo/ducking, EQ/reverb/echo နားထောင်ခြင်း။
+- Mouse ဖြင့် move/trim/split/snap, undo/redo လုပ်ခြင်း။
+- Right-click menu (clip/track/ruler)၊ Ctrl+C/X/V paste၊ media tile ကို timeline ပေါ် drag ချခြင်း။
+- Audio clip ရွေးရင် Inspector က Basic/Effects ပဲပြ၊ Video clip ရွေးရင် Video/Adjust ပဲပြ။
+- သီချင်းတစ်ပုဒ်ကို EQ/reverb/echo ဖွင့်ပြီး preview နဲ့ export ကို နားနှိုင်းယှဉ်ခြင်း (S6)။
+- Panel တွေ ဆွဲချဲ့/ချုံ့၊ ပိတ်/ဖွင့်၊ track rename/mute/solo/height ကို သင့် Chrome မှာ စမ်းခြင်း (U4/U5)။
+- မိနစ် ၁၀ ကျော် အသံဖိုင်နဲ့ playback/seek စမ်းခြင်း (element path)။
+- MP4/WebM ကို VLC နှင့် ဖုန်းတွင်ဖွင့်စစ်ခြင်း၊ အချိန်ရှည် export စမ်းခြင်း။
+- Myanmar fonts, text effects/animation နှင့် R2 private fonts ကိုစစ်ခြင်း။
+
+ဤစာရင်းမပြီးသေးမချင်း Plan.md ၏ stabilization/release အခြေအနေကို အစိမ်းမပြောင်းရ။

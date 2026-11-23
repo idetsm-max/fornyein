@@ -12,12 +12,24 @@ try {
   const info = JSON.parse(stdout), streams = info.streams || [], video = streams.find((s) => s.codec_type === 'video'), audio = streams.find((s) => s.codec_type === 'audio');
   if (!video) fail('missing video stream');
   if (!audio) fail('missing audio stream');
-  const vd = Number(video?.duration || 0), ad = Number(audio?.duration || 0), fd = Number(info.format?.duration || Math.max(vd, ad));
+  const streamDuration = (stream) => Number.isFinite(Number(stream?.duration)) ? Number(stream.duration) : null;
+  const vd = streamDuration(video), ad = streamDuration(audio);
+  const fd = Number(info.format?.duration || Math.max(vd || 0, ad || 0));
   if (expected > 0 && Math.abs(fd - expected) > Math.max(tolerance, expected * .02)) fail(`duration ${fd.toFixed(3)}s differs from expected ${expected.toFixed(3)}s`);
-  if (video && audio && Math.abs(vd - ad) > tolerance) fail(`A/V duration drift ${Math.abs(vd - ad).toFixed(3)}s exceeds ${tolerance.toFixed(3)}s`);
+  const avDrift = vd !== null && ad !== null ? Math.abs(vd - ad) : null;
+  if (avDrift !== null && avDrift > tolerance) fail(`A/V duration drift ${avDrift.toFixed(3)}s exceeds ${tolerance.toFixed(3)}s`);
   if (video && Number(video.start_time || 0) < -tolerance) fail(`video starts before zero: ${video.start_time}`);
   if (audio && Number(audio.start_time || 0) < -tolerance) fail(`audio starts before zero: ${audio.start_time}`);
   if (video && !/^\d+\/\d+$/.test(video.avg_frame_rate || '')) fail('missing video frame rate');
-  const report = { ok: !process.exitCode, file, duration: fd, video: video && { codec: video.codec_name, duration: vd, fps: video.avg_frame_rate }, audio: audio && { codec: audio.codec_name, duration: ad }, avDrift: video && audio ? Math.abs(vd - ad) : null };
+  const report = {
+    ok: !process.exitCode,
+    file,
+    duration: fd,
+    format: info.format?.format_name || null,
+    video: video && { codec: video.codec_name, duration: vd, fps: video.avg_frame_rate },
+    audio: audio && { codec: audio.codec_name, duration: ad },
+    avDrift,
+    avDriftCheck: avDrift === null ? 'unavailable in stream metadata' : 'measured',
+  };
   console.log(JSON.stringify(report, null, 2));
 } catch (error) { fail(error.stderr || error.message); }

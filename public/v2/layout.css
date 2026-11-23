@@ -1,0 +1,23 @@
+/* Workspace layout: grid, splitters, panel collapse, track heights, rename. */
+.main{display:grid;min-height:0;gap:8px;padding:8px;position:relative;
+  grid-template-columns:78px var(--left-w,330px) minmax(0,1fr) var(--insp-w,330px);
+  grid-template-rows:minmax(0,1fr) var(--tl-h,300px);
+  grid-template-areas:"rail media player inspector" "rail timeline timeline fx"}
+.main.no-left{grid-template-columns:78px 0 minmax(0,1fr) var(--insp-w,330px)}
+.main.no-insp{grid-template-columns:78px var(--left-w,330px) minmax(0,1fr) 0}
+.main.no-tl{grid-template-rows:minmax(0,1fr) 0}
+.main.no-left .media,.main.no-insp .inspector,.main.no-insp .fxpanel,.main.no-tl .timeline{display:none}
+.splitter{position:absolute;z-index:25;background:transparent;transition:background .12s}
+.splitter:hover,.splitter:focus-visible{background:var(--accent)}
+.splitter.v{width:6px;top:8px;bottom:8px;cursor:col-resize}
+.splitter.v.left{left:calc(11px + 78px + var(--left-w,330px))}
+.splitter.v.right{right:calc(5px + var(--insp-w,330px))}
+.splitter.h{height:6px;left:8px;right:8px;bottom:calc(5px + var(--tl-h,300px));cursor:row-resize}
+.thead.h-s,.trow.h-s{height:32px}.thead.h-l,.trow.h-l{height:72px}
+.ibtn.solo{font-size:11px;font-weight:700}
+.trename{width:100%;min-width:0;height:24px;border:1px solid var(--accent);border-radius:5px;background:var(--field);padding:0 6px;font:inherit;color:var(--tx)}
+.marquee{position:absolute;z-index:9;pointer-events:none;background:rgba(120,170,255,.14);border:1px solid var(--accent)}
+.range{position:absolute;top:0;bottom:0;pointer-events:none;background:rgba(255,255,255,.07);
+  border-left:1px solid var(--accent2);border-right:1px solid var(--accent2)}
+.marker{position:absolute;top:0;transform:translateX(-6px);width:0;height:0;cursor:pointer;z-index:3;
+  border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid var(--accent2)}

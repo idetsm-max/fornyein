@@ -36,14 +36,25 @@
 |---|---|---|
 | Shell/theme၊ Engine core (store/undo/autosave/render) | 🟢 | unit + e2e ၁၄ pass |
 | Media import → audio clip၊ Text presets၊ **Auto-draft** (±၀.၀၂ s)၊ SRT | 🟢 | |
-| Timeline ops (text split+undo, ripple, lock, trim limit) | 🟡 | **B4** audio split/trim-left မှန်မှန်မပြေ၊ **B7** clip ထပ်လို့ရ |
-| **မြန်မာ Unicode စာ** | 🔴 | **B1** `normalizeMyanmar` က `တွေကို→တွကေို` ဖျက် |
-| **Export အသံပါ** | 🔴 | **B2** track ကို start() နောက်ထည့်၊ **B3** WebM class နာမည်၊ **B8** AAC→Opus fallback မရှိ |
-| Audio Preview | 🟡 | **B5** play နေစဉ် `<audio>` ကို ~၈/s seek |
-| Preview=Export အသံ | 🔴 | **B6** export က EQ/reverb/echo/loop မသုံး |
+| Timeline ops (text split+undo, ripple, lock, trim limit) | 🟡 | **B4/B7 ပြင်ပြီး** (schema v4 `src`၊ lanes) — unit + known-bugs ✅၊ သင့် Chrome mouse gesture မစစ်ရသေး |
+| **မြန်မာ Unicode စာ** | 🟢 | **B1 ပြင်ပြီး** (`feat/stabilization-s1-s2`) — `normalizeMyanmar` ဖျက်၊ Zawgyi = confirm ပဲ။ Evidence: known-bugs B1 (၇ check) + unit + e2e |
+| **Export အသံပါ** | 🟡 | **B2/B3/B8 ပြင်ပြီး** — ffprobe: MP4 H.264+Opus 6.0135 s (drift 13.5 ms)၊ WebM VP9+Opus။ **နားနဲ့/VLC/သင့် Chrome မစစ်ရသေး** |
+| Audio Preview | 🟡 | **S4/B5 ပြင်ပြီး** — AudioContext clock ပေါ် buffer scheduling (playhead rAF)၊ drift > 0.12 s မှသာ reschedule၊ e2e: 0 media-element seek။ **နားဖြင့်မစစ်ရသေး** |
+| Preview=Export အသံ | 🟡 | **S6/B6 ပြင်ပြီး** — preview/export နှစ်ခုလုံး `audio-graph.js` တစ်ခုတည်း (EQ/comp/echo/reverb/loop/duck)၊ deterministic render diff 0။ spectrum A/B capture မလုပ်ရသေး |
 | အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay/Filters | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
 | Auto caption (Workers AI Whisper) | 🔴/⏸ | မြန်မာမှာ တခြားစာလုံးထွက် — M7 benchmark |
 | Cloudflare Access | ⏸ | `/api/*` public |
+| **S7 CI/lint** | 🟢 | `scripts/lint-lines.mjs` ratchet ✅; `.github/workflows/test.yml` (unit/lint/syntax/e2e) ကို token `workflow` scope မရှိ၍ repo မတင်၊ local သာ |
+| **S8 stabilization** | 🟢 | `scripts/test-all.sh` gate (lint+unit+known-bugs+e2e)၊ CI e2e job (Chromium + puppeteer-core) |
+| **U1–U3 (G1–G3)** | 🟢 | Inspector registry၊ context menu/clipboard၊ drag & drop — headless e2e `tests/e2e/ux.js` ✅ |
+| **U4–U6** | 🟢 | Splitters/collapse (localStorage)၊ track mute/solo/rename/height၊ razor/fit/Q/W — e2e `tests/e2e/layout.js` ✅ |
+| **T1 command layer** | 🟢 | `engine/timeline.js` + undo labels (`history.js`)၊ unit ၁၃ + property checks |
+| **T3 groups/markers** | 🟢 | link/unlink + group move/delete၊ markers (M / ↑↓ / right-click)၊ marquee select၊ Alt+→ — e2e `groups.js` |
+| **T2 gestures** | 🟡 | Shift = ripple trim၊ Alt = roll (edge) / slip (body)၊ Ctrl = slide၊ N = snap — box select ကျန် |
+| **E1 export** | 🟢 | dialog: range (I/O) + captions burn-in/SRT sidecar (`engine/export-range.js`) |
+| **T6 captions** | 🟢 | SRT import → caption clips (`engine/captions.js`)၊ timeline မှာ dashed outline၊ SRT export ရှိပြီး |
+| **T5 perf** | 🟢 | viewport virtualization (`engine/virtual.js`) + waveform LOD (bars by width) + horizontal scroll |
+| **T4 transport** | 🟢 | ←/→၊ Home/End၊ J/K/L၊ I/O + loop၊ fit၊ scrub (edge/marker snap + audio burst) |
 
 ### ၂.၂ UI/UX audit (လက်ရှိ UI ကို headless Chromium မှာ တကယ်နှိပ်စမ်းပြီး တွေ့တာ — Nov 2026)
 **ရှိပြီး ✅**: VidPro layout (rail/panel/player/inspector/timeline/status)၊ dark/light၊ undo/redo၊ Text panel (Add text/presets/Poem)၊ Inspector (text: font/style/color/stroke/size/opacity/position/rotate…)၊ Player ပေါ်မှာ ရွေးထားတဲ့စာ ဆွဲ + handle ၈ ခု၊ Timeline ဆွဲ/trim/split/snap/zoom၊ Export dialog၊ shortcut ခလုတ်၊ ၁၁၀၀×၆၅၀ မှာ page scroll မရှိ။
@@ -63,6 +74,8 @@
 | G11 | **Toast/notification**၊ onboarding hint၊ empty-state CTA မညီညာ | |
 | G12 | **Top bar** ရဲ့ zoom select (50–200%) က ဘာကိုထိန်းလဲ မရှင်း | |
 | G13 | Burmese UI ကိစ္စ: label English၊ error/tooltip မြန်မာ — ရောပြန်ရင်းနေ | |
+
+> **ပိတ်ပြီး (v5.1, 2026-11-23)**: **G1** (Inspector registry — U1)၊ **G2** (right-click context menu + clipboard — U2)၊ **G3** (media → timeline/player drag & drop — U3)။ အထောက်အထား = `public/v2/tests/e2e/ux.js` (headless Chromium)။
 
 ---
 
@@ -180,8 +193,8 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | U8 | **Left panels အပြည့်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates) + "demo panel" ဖယ် | G4, G5 | M2–M6 |
 | U9 | **Keyframes UI** (◆, curve editor, timeline keyframe row) | G9 | M3 |
 | U10 | **Export dialog** (preset/format/range/captions) | – | S2 |
-| U11 | **Shortcuts dialog + CapCut keymap + registry** | – | T-all |
-| U12 | **Toast/Coach marks/Empty-state CTA/Microcopy (မြန်မာ)** | G11, G13 | – |
+| U11 | **Shortcuts dialog + CapCut keymap + registry** ✅ (`ui/keymap.js`, `ui/shortcuts-dialog.js`) | – | T-all |
+| U12 | **Toast/Coach marks/Empty-state CTA/Microcopy (မြန်မာ)** 🟢 toast၊ empty-state card၊ ၅ ဆင့် coach tour | G11, G13 | – |
 | U13 | **A11y + responsive (၁၂၈၀×၇၂၀)** | – | M8 |
 
 | Milestone | Engine | **UX (U)** | ထွက်ပေါက်စံ |
@@ -249,10 +262,10 @@ D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ C
 ## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ
 
 1. **Plan ကို ဆက်မြှင့်**: **L2b — CapCut-like UI/UX Detailed Spec** (§၃ ကို screen/state/interaction table အဆင့်သို့ — panel တစ်ခုချင်း၊ context-menu item တစ်ခုချင်း၊ shortcut တစ်ခုချင်း၊ state (hover/active/disabled/error)၊ wireframe ASCII) → L4 test catalog (UX test ပါ) → L5 M2–M8 → L6 release/ops။
-2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။
+2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1–S8 (CI file မှလွဲ၍), T1–T6, E1, U1–U6, U10–U13 အားလုံး။ **နောက်**: U7–U13 (Plan အသစ် ဖြည့်လာသည်အထိ)။
 3. သင်ပြင်ဆင်ရန်: CapCut-user test အတွက် task ၁၀ ခုကို စစ်ကြည့်ရန် အချိန်၊ ကိုယ့်ကဗျာဖတ်သံ၊ Access AUD tag။
 
 ---
 
 ## နောက်ဆက်တွဲ — v1 → v2 အင်္ဂါရပ် လွှဲပြောင်း (အခြေအနေ)
-Tap-sync/Auto-draft/Review/Lock 🟡(Auto-draft 🟢) · စာ effect ၁၅/animation/preset/အရောင်နှစ်မျိုး/stroke 🟡 · Zawgyi 🔴 B1 · Font R2 🟡 · R2 tiles/Record 🟡 · Mixer preview 🟡/export 🔴 B6 · Title/Credits 🟡၊ SRT 🟢 · MP4 export 🔴 B2 · ဖတ်သံ split/trim 🔴 B4 · 9:16 safe-area ⏸ (U7)။
+Tap-sync/Auto-draft/Review/Lock 🟡(Auto-draft 🟢) · စာ effect ၁၅/animation/preset/အရောင်နှစ်မျိုး/stroke 🟡 · Zawgyi 🟡 B1 ပြင်ပြီး (confirm UX ကျန်) · Font R2 🟡 · R2 tiles/Record 🟡 · Mixer preview 🟡/export 🔴 B6 · Title/Credits 🟡၊ SRT 🟢 · MP4 export 🟡 B2/B3/B8 ပြင်ပြီး (ffprobe ✅၊ နားနဲ့မစစ်) · ဖတ်သံ split/trim 🔴 B4 · 9:16 safe-area ⏸ (U7)။

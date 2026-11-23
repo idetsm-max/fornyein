@@ -15,15 +15,25 @@ const here = (p) => fs.readFileSync(fileURLToPath(new URL(p, import.meta.url)), 
 for (const s of ['တွေကို', 'ရေကို', 'မြန်မာစာ', 'ဗုဒ္ဓ', 'မန္တလေး', 'ကျွန်တော် သူငယ်ချင်းတွေကို ချစ်တယ်']) {
   const o = normalizeMyanmar(s); log(o === s, `B1 normalizeMyanmar keeps "${s}"`, o === s ? '' : 'became ' + o);
 }
+{
+  const text = 'တွေကို ရေကို ဗုဒ္ဓ မန္တလေး';
+  const s = createStore(M.newProject()), tr = { t: 0, seek(value) { this.t = value; } };
+  A.addLines(s, tr, [text]);
+  A.addTimedLines(s, tr, [text], [{ start: 5, end: 7 }]);
+  A.addAsrLines(s, tr, [{ text, start: 8, end: 10 }]);
+  const saved = M.textTrack(s.get().project).clips.map((clip) => clip.text);
+  log(saved.length === 3 && saved.every((value) => value === text),
+    'B1 text, auto-draft, and ASR caption paths preserve Unicode');
+}
 // B4 — splitting / trimming an AUDIO clip must keep the position inside the file
 {
   const s = createStore(M.newProject()); A.addMedia(s, tr, { id: 'm1', kind: 'audio', name: 'v.wav', dur: 8 });
   const id = s.get().selection, right = A.splitClip(s, id, 4, { snap: false });
   const r = s.get().project.tracks.find((t) => t.kind === 'audio').clips.find((c) => c.id === right);
-  log(!!r && ('in' in r || 'offset' in r || 'srcStart' in r), 'B4 split audio: right half knows where it starts inside the file', JSON.stringify(r));
+  log(!!r && r.src?.in === 4 && r.src?.out === 8, 'B4 split audio: right half starts at 4 s inside the file', JSON.stringify(r?.src));
   const s2 = createStore(M.newProject()); A.addMedia(s2, tr, { id: 'm2', kind: 'audio', name: 'v.wav', dur: 8 });
   A.trimClip(s2, s2.get().selection, 'left', 3, { snap: false }); const c = s2.get().project.tracks.find((t) => t.kind === 'audio').clips[0];
-  log('in' in c || 'offset' in c || 'srcStart' in c, 'B4 trim-left audio: content does not slide', JSON.stringify(c));
+  log(c.src?.in === 3 && c.src?.out === 8 && c.start === 3 && c.dur === 5, 'B4 trim-left audio: content does not slide', JSON.stringify({ src: c.src, start: c.start, dur: c.dur }));
 }
 // B7 — no overlap on the same track
 {
@@ -37,6 +47,7 @@ for (const s of ['တွေကို', 'ရေကို', 'မြန်မာစ
   log(!/WebmOutputFormat/.test(job), 'B3 uses the real Mediabunny class name WebMOutputFormat');
   const iStart = job.indexOf('output.start()'), iAudio = job.indexOf('addAudioTrack');
   log(iAudio >= 0 && iStart > iAudio, 'B2 audio track is added BEFORE output.start()', `start@${iStart} addAudioTrack@${iAudio}`);
-  log(/opus/.test(job) && /isConfigSupported/.test(src), 'B8 falls back to Opus when AAC is not supported');
+  const selector = src.slice(src.indexOf('export async function selectAudioCodec'), src.indexOf('export async function createMediabunnyJob'));
+  log(/opus/.test(selector) && /getFirstEncodableAudioCodec/.test(selector) && /isConfigSupported/.test(selector), 'B8 falls back to Opus when AAC is not supported');
 }
 console.log(failed ? `\n${failed} known bug check(s) still failing` : '\nall known-bug checks pass'); process.exit(failed ? 1 : 0);
