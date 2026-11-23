@@ -52,8 +52,8 @@
     "long": 1
   },
   "public/v2/main.js": {
-    "lines": 44,
-    "long": 6
+    "lines": 45,
+    "long": 7
   },
   "public/v2/styles.css": {
     "lines": 211,
@@ -100,7 +100,7 @@
     "long": 12
   },
   "public/v2/ui/export-dialog.js": {
-    "lines": 34,
+    "lines": 36,
     "long": 2
   },
   "public/v2/ui/hooks.js": {
@@ -112,7 +112,7 @@
     "long": 1
   },
   "public/v2/ui/panels.js": {
-    "lines": 211,
+    "lines": 212,
     "long": 86
   },
   "public/v2/ui/shortcuts-dialog.js": {
@@ -120,12 +120,16 @@
     "long": 1
   },
   "public/v2/ui/stage.js": {
-    "lines": 131,
-    "long": 23
+    "lines": 134,
+    "long": 24
   },
   "public/v2/ui/strings.js": {
     "lines": 18,
     "long": 4
+  },
+  "public/v2/ui/toast.js": {
+    "lines": 23,
+    "long": 1
   },
   "public/v2/ui/widgets.js": {
     "lines": 32,

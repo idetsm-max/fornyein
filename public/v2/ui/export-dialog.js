@@ -3,6 +3,7 @@ import { Select } from './widgets.js';
 import { createMediabunnyJob, saveExportResult } from '../engine/export.js';
 import { trimProject, stripCaptions } from '../engine/export-range.js';
 import { textToSrt } from '../engine/actions.js';
+import { toast } from './toast.js';
 
 function downloadSrt(project) {
   const a = document.createElement('a');
@@ -26,7 +27,8 @@ export function ExportDialog({ project, transport, onClose }) {
       job.current = j;
       const result = await j.run();
       await saveExportResult(result, `${project.name || 'fornyein'}.${format}`);
-    } catch (e) { setError(e?.message || String(e)); } finally { setRunning(false); }
+      toast('Export ပြီးပါပြီ', 'ok');
+    } catch (e) { setError(e?.message || String(e)); toast('Export မအောင်မြင်ပါ', 'error'); } finally { setRunning(false); }
   };
   return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && !running && onClose()}><div class="exportbox"><div class="exporthead"><b>Export video</b><button type="button" class="x" disabled=${running} onClick=${onClose}>×</button></div><div class="exportbody"><label>Resolution<${Select} value=${preset} onChange=${setPreset} options=${['720p', '1080p', '9:16', '1:1']} /></label><label>Format<${Select} value=${format} onChange=${setFormat} options=${['mp4', 'webm']} /></label>
 <label title="In–out range (I/O keys)">Range<${Select} value=${range} onChange=${setRange} options=${['all', 'range']} /></label>

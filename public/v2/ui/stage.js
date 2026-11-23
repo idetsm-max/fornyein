@@ -5,7 +5,7 @@ import { useStore, useTransport } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, projectDuration, fmtClock } from '../engine/model.js';
 import { drawFrame, bboxes, measureText } from '../engine/render.js';
-import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, trimClip, splitClip, addMediaAt } from '../engine/actions.js';
+import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, trimClip, splitClip, addMediaAt, addText } from '../engine/actions.js';
 import { splitClips } from '../engine/timeline.js'; import { applyClipDrag } from './clip-drag.js';
 import { marqueeStyle, useMarquee } from './marquee.js'; import { clipsRightOf } from './timeline-keys.js';
 import { scrubSeek } from './scrub.js'; import { useTimelineScroll } from './tl-scroll.js'; import { clipVisible } from '../engine/virtual.js';
@@ -13,6 +13,7 @@ import { addMarker, markers, removeMarker } from '../engine/markers.js'; import 
 import { TrackHead } from './track-head.js'; import { useTimelineKeys } from './timeline-keys.js';
 import { clipMediaId } from '../engine/clip.js';
 import { clipMenu, trackMenu, rulerMenu } from './menus.js';
+import { toast } from './toast.js';
 
 export { RATIOS };
 
@@ -22,6 +23,7 @@ const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 export function Player({ store, transport, fonts, onMenu }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const { t, playing } = useTransport(transport);
+  const empty = !project.tracks.some((track) => track.clips.length);
   const [w, h] = RATIOS[project.size], dur = projectDuration(project);
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
   const [dim, setDim] = useState({ cw: 960, ch: 540 }), [ov, setOv] = useState(null), lastPaint = useRef(0);
@@ -65,6 +67,7 @@ export function Player({ store, transport, fonts, onMenu }) {
     <div class="stagewrap">
       <div class="frame" ref=${frameRef} style=${{ width: `min(100cqw, calc(100cqh * ${w / h}))`, aspectRatio: `${w} / ${h}` }} onPointerDown=${(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) store.select(null); }} onContextMenu=${(e) => { e.preventDefault(); if (sel) onMenu?.(clipMenu({ store, transport, clipId: sel, x: e.clientX, y: e.clientY })); }} onDragOver=${(e) => { if (e.dataTransfer.types.includes('text/x-fornyein-media')) e.preventDefault(); }} onDrop=${(e) => { e.preventDefault(); const meta = project.media?.[e.dataTransfer.getData('text/x-fornyein-media')]; if (meta) addMediaAt(store, transport, meta, transport.t); }}>
         <canvas ref=${canvasRef} class="stagecanvas" role="img" aria-label="Video preview canvas"></canvas>
+        ${empty && html`<div class="stageempty"><div class="emptycard"><b>ကဗျာ ဗီဒီယို စတင်ရအောင်</b><ol><li>မီဒီယာ ထည့်ပါ — ဖတ်သံ သို့မဟုတ် ပုံ</li><li>စာတန်း ထည့်ပါ — ကဗျာကို paste လုပ်နိုင်</li><li>Export နှိပ်ပြီး သိမ်းပါ</li></ol><button type="button" class="btn primary" onClick=${() => { addText(store, transport); toast('စာတန်း ထည့်ပြီး', 'ok'); }}>စာတန်း ထည့်ပါ</button></div></div>`}
         ${ov && html`<div class="sel" style=${{ left: (ov.x - ov.w / 2) + '%', top: (ov.y - ov.h / 2) + '%', width: ov.w + '%', height: ov.h + '%', transform: `rotate(${ov.rot}deg)` }}
           onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onDblClick=${() => document.querySelector('.inspector textarea')?.focus()}>
           <div class="floatbar" onPointerDown=${(e) => e.stopPropagation()}>
