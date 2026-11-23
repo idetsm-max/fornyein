@@ -39,12 +39,12 @@
 | Timeline ops (text split+undo, ripple, lock, trim limit) | 🟡 | **B4/B7 ပြင်ပြီး** (schema v4 `src`၊ lanes) — unit + known-bugs ✅၊ သင့် Chrome mouse gesture မစစ်ရသေး |
 | **မြန်မာ Unicode စာ** | 🟢 | **B1 ပြင်ပြီး** (`feat/stabilization-s1-s2`) — `normalizeMyanmar` ဖျက်၊ Zawgyi = confirm ပဲ။ Evidence: known-bugs B1 (၇ check) + unit + e2e |
 | **Export အသံပါ** | 🟡 | **B2/B3/B8 ပြင်ပြီး** — ffprobe: MP4 H.264+Opus 6.0135 s (drift 13.5 ms)၊ WebM VP9+Opus။ **နားနဲ့/VLC/သင့် Chrome မစစ်ရသေး** |
-| Audio Preview | 🟡 | **B5 code ပြင်ပြီး** — drift > 0.3 s မှသာ seek၊ **နားဖြင့်မစစ်ရသေး** |
-| Preview=Export အသံ | 🔴 | **B6** export က EQ/reverb/echo/loop မသုံး |
+| Audio Preview | 🟡 | **S4/B5 ပြင်ပြီး** — AudioContext clock ပေါ် buffer scheduling (playhead rAF)၊ drift > 0.12 s မှသာ reschedule၊ e2e: 0 media-element seek။ **နားဖြင့်မစစ်ရသေး** |
+| Preview=Export အသံ | 🟡 | **S6/B6 ပြင်ပြီး** — preview/export နှစ်ခုလုံး `audio-graph.js` တစ်ခုတည်း (EQ/comp/echo/reverb/loop/duck)၊ deterministic render diff 0။ spectrum A/B capture မလုပ်ရသေး |
 | အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay/Filters | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
 | Auto caption (Workers AI Whisper) | 🔴/⏸ | မြန်မာမှာ တခြားစာလုံးထွက် — M7 benchmark |
 | Cloudflare Access | ⏸ | `/api/*` public |
-| **S7 CI/lint** | 🟢 | `.github/workflows/test.yml` + `scripts/lint-lines.mjs` ratchet |
+| **S7 CI/lint** | 🟡 | `scripts/lint-lines.mjs` ratchet ✅; `.github/workflows/test.yml` ကို token `workflow` scope မရှိ၍ local မှာသာ ထားရ |
 | **U1–U3 (G1–G3)** | 🟢 | Inspector registry၊ context menu/clipboard၊ drag & drop — headless e2e `tests/e2e/ux.js` ✅ |
 
 ### ၂.၂ UI/UX audit (လက်ရှိ UI ကို headless Chromium မှာ တကယ်နှိပ်စမ်းပြီး တွေ့တာ — Nov 2026)
@@ -253,7 +253,7 @@ D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ C
 ## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ
 
 1. **Plan ကို ဆက်မြှင့်**: **L2b — CapCut-like UI/UX Detailed Spec** (§၃ ကို screen/state/interaction table အဆင့်သို့ — panel တစ်ခုချင်း၊ context-menu item တစ်ခုချင်း၊ shortcut တစ်ခုချင်း၊ state (hover/active/disabled/error)၊ wireframe ASCII) → L4 test catalog (UX test ပါ) → L5 M2–M8 → L6 release/ops။
-2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1, S2, S3, S5, S7, U1, U2, U3။ **နောက်**: S4, S6, T1–T6, U4–U6။
+2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။ **လုပ်ပြီး**: S1, S2, S3, S4, S5, S6, S7 (CI file မှလွဲ၍), U1, U2, U3။ **နောက်**: T1–T6, U4–U6။
 3. သင်ပြင်ဆင်ရန်: CapCut-user test အတွက် task ၁၀ ခုကို စစ်ကြည့်ရန် အချိန်၊ ကိုယ့်ကဗျာဖတ်သံ၊ Access AUD tag။
 
 ---

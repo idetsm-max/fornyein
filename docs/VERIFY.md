@@ -1,6 +1,6 @@
 # VERIFY.md — v2 editor စစ်ဆေးမှု အစီရင်ခံစာ (Nov 2026)
 
-နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S5 lanes၊ S7 CI၊ U1–U3 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
+နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S4 audio clock၊ S5 lanes၊ S6 shared graph၊ S7 CI/lint၊ U1–U3 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
 
 ပြန်စစ်ရန်:
 
@@ -21,9 +21,10 @@ node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
 | B8 AAC → Opus fallback | ✅ | Browser `getEncodableAudioCodecs` က Opus ကိုသာရကြောင်း၊ MP4 export ထဲ Opus audio stream ရကြောင်း စစ် |
 | **B4 source range (S3)** | ✅ ပြင်ပြီး | schema v4 `src{mediaId,in,out}` + `engine/clip.js` + `engine/migrate.js`။ split ညာတစ်ဝက် `src.in=4`၊ trim-left `src.in=3, out=8` — `known-bugs` ၂ ခု PASS |
 | **B7 lane overlap (S5)** | ✅ ပြင်ပြီး | `engine/lanes.js` — move/add/paste/duplicate အားလုံး free slot ရှာပြီး lane မထပ်စေ။ known-bugs PASS + unit property test ၃၀၀ move |
-| **B5 preview seek policy** | 🟡 code ပြင်ပြီး | play နေစဉ် `currentTime` ကို drift > 0.3 s ရှိမှပြင်၊ စတင်ချိန်/seek ချိန်ပဲ သတ်မှတ်။ **နားဖြင့်မစစ်ရသေး** |
-| Unit tests | ✅ ၅၄ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ timeline 9 |
-| E2E browser tests | ✅ phase1 ၁၄/၁၄ + ux ၁၂/၁၂ | `tests/e2e/phase1.js`၊ `tests/e2e/ux.js` (headless Chromium) — page error မရှိ |
+| **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
+| **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
+| Unit tests | ✅ ၆၁ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline 9 |
+| E2E browser tests | ✅ phase1 ၁၄ + ux ၁၂ + audio ၁၀ | `tests/e2e/{phase1,ux,audio}.js` (headless Chromium) — page error မရှိ |
 | **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
 `node scripts/validate-export.mjs` ရလဒ်:
@@ -49,13 +50,13 @@ Offline audio ကို ပထမ render လုပ်၊ video/audio tracks အ�
 
 Media clip တိုင်းတွင် `src{mediaId,in,out}` ရှိပြီ။ `splitClip` က ညာတစ်ဝက်၏ `src.in` ကို ဖြတ်သည့်နေရာအထိ ရွှေ့သည်၊ `trimClip('left')` က `src.in` ကို တိုးသည်၊ `trimClip('right')` က `src.out` ကို ချိန်သည်၊ `slipClip` က window ကို ရွှေ့သည်။ `migrate()` က v3 project ကို v4 သို့ ပြောင်းပြီး media duration ထက် မကျော်စေ။ Preview/export/render အားလုံး `srcTime()` ကိုပဲ သုံးသည်။ စစ်ဆေးချက်: `known-bugs` B4 ၂ ခု PASS၊ `model-v4.test.mjs` (split/trim/slip/migrate idempotent/random-move property)။
 
-### B5 — Preview audio playback တွင် seek များလွန်းခြင်း — code ပြင်ပြီး၊ နားဖြင့်မစစ်ရသေး
+### B5 — Preview audio playback တွင် seek များလွန်းခြင်း — ပြင်ပြီး (S4)၊ နားဖြင့်မစစ်ရသေး
 
-Audio controller က play နေစဉ် `currentTime` ကို မပြင်တော့ပါ — `paused` ဖြစ်ချိန် (clip အသစ်စချိန်) သို့မဟုတ် drift > 0.3 s ရှိမှသာ seek လုပ်သည်။ Audio clip များကို track အားလုံးမှ ဖတ်ပြီး mute/hidden ကို လိုက်နာသည်။ S4 (AudioContext master clock + AudioBufferSource scheduling) ကို မလုပ်ရသေးပါ။ နားဖြင့် stutter စစ်ရန် လိုအပ်သည်။
+Preview က ယခု AudioContext ကို master clock အဖြစ်သုံးပြီး `AudioBufferSourceNode` ကို ကြိုတင် schedule လုပ်သည် (25 MB ကျော် ဖိုင်အတွက် `<audio>` + MediaElementSource path၊ seek ကို စတင်ချိန်ပဲ လုပ်သည်)။ Reschedule က play/seek/edit (debounce 120 ms) မှာပဲ ဖြစ်ပြီး သဘာဝ tick နဲ့ ကွာဟမှု 0.12 s ကျော်မှ seek လုပ်သည်။ `visibilitychange` မှာ pause လုပ်သည်။ e2e `audio.js`: `scheduled=1`၊ ctx `running`၊ media-element `currentTime` ရေး 0 ကြိမ်၊ pause မှာ sources ရပ်။ နားဖြင့် stutter/A-V sync စစ်ရန် လိုအပ်ဆဲ။
 
-### B6 — Export audio DSP parity မပြည့်ခြင်း — မပြင်ရသေး
+### B6 — Export audio DSP parity မပြည့်ခြင်း — ပြင်ပြီး (S6)
 
-Offline export audio သည် gain/pan/fade/ducking သာသုံးပြီး Preview ထဲက EQ/compressor/reverb/echo/loop graph ကို မမျှဝေသေးပါ။ Spectrum parity စမ်းသပ်မှုလည်း မလုပ်ရသေး။
+`engine/audio-graph.js` က per-clip chain (EQ ၃ ခု → compressor → dry/echo/reverb → gain envelope → pan) နဲ့ track bus/master limiter ကို တစ်နေရာတည်း ဆောက်သည်။ Preview (`playback.js`) နဲ့ export (`renderOfflineAudio`) နှစ်ခုလုံး `startBufferClip()` တစ်ခုတည်းကို သုံးသဖြင့် EQ/compressor/echo/reverb/loop/ducking/fade အားလုံး တူညီသည်။ Reverb impulse ကို seeded PRNG နဲ့ ဆောက်သဖြင့် render တစ်ခုနဲ့တစ်ခု bit-identical (e2e diff 0)။ ကျန်တာ: တကယ့် preview capture နဲ့ export ကို spectrum နှိုင်းယှဉ်ခြင်း။
 
 ### B7 — တူညီသော track ပေါ် clip ထပ်တင်နိုင်ခြင်း — ပြင်ပြီး
 
@@ -71,10 +72,12 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **U1 (G1)**: `ui/inspector-registry.js` — clip kind → tabs (Text/Animation/Timing၊ Audio: Basic/Effects၊ Video/Image: Video/Adjust၊ မရွေးရင် Project settings)။ e2e စစ်ပြီး။
 - **U2 (G2)**: `ui/menus.js` + `ui/context-menu.js` — clip/track/ruler/media right-click၊ clipboard (Ctrl+C/X/V)၊ lane-safe paste။ e2e စစ်ပြီး။
 - **U3 (G3)**: media tile ကို drag → timeline/player ချ၊ ဖိုင် drag → Media panel import၊ drop indicator။ e2e စစ်ပြီး။
+- **S4**: `engine/playback.js` — pure `planSchedule()` + live engine (AudioContext clock၊ buffer/element path၊ debounce reschedule၊ visibility pause၊ meters)။ unit ၁၀ + e2e ၁၀။
+- **S6**: `engine/audio-graph.js` — shared preview/export graph၊ seeded IR၊ limiter၊ track buses။ e2e parity diff 0။
 
 ### မပြီးသေးသည့်အချက်များ
 
-S4 audio clock scheduling၊ S6 audio graph parity (B6)၊ T1–T6 command/gesture layer အပြည့်၊ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
+T1–T6 command/gesture layer အပြည့်၊ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
 
 ## ၃။ User Chrome တွင် လက်ဖြင့်စစ်ရန်
 
@@ -83,6 +86,8 @@ S4 audio clock scheduling၊ S6 audio graph parity (B6)၊ T1–T6 command/gestu
 - Mouse ဖြင့် move/trim/split/snap, undo/redo လုပ်ခြင်း။
 - Right-click menu (clip/track/ruler)၊ Ctrl+C/X/V paste၊ media tile ကို timeline ပေါ် drag ချခြင်း။
 - Audio clip ရွေးရင် Inspector က Basic/Effects ပဲပြ၊ Video clip ရွေးရင် Video/Adjust ပဲပြ။
+- သီချင်းတစ်ပုဒ်ကို EQ/reverb/echo ဖွင့်ပြီး preview နဲ့ export ကို နားနှိုင်းယှဉ်ခြင်း (S6)။
+- မိနစ် ၁၀ ကျော် အသံဖိုင်နဲ့ playback/seek စမ်းခြင်း (element path)။
 - MP4/WebM ကို VLC နှင့် ဖုန်းတွင်ဖွင့်စစ်ခြင်း၊ အချိန်ရှည် export စမ်းခြင်း။
 - Myanmar fonts, text effects/animation နှင့် R2 private fonts ကိုစစ်ခြင်း။
 

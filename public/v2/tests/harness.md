@@ -17,10 +17,14 @@ BASE=http://localhost:8765 PUPPETEER=puppeteer-core CHROME=/usr/bin/chromium \
   node public/v2/tests/e2e/phase1.js
 BASE=http://localhost:8765 PUPPETEER=puppeteer-core CHROME=/usr/bin/chromium \
   node public/v2/tests/e2e/ux.js
+BASE=http://localhost:8765 PUPPETEER=puppeteer-core CHROME=/usr/bin/chromium \
+  node public/v2/tests/e2e/audio.js
 ```
 
 `phase1.js` covers text/timeline/autosave/projects/theme. `ux.js` covers the
 inspector registry (U1), context menu + clipboard (U2) and drag & drop (U3).
+`audio.js` covers the AudioContext clock (S4) and the shared preview/export
+graph (S6), including a deterministic two-render comparison.
 
 ## Export check (needs ffprobe)
 

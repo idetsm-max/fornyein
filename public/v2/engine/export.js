@@ -1,7 +1,5 @@
 import { newProject, RATIOS } from './model.js';
 import { drawFrame } from './render.js';
-import { loadMedia } from './storage.js';
-import { clipMediaId, clipSpeed, sourceRange } from './clip.js';
 import { migrate } from './migrate.js';
 
 export const EXPORT_PRESETS = {
@@ -93,61 +91,7 @@ export function createCanvasFrameRenderer(project, config, { canvas } = {}) {
   };
 }
 
-export async function renderOfflineAudio(project, config, {
-  sampleRate = 48000, onProgress = () => {}, signal,
-} = {}) {
-  if (typeof OfflineAudioContext === 'undefined') throw new Error('OfflineAudioContext is not available');
-  const clips = (project.tracks || [])
-    .filter((track) => track.kind === 'audio' && !track.muted && !track.hidden)
-    .flatMap((track) => track.clips.map((clip) => ({ ...clip, track })));
-  const length = Math.max(1, Math.ceil(config.duration * sampleRate));
-  const offline = new OfflineAudioContext(2, length, sampleRate);
-  const voice = clips.filter((clip) => clip.role === 'voice')
-    .map((clip) => [clip.start, clip.start + clip.dur]);
-  const overlapsVoice = (clip) => voice.some(([start, end]) =>
-    clip.role === 'music' && start < clip.start + clip.dur && end > clip.start);
-  let done = 0;
-  for (const clip of clips) {
-    if (signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
-    const blob = await loadMedia(clipMediaId(clip));
-    if (!blob) {
-      done++;
-      onProgress(done / Math.max(1, clips.length));
-      continue;
-    }
-    const decoded = await offline.decodeAudioData(await blob.arrayBuffer());
-    const source = offline.createBufferSource();
-    source.buffer = decoded;
-    const gain = offline.createGain(), pan = offline.createStereoPanner();
-    const duck = overlapsVoice(clip) && clip.track.mixer?.ducking ? .35 : 1;
-    const amount = Math.max(0, Math.min(2,
-      (clip.gain ?? 1) * (clip.volume ?? 1) * (clip.track.mixer?.volume ?? 1) * duck));
-    gain.gain.setValueAtTime(0, clip.start);
-    const fadeIn = clip.fade?.in || 0, fadeOut = clip.fade?.out || 0;
-    gain.gain.linearRampToValueAtTime(amount, clip.start + (fadeIn || .001));
-    if (fadeOut) {
-      gain.gain.setValueAtTime(amount, Math.max(
-        clip.start + (fadeIn || .001), clip.start + clip.dur - fadeOut));
-      gain.gain.linearRampToValueAtTime(0, clip.start + clip.dur);
-    } else {
-      gain.gain.setValueAtTime(amount, clip.start + clip.dur);
-    }
-    pan.pan.value = Math.max(-1, Math.min(1,
-      (clip.pan || 0) + (clip.track.mixer?.pan || 0)));
-    source.connect(gain).connect(pan).connect(offline.destination);
-    const { in: tin, out: tout } = sourceRange(clip);
-    if (tin >= decoded.duration) { done++; onProgress(done / Math.max(1, clips.length)); continue; }
-    const rate = clipSpeed(clip);
-    source.playbackRate.value = rate;
-    source.loop = !!clip.loop;
-    if (source.loop) { source.loopStart = tin; source.loopEnd = Math.min(decoded.duration, tout); }
-    const playable = Math.min(decoded.duration - tin, (tout - tin) / rate);
-    source.start(clip.start, tin, Math.max(.01, Math.min(playable, clip.dur * rate)));
-    done++;
-    onProgress(done / Math.max(1, clips.length));
-  }
-  return offline.startRendering();
-}
+export { renderOfflineAudio } from './playback.js';
 
 export function normalizeImportedProject(input) {
   const source = typeof input === 'string' ? JSON.parse(input) : input;
