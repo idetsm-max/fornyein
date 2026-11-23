@@ -2,16 +2,21 @@
 import { useEffect, useRef } from './deps.js';
 import { deleteLeft, deleteRight } from '../engine/timeline.js';
 import { addMarker, nextMarker, prevMarker } from '../engine/markers.js';
-import { projectDuration } from '../engine/model.js';
+import { clipEnd, projectDuration } from '../engine/model.js';
 import { frameStep } from '../engine/time.js';
 
-export function useTimelineKeys({ store, transport, setRazor, setSnap, onFit }) {
+export function clipsRightOf(project, t) {
+  return project.tracks.flatMap((tr) => tr.clips.filter((c) => clipEnd(c) > t + 1e-6).map((c) => c.id));
+}
+
+export function useTimelineKeys({ store, transport, setRazor, setSnap, onFit, onSelectRight }) {
   const fitRef = useRef(onFit);
   fitRef.current = onFit;
   useEffect(() => {
     const onKey = (e) => {
       const typing = /input|textarea|select/i.test(e.target.tagName);
-      if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (typing || e.ctrlKey || e.metaKey) return;
+      if (e.altKey) { if (e.key === 'ArrowRight') { e.preventDefault(); onSelectRight?.(); } return; }
       const key = e.key.toLowerCase();
       if (key === 'b') setRazor(true);
       else if (key === 'v') setRazor(false);
@@ -36,5 +41,5 @@ export function useTimelineKeys({ store, transport, setRazor, setSnap, onFit }) 
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [store, transport, setRazor, setSnap]);
+  }, [store, transport, setRazor, setSnap, onSelectRight]);
 }

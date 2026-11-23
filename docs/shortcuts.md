@@ -21,6 +21,8 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Ctrl+S | Save project | ⬜ planned (M1, T2) |
 | Ctrl+E | Export | ⬜ planned (M1, U10) |
 | B / V | Razor / select tool | ✅ |
+| Drag empty timeline area | Marquee select clips | ✅ |
+| Alt+→ | Select every clip to the right of the playhead | ✅ |
 | Shift-drag clip edge | Ripple trim | ✅ |
 | Alt-drag clip edge | Roll trim (shared edit point) | ✅ |
 | Alt-drag clip body | Slip source | ✅ |

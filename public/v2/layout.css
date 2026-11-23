@@ -16,6 +16,7 @@
 .thead.h-s,.trow.h-s{height:32px}.thead.h-l,.trow.h-l{height:72px}
 .ibtn.solo{font-size:11px;font-weight:700}
 .trename{width:100%;min-width:0;height:24px;border:1px solid var(--accent);border-radius:5px;background:var(--field);padding:0 6px;font:inherit;color:var(--tx)}
+.marquee{position:absolute;z-index:9;pointer-events:none;background:rgba(120,170,255,.14);border:1px solid var(--accent)}
 .range{position:absolute;top:0;bottom:0;pointer-events:none;background:rgba(255,255,255,.07);
   border-left:1px solid var(--accent2);border-right:1px solid var(--accent2)}
 .marker{position:absolute;top:0;transform:translateX(-6px);width:0;height:0;cursor:pointer;z-index:3;

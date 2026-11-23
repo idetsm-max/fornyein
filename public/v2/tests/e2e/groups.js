@@ -80,6 +80,21 @@ const box = (p, sel) => p.evaluate((s) => {
   await page.click('.tltools .ibtn[title="Loop in–out"]'); await sleep(100);
   ok('loop toggles', await page.evaluate(() => document.querySelector('.tltools .ibtn[title="Loop in–out"]').classList.contains('on')));
 
+  const row = await box(page, '.trow.text');
+  const all = await clipBoxes();
+  const head = all.reduce((a, b) => (a.left < b.left ? a : b));
+  const tail = all.reduce((a, b) => (a.left > b.left ? a : b));
+  await page.mouse.move(head.x + 4, row.y + row.h + 30);
+  await page.mouse.down();
+  await page.mouse.move(tail.x + tail.w - 4, row.y + 4, { steps: 8 });
+  await page.mouse.up(); await sleep(150);
+  const boxed = await page.evaluate(() => document.querySelectorAll('.clip.sel').length);
+  ok('marquee selects the covered clips', boxed === all.length, String(boxed));
+  await page.keyboard.press('Home'); await sleep(60);
+  await page.keyboard.down('Alt'); await page.keyboard.press('ArrowRight'); await page.keyboard.up('Alt'); await sleep(120);
+  const right = await page.evaluate(() => document.querySelectorAll('.clip.sel').length);
+  ok('Alt+→ selects clips to the right', right >= 2, String(right));
+
   await page.keyboard.press('m'); await sleep(120);
   ok('M adds a marker', (await page.$$('.ruler .marker')).length === 1);
   await page.evaluate(() => document.querySelector('.ruler .marker').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true })));
