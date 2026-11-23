@@ -68,7 +68,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .select .icon{position:absolute;right:9px;pointer-events:none;color:var(--mut)}
 .select.compact select{height:30px;padding-left:10px;font-weight:500}
 .empty{margin:auto;text-align:center;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px}
-.empty p{margin:0;color:var(--tx);font-weight:600}.empty small{color:var(--dim)}
+.empty p{margin:0;color:var(--tx);font-weight:600;max-width:100%;word-break:break-word}.empty small{color:var(--dim);max-width:100%;word-break:break-word;line-height:1.5}
 .phead{padding:14px;border-bottom:1px solid var(--line);font-size:14px}
 
 /* ---- tool rail ---- */
@@ -200,3 +200,14 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .statusbar b{color:var(--tx);font-weight:600}
 .statusbar .btn{height:34px}
 .clip.sel{outline:2px solid var(--accent2);box-shadow:0 0 0 1px rgba(255,255,255,.35) inset;z-index:3}
+
+/* ---- context menu (right-click) ---- */
+.ctxbackdrop{position:fixed;inset:0;z-index:80}
+.ctxmenu{position:fixed;min-width:220px;max-width:260px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:var(--shadow);z-index:81}
+.ctxhead{padding:6px 10px;margin-bottom:4px;border-bottom:1px solid var(--line);color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctxitem{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:7px 10px;border-radius:6px;color:var(--tx);text-align:left}
+.ctxitem:hover:not(:disabled){background:var(--field)}
+.ctxitem:disabled{opacity:.45;cursor:default}
+.ctxitem kbd{color:var(--dim);font:11px/1 inherit}
+.ctxsep{height:1px;background:var(--line);margin:4px 6px}
+.dropline{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);box-shadow:0 0 8px var(--accent);z-index:6;pointer-events:none}

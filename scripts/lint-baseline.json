@@ -1,0 +1,134 @@
+{
+  "public/v2/editor.css": {
+    "lines": 40,
+    "long": 3
+  },
+  "public/v2/engine/actions.js": {
+    "lines": 205,
+    "long": 5
+  },
+  "public/v2/engine/asr.js": {
+    "lines": 9,
+    "long": 4
+  },
+  "public/v2/engine/audio.js": {
+    "lines": 55,
+    "long": 9
+  },
+  "public/v2/engine/export.js": {
+    "lines": 353,
+    "long": 0
+  },
+  "public/v2/engine/fonts.js": {
+    "lines": 16,
+    "long": 1
+  },
+  "public/v2/engine/media.js": {
+    "lines": 24,
+    "long": 8
+  },
+  "public/v2/engine/model.js": {
+    "lines": 20,
+    "long": 10
+  },
+  "public/v2/engine/perf.js": {
+    "lines": 3,
+    "long": 3
+  },
+  "public/v2/engine/render.js": {
+    "lines": 78,
+    "long": 10
+  },
+  "public/v2/engine/storage.js": {
+    "lines": 18,
+    "long": 4
+  },
+  "public/v2/engine/store.js": {
+    "lines": 26,
+    "long": 1
+  },
+  "public/v2/engine/transport.js": {
+    "lines": 20,
+    "long": 1
+  },
+  "public/v2/engine/visual.js": {
+    "lines": 5,
+    "long": 2
+  },
+  "public/v2/index.html": {
+    "lines": 21,
+    "long": 1
+  },
+  "public/v2/main.js": {
+    "lines": 41,
+    "long": 5
+  },
+  "public/v2/styles.css": {
+    "lines": 213,
+    "long": 26
+  },
+  "public/v2/tests/e2e/phase1.js": {
+    "lines": 50,
+    "long": 5
+  },
+  "public/v2/tests/unit/engine.test.mjs": {
+    "lines": 35,
+    "long": 3
+  },
+  "public/v2/tests/unit/phase5.test.mjs": {
+    "lines": 13,
+    "long": 6
+  },
+  "public/v2/tests/unit/phase6.test.mjs": {
+    "lines": 28,
+    "long": 8
+  },
+  "public/v2/tests/unit/phase7.test.mjs": {
+    "lines": 9,
+    "long": 4
+  },
+  "public/v2/tests/unit/phase8.test.mjs": {
+    "lines": 7,
+    "long": 3
+  },
+  "public/v2/tests/unit/timeline.test.mjs": {
+    "lines": 34,
+    "long": 9
+  },
+  "public/v2/tests/verify/known-bugs.mjs": {
+    "lines": 53,
+    "long": 3
+  },
+  "public/v2/ui/chrome.js": {
+    "lines": 77,
+    "long": 16
+  },
+  "public/v2/ui/hooks.js": {
+    "lines": 13,
+    "long": 1
+  },
+  "public/v2/ui/icons.js": {
+    "lines": 73,
+    "long": 1
+  },
+  "public/v2/ui/panels.js": {
+    "lines": 209,
+    "long": 85
+  },
+  "public/v2/ui/stage.js": {
+    "lines": 121,
+    "long": 25
+  },
+  "public/v2/ui/strings.js": {
+    "lines": 18,
+    "long": 4
+  },
+  "public/v2/ui/widgets.js": {
+    "lines": 32,
+    "long": 4
+  },
+  "scripts/validate-export.mjs": {
+    "lines": 35,
+    "long": 3
+  }
+}

@@ -1,6 +1,8 @@
 import { newProject, RATIOS } from './model.js';
 import { drawFrame } from './render.js';
 import { loadMedia } from './storage.js';
+import { clipMediaId, clipSpeed, sourceRange } from './clip.js';
+import { migrate } from './migrate.js';
 
 export const EXPORT_PRESETS = {
   '720p': { width: 1280, height: 720, fps: 30, label: '720p' },
@@ -107,7 +109,7 @@ export async function renderOfflineAudio(project, config, {
   let done = 0;
   for (const clip of clips) {
     if (signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
-    const blob = await loadMedia(project.media?.[clip.mediaId]?.id || clip.mediaId);
+    const blob = await loadMedia(clipMediaId(clip));
     if (!blob) {
       done++;
       onProgress(done / Math.max(1, clips.length));
@@ -133,7 +135,14 @@ export async function renderOfflineAudio(project, config, {
     pan.pan.value = Math.max(-1, Math.min(1,
       (clip.pan || 0) + (clip.track.mixer?.pan || 0)));
     source.connect(gain).connect(pan).connect(offline.destination);
-    source.start(clip.start, 0, Math.min(decoded.duration, clip.dur));
+    const { in: tin, out: tout } = sourceRange(clip);
+    if (tin >= decoded.duration) { done++; onProgress(done / Math.max(1, clips.length)); continue; }
+    const rate = clipSpeed(clip);
+    source.playbackRate.value = rate;
+    source.loop = !!clip.loop;
+    if (source.loop) { source.loopStart = tin; source.loopEnd = Math.min(decoded.duration, tout); }
+    const playable = Math.min(decoded.duration - tin, (tout - tin) / rate);
+    source.start(clip.start, tin, Math.max(.01, Math.min(playable, clip.dur * rate)));
     done++;
     onProgress(done / Math.max(1, clips.length));
   }
@@ -164,13 +173,12 @@ export function normalizeImportedProject(input) {
       }) : [],
     }))
     : base.tracks;
-  return {
+  return migrate({
     ...base,
     ...source,
-    version: 3,
     media: { ...(source.media || {}) },
     tracks,
-  };
+  });
 }
 
 export function createExportJob(project, preset = '720p', {

@@ -30,10 +30,10 @@ for (const s of ['တွေကို', 'ရေကို', 'မြန်မာစ
   const s = createStore(M.newProject()); A.addMedia(s, tr, { id: 'm1', kind: 'audio', name: 'v.wav', dur: 8 });
   const id = s.get().selection, right = A.splitClip(s, id, 4, { snap: false });
   const r = s.get().project.tracks.find((t) => t.kind === 'audio').clips.find((c) => c.id === right);
-  log(!!r && ('in' in r || 'offset' in r || 'srcStart' in r), 'B4 split audio: right half knows where it starts inside the file', JSON.stringify(r));
+  log(!!r && r.src?.in === 4 && r.src?.out === 8, 'B4 split audio: right half starts at 4 s inside the file', JSON.stringify(r?.src));
   const s2 = createStore(M.newProject()); A.addMedia(s2, tr, { id: 'm2', kind: 'audio', name: 'v.wav', dur: 8 });
   A.trimClip(s2, s2.get().selection, 'left', 3, { snap: false }); const c = s2.get().project.tracks.find((t) => t.kind === 'audio').clips[0];
-  log('in' in c || 'offset' in c || 'srcStart' in c, 'B4 trim-left audio: content does not slide', JSON.stringify(c));
+  log(c.src?.in === 3 && c.src?.out === 8 && c.start === 3 && c.dur === 5, 'B4 trim-left audio: content does not slide', JSON.stringify({ src: c.src, start: c.start, dur: c.dur }));
 }
 // B7 — no overlap on the same track
 {

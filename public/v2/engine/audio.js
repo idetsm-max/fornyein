@@ -1,4 +1,5 @@
 import { loadMedia } from './storage.js';
+import { clipMediaId, clipSpeed, sourceRange } from './clip.js';
 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 function impulse(ctx, seconds = 1.8, decay = 2.4) { const length = Math.floor(ctx.sampleRate * seconds), buffer = ctx.createBuffer(2, length, ctx.sampleRate); for (let ch = 0; ch < 2; ch++) { const data = buffer.getChannelData(ch); for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay); } return buffer; }
@@ -20,12 +21,34 @@ export function createAudioController(transport, getProject) {
   const players = new Map(); let lastT = 0, active = false, token = 0, ctx = null, master = null;
   const ensure = () => { if (!ctx) { ctx = new AudioContext(); master = ctx.createDynamicsCompressor(); master.threshold.value = -1; master.ratio.value = 12; master.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); return ctx; };
   async function sync(force = false) {
-    const p = getProject(), tracks = p.tracks || [], audioTrack = tracks.find((t) => t.kind === 'audio'), clips = audioTrack?.clips || [], now = transport.t;
+    const p = getProject(), tracks = p.tracks || [], audioTracks = tracks.filter((t) => t.kind === 'audio' && !t.muted && !t.hidden);
+    const entries = audioTracks.flatMap((track) => track.clips.map((clip) => ({ clip, track }))), now = transport.t;
     if (!force && Math.abs(now - lastT) < .12 && active === transport.playing) return; lastT = now; active = transport.playing;
-    const current = new Set(clips.map((c) => c.id)); for (const [id, item] of players) if (!current.has(id)) { item.el.pause(); URL.revokeObjectURL(item.url); players.delete(id); }
+    const current = new Set(entries.map(({ clip }) => clip.id)); for (const [id, item] of players) if (!current.has(id)) { item.el.pause(); URL.revokeObjectURL(item.url); players.delete(id); }
     if (!active) { for (const { el } of players.values()) el.pause(); return; }
-    const ac = ensure(); const voiceActive = clips.some((c) => c.role === 'voice' && now >= c.start && now < c.start + c.dur);
-    await Promise.all(clips.map(async (c) => { let item = players.get(c.id); if (!item) { const blob = await loadMedia(p.media?.[c.mediaId]?.id || c.mediaId); if (!blob) return; item = { url: URL.createObjectURL(blob), el: new Audio(), ctx: ac }; item.el.src = item.url; item.el.crossOrigin = 'anonymous'; item.graph = setupGraph(ac, item.el, master); players.set(c.id, item); } item.el.loop = !!c.loop; const offset = now - c.start; if (offset >= 0 && offset < c.dur) { item.el.currentTime = Math.max(0, offset); const fi = c.fade?.in || 0, fo = c.fade?.out || 0, fade = (fi ? Math.min(1, offset / fi) : 1) * (fo ? Math.min(1, Math.max(0, (c.dur - offset) / fo)) : 1); applyGraph(item, c, audioTrack, audioTrack.mixer?.ducking && c.role === 'music' && voiceActive ? .35 : 1); item.graph.gain.gain.value *= fade; item.el.play().catch(() => {}); } else item.el.pause(); }));
+    const ac = ensure(); const voiceActive = entries.some(({ clip }) => clip.role === 'voice' && now >= clip.start && now < clip.start + clip.dur);
+    await Promise.all(entries.map(async ({ clip, track }) => {
+      let item = players.get(clip.id);
+      if (!item) {
+        const blob = await loadMedia(clipMediaId(clip)); if (!blob) return;
+        item = { url: URL.createObjectURL(blob), el: new Audio(), ctx: ac };
+        item.el.src = item.url; item.el.crossOrigin = 'anonymous';
+        item.graph = setupGraph(ac, item.el, master); players.set(clip.id, item);
+      }
+      item.el.loop = !!clip.loop;
+      const offset = now - clip.start, { in: tin, out: tout } = sourceRange(clip), srcDur = Math.max(.01, tout - tin);
+      if (offset >= 0 && offset < clip.dur) {
+        let want = tin + offset * clipSpeed(clip);
+        if (clip.loop && srcDur > 0) want = tin + (want - tin) % srcDur;
+        // B5: only seek on start / explicit seek; drift correction > 300 ms while playing
+        if (item.el.paused || Math.abs(item.el.currentTime - want) > .3) item.el.currentTime = Math.max(0, want);
+        const fi = clip.fade?.in || 0, fo = clip.fade?.out || 0;
+        const fade = (fi ? Math.min(1, offset / fi) : 1) * (fo ? Math.min(1, Math.max(0, (clip.dur - offset) / fo)) : 1);
+        applyGraph(item, clip, track, track.mixer?.ducking && clip.role === 'music' && voiceActive ? .35 : 1);
+        item.graph.gain.gain.value *= fade;
+        if (item.el.paused) item.el.play().catch(() => {});
+      } else item.el.pause();
+    }));
   }
   const unsub = transport.subscribe(() => sync());
   return { sync, getMeters() { const out = {}; for (const [id, item] of players) { const data = new Uint8Array(item.graph.analyser.frequencyBinCount); item.graph.analyser.getByteTimeDomainData(data); out[id] = Math.sqrt(data.reduce((n, x) => n + ((x - 128) / 128) ** 2, 0) / data.length); } return out; }, dispose() { unsub(); for (const { el, url } of players.values()) { el.pause(); URL.revokeObjectURL(url); } players.clear(); if (ctx) ctx.close(); } };

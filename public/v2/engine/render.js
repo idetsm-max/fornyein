@@ -3,6 +3,7 @@ import { clipEnd } from './model.js';
 import { revealText } from './text.js';
 import { transitionState } from './visual.js';
 import { loadMedia } from './storage.js';
+import { clipMediaId, srcTime } from './clip.js';
 import { filterString } from './visual.js';
 
 const seg = new Intl.Segmenter('my', { granularity: 'word' });
@@ -23,7 +24,7 @@ const visualCache = new Map();
 function ensureVisual(media) { if (!media || visualCache.has(media.id)) return visualCache.get(media.id); const item = { ready: false, el: null, url: '', lastUsed: performance.now() }; visualCache.set(media.id, item); loadMedia(media.id).then((blob) => { if (!blob) return; item.url = URL.createObjectURL(blob); const el = media.kind === 'video' ? document.createElement('video') : new Image(); el.src = item.url; if (media.kind === 'video') { el.muted = true; el.playsInline = true; el.onloadeddata = () => { item.ready = true; }; } else el.onload = () => { item.ready = true; }; item.el = el; }).catch(() => { item.failed = true; }); return item; }
 export function clearVisualCache({ keep = [] } = {}) { const retain = new Set(keep); for (const [id, item] of visualCache) if (!retain.has(id)) { item.el?.pause?.(); if (item.url) URL.revokeObjectURL(item.url); visualCache.delete(id); } }
 export function visualCacheStats() { return { entries: visualCache.size, ready: [...visualCache.values()].filter((x) => x.ready).length }; }
-function drawVisual(ctx, cw, ch, project, c, t) { const media = project.media?.[c.mediaId], item = ensureVisual(media); item.lastUsed = performance.now(); if (!item.ready || !item.el) return; if (c.kind === 'video') { const local = Math.max(0, Math.min(c.dur, t - c.start)); if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local; item.el.play?.().catch(() => {}); } const tr = transitionState(c, t), p = tr.inType === 'fade' ? tr.inProgress : tr.inType === 'slide' ? tr.inProgress : 1, q = tr.outType === 'fade' ? tr.outProgress : tr.outType === 'slide' ? tr.outProgress : 1; ctx.save(); ctx.globalAlpha = (c.opacity ?? 100) / 100 * p * q; ctx.filter = filterString(media.adjust); let x = 0; if (tr.inType === 'slide') x = (1 - p) * cw; if (tr.outType === 'slide') x += (1 - q) * cw; const iw = item.el.videoWidth || item.el.naturalWidth || cw, ih = item.el.videoHeight || item.el.naturalHeight || ch, base = c.fit === 'contain' ? Math.min(cw / iw, ch / ih) : Math.max(cw / iw, ch / ih), scale = base * (c.pos?.scale || 1), w = iw * scale, h = ih * scale; const px = c.pos ? c.pos.x / 100 * cw : cw / 2, py = c.pos ? c.pos.y / 100 * ch : ch / 2; ctx.drawImage(item.el, x + px - w / 2, py - h / 2, w, h); ctx.restore(); }
+function drawVisual(ctx, cw, ch, project, c, t) { const media = project.media?.[clipMediaId(c)], item = ensureVisual(media); item.lastUsed = performance.now(); if (!item.ready || !item.el) return; if (c.kind === 'video') { const local = srcTime(c, t); if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local; item.el.play?.().catch(() => {}); } const tr = transitionState(c, t), p = tr.inType === 'fade' ? tr.inProgress : tr.inType === 'slide' ? tr.inProgress : 1, q = tr.outType === 'fade' ? tr.outProgress : tr.outType === 'slide' ? tr.outProgress : 1; ctx.save(); ctx.globalAlpha = (c.opacity ?? 100) / 100 * p * q; ctx.filter = filterString(media.adjust); let x = 0; if (tr.inType === 'slide') x = (1 - p) * cw; if (tr.outType === 'slide') x += (1 - q) * cw; const iw = item.el.videoWidth || item.el.naturalWidth || cw, ih = item.el.videoHeight || item.el.naturalHeight || ch, base = c.fit === 'contain' ? Math.min(cw / iw, ch / ih) : Math.max(cw / iw, ch / ih), scale = base * (c.pos?.scale || 1), w = iw * scale, h = ih * scale; const px = c.pos ? c.pos.x / 100 * cw : cw / 2, py = c.pos ? c.pos.y / 100 * ch : ch / 2; ctx.drawImage(item.el, x + px - w / 2, py - h / 2, w, h); ctx.restore(); }
 
 function drawText(ctx, cw, ch, c, t) {
   const s = c.style || {}, fs = Math.max(4, s.size * ch / 1080) * (c.pos?.scale || 1), maxW = cw * 0.86, lh = fs * 1.5;
@@ -59,7 +60,7 @@ function drawText(ctx, cw, ch, c, t) {
 }
 
 export function drawFrame(ctx, cw, ch, project, t) {
-  ctx.clearRect(0, 0, cw, ch); ctx.fillStyle = '#0b0e14'; ctx.fillRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, cw, ch); ctx.fillStyle = project.background || '#0b0e14'; ctx.fillRect(0, 0, cw, ch);
   bboxes.clear();
   for (const kind of ['video', 'overlay', 'text']) {                       // bottom -> top
     for (const tr of project.tracks) {
