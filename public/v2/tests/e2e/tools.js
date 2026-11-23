@@ -60,6 +60,14 @@ const ok = (name, cond, extra = '') => {
   ok('2× halves the clip length', Math.abs(spd.dur - durBefore / 2) < 0.01 && spd.speed === 2, `${durBefore}->${spd.dur} @${spd.speed}`);
   await page.click('.speedwrap .switchrow input'); await sleep(200);
   ok('reverse toggle lands on the clip', (await page.evaluate(() => !!window.__store.get().project.tracks.find((t) => t.kind === 'video').clips[0].reverse)) === true);
+
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((t) => t.textContent === 'Mask')?.click());
+  await sleep(200);
+  await page.evaluate(() => [...document.querySelectorAll('.speedwrap .chipbtn')].find((b) => b.textContent === 'Ellipse')?.click());
+  await sleep(250);
+  ok('mask shape lands on the clip', (await page.evaluate(() => window.__store.get().project.tracks.find((t) => t.kind === 'video').clips[0].mask?.shape)) === 'ellipse');
+  await page.click('.speedwrap .switchrow input'); await sleep(200);
+  ok('mask invert toggles', (await page.evaluate(() => !!window.__store.get().project.tracks.find((t) => t.kind === 'video').clips[0].mask?.invert)) === true);
   await page.click('.trow.text .clip'); await sleep(200);
 
   await page.click('.railbtn[aria-label="Transitions"]'); await sleep(150);

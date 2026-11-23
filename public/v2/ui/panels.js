@@ -7,6 +7,7 @@ import { CurveEditor } from './curve-editor.js';
 import { T } from './locale-core.js';
 import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
 import { SpeedPanel } from './speed-panel.js';
+import { MaskPanel } from './mask-panel.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
@@ -154,6 +155,7 @@ export function Inspector({ store, fonts, transport }) {
     `}
     ${tab === 'keys' && html`<${CurveEditor} store=${store} clipId=${c.id} clip=${c} transport=${transport} />`}
     ${tab === 'speed' && html`<${SpeedPanel} store=${store} clipId=${c.id} clip=${c} />`}
+    ${tab === 'mask' && html`<${MaskPanel} store=${store} clipId=${c.id} clip=${c} />`}
     ${tab === 'adjust' && html`<${Slider} label="Brightness" value=${a.brightness || 0} min=${-100} max=${100} onChange=${(v) => updMedia('brightness', (k) => { k.adjust = { ...(k.adjust || {}), brightness: v }; })} unit="%" />
     <${Slider} label="Contrast" value=${a.contrast || 0} min=${-100} max=${100} onChange=${(v) => updMedia('contrast', (k) => { k.adjust = { ...(k.adjust || {}), contrast: v }; })} unit="%" />
     <${Slider} label="Saturation" value=${a.saturation || 0} min=${-100} max=${100} onChange=${(v) => updMedia('saturation', (k) => { k.adjust = { ...(k.adjust || {}), saturation: v }; })} unit="%" />

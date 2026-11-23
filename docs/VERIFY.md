@@ -23,8 +23,8 @@ node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
 | **B7 lane overlap (S5)** | ✅ ပြင်ပြီး | `engine/lanes.js` — move/add/paste/duplicate အားလုံး free slot ရှာပြီး lane မထပ်စေ။ known-bugs PASS + unit property test ၃၀၀ move |
 | **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
 | **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
-| Unit tests | ✅ ၁၁၈ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ range 4၊ virtual 4၊ captions 4၊ export-range 4၊ keymap 4၊ toast 4၊ tool-presets 4၊ keyframes 5၊ locale 3၊ curve 4၊ transitions 5၊ timeline 9 |
-| E2E browser tests | ✅ ၁၁၇ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၃၂ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
+| Unit tests | ✅ ၁၂၁ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ range 4၊ virtual 4၊ captions 4၊ export-range 4၊ keymap 4၊ toast 4၊ tool-presets 4၊ keyframes 5၊ locale 3၊ curve 4၊ transitions 5၊ mask 3၊ timeline 9 |
+| E2E browser tests | ✅ ၁၁၉ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၃၄ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
 | **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
 `node scripts/validate-export.mjs` ရလဒ်:
@@ -82,6 +82,7 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **T4**: ←/→ (Shift = ၁ စက္ကန့်)၊ Home/End၊ J/K/L (J = pause + ၁ စက္ကန့် နောက်ဆုတ်)။ e2e စစ်ပြီး။
 - **T2**: Shift-drag = ripple trim၊ Alt-drag edge = roll၊ Alt-drag body = slip၊ Ctrl-drag body = slide၊ N = snap။ e2e roll စစ်ပြီး။
 - **T3 select**: marquee drag on empty timeline area (`ui/marquee.js`)၊ Alt+→ = clips right of playhead။ e2e စစ်ပြီး။
+- **M4 mask**: `engine/mask.js` (`maskBox`/`maskPath`/`applyMask`) — rect/ellipse၊ width/height/position 0–100%၊ invert (evenodd)၊ preview နှင့် export တူညီ။ pixel probe: mask မတပ်ခင် edge=ကıနီ၊ Rect ပြီးနောက် edge=နောက်ခံ၊ center=အနီ (ပုံ screenshot စစ်ပြီး)။ e2e: shape/invert clip ပေါ် ရောက်ကြောင်း။
 - **M5 speed**: `setClipSpeed()` source slice မပြောင်းဘဲ dur ကို ပြန်တွက် (0.25×–4× clamp)၊ Inspector Speed tab (preset chip + slider + reverse)၊ preview က reverse ကို seek-based ဖတ်။ e2e: 2× → dur ထက်ဝက်၊ reverse toggle။
 - **M4 transitions**: `engine/transitions.js` — fade/slide/zoom/wipe/blur/rise/spin/dip (နှင့် none) ၈ မျိုး၊ preview + export တူညီသော math (`transitionFx`)၊ e2e: tile ၉ ခု + Wipe ရွေး → clip.transition.in = 'wipe'။
 - **U9 curve editor**: Inspector → Keys tab၊ x/y/scale/opacity chip၊ SVG curve (click = key၊ Shift+click dot = ဖျက်၊ dot = seek)၊ `curve-core.js` pure geometry (unit 4)။ e2e: `.curve` နှိပ် → key 1→2၊ timeline diamond တိုက်စစ်။

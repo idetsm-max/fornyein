@@ -28,7 +28,7 @@
     "long": 3
   },
   "public/v2/engine/render.js": {
-    "lines": 95,
+    "lines": 97,
     "long": 10
   },
   "public/v2/engine/storage.js": {
@@ -68,12 +68,16 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 106,
-    "long": 4
+    "lines": 114,
+    "long": 5
   },
   "public/v2/tests/unit/engine.test.mjs": {
     "lines": 35,
     "long": 3
+  },
+  "public/v2/tests/unit/mask.test.mjs": {
+    "lines": 36,
+    "long": 1
   },
   "public/v2/tests/unit/phase5.test.mjs": {
     "lines": 13,
@@ -123,12 +127,16 @@
     "lines": 14,
     "long": 1
   },
+  "public/v2/ui/mask-panel.js": {
+    "lines": 23,
+    "long": 4
+  },
   "public/v2/ui/panels-tools.js": {
     "lines": 104,
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 223,
+    "lines": 225,
     "long": 87
   },
   "public/v2/ui/shortcuts-dialog.js": {

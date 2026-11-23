@@ -3,6 +3,7 @@ import { clipEnd } from './model.js';
 import { revealText } from './text.js';
 import { transitionState } from './visual.js';
 import { transitionFx } from './transitions.js';
+import { applyMask } from './mask.js';
 import { loadMedia } from './storage.js';
 import { clipMediaId, srcTime } from './clip.js';
 import { filterString } from './visual.js';
@@ -34,6 +35,7 @@ function drawVisual(ctx, cw, ch, project, c, t) {
   ctx.globalAlpha = Math.max(0, Math.min(1, (c.opacity ?? 100) / 100 * fx.alpha));
   ctx.filter = [base === 'none' ? '' : base, fx.blur ? `blur(${fx.blur}px)` : ''].filter(Boolean).join(' ') || 'none';
   if (fx.wipe < 1) { ctx.beginPath(); ctx.rect(0, 0, cw * fx.wipe, ch); ctx.clip(); }
+  applyMask(ctx, c.mask, cw, ch);
   const iw = item.el.videoWidth || item.el.naturalWidth || cw, ih = item.el.videoHeight || item.el.naturalHeight || ch;
   const fitBase = c.fit === 'contain' ? Math.min(cw / iw, ch / ih) : Math.max(cw / iw, ch / ih);
   const scale = fitBase * (c.pos?.scale || 1) * fx.scale, w = iw * scale, h = ih * scale;

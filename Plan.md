@@ -202,7 +202,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | **M1 Core NLE** | S1–S8 (မြန်မာစာ၊ export အသံ၊ `src` v4၊ audio schedule၊ lane၊ audio graph) + T1–T6 (command/tools/selection/scrub/perf/caption) + E1 | **U1 U2 U3 U4 U5 U6 U10 U11 U12(အစ)** | X1–X7 (L3 §၀) + **UX gate**: G1–G3, G6–G8 ပိတ်၊ CapCut-user test (§၇) |
 | **M2 Text & Captions** | text template/animation/SRT/Poem Mode/font manager/Zawgyi | **U8 (Text/Audio panel)**၊ U12 | မြန်မာ corpus ၁၀၀%၊ ကဗျာ ၃ ပုဒ် e2e |
 | **M3 Transform & Keyframes** | `buildFrame`+WebGL2 compositor၊ transform/crop/opacity/fit/canvas bg၊ keyframes | **U7 U9** (+ Stickers panel) | golden frame၊ keyframe preview=export |
-| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | shader registry၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/Mask tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ GPU fallback |
+| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | shader registry၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ GPU fallback |
 | **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | speed time-map 🟢 (`setClipSpeed`၊ `srcTime` reverse)၊ noise reduction/loudness ကျန် | Inspector **Speed tab** 🟢 (0.25×–4×၊ reverse)၊ Mixer panel ကျန် | A/V drift ≤၄၀ ms (speed ပါ) |
 | **M6 Templates & Assets** | project/text template၊ asset relink၊ stickers | U8 (Templates/Stickers) | template ၅ ခု |
 | **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |
