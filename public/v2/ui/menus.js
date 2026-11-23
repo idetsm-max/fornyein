@@ -5,6 +5,7 @@ import { duplicateSelected, deleteClips, splitClip, toggleTrack, addText, addMed
 import { renameTrack, setTrackHeight, deleteTrack } from '../engine/tracks.js';
 import { copyClips, cutClips, pasteClips, hasClipboard } from '../engine/clipboard.js';
 import { deleteLeft, deleteRight } from '../engine/timeline.js';
+import { addMarker, removeMarkerAt } from '../engine/markers.js';
 
 export function clipMenu({ store, transport, clipId, x, y }) {
   const found = findClip(store.get().project, clipId);
@@ -53,6 +54,8 @@ export function rulerMenu({ store, transport, x, y, onFit }) {
     items: [
       { label: 'Paste at playhead', shortcut: 'Ctrl+V', disabled: !hasClipboard(), run: () => pasteClips(store, transport) },
       { label: 'Add text at playhead', run: () => addText(store, transport) },
+      { label: 'Add marker', shortcut: 'M', run: () => addMarker(store, transport.t) },
+      { label: 'Delete marker at playhead', run: () => removeMarkerAt(store, transport.t) },
       { sep: true },
       { label: 'Delete left of playhead', shortcut: 'Q', run: () => deleteLeft(store, transport.t) },
       { label: 'Delete right of playhead', shortcut: 'W', run: () => deleteRight(store, transport.t) },

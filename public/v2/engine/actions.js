@@ -9,9 +9,9 @@ import { laneFor, nearestFreeStart } from './lanes.js';
 import { quantize } from './time.js';
 
 const MIN_DUR = 0.1;
-const snapTime = (value, project, ignoreId, enabled = true) => {
+export const snapTime = (value, project, ignoreId, enabled = true) => {
   if (!enabled) return Math.max(0, value);
-  const points = [0];
+  const points = [0, ...(project.markers || []).map((m) => m.t)];
   for (const t of project.tracks) for (const c of t.clips) if (c.id !== ignoreId) points.push(c.start, clipEnd(c));
   let best = value, dist = 0.12;
   for (const p of points) if (Math.abs(p - value) < dist) { best = p; dist = Math.abs(p - value); }

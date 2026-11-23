@@ -13,8 +13,8 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Delete / Backspace | Delete selected clip | ✅ |
 | Shift+Delete | Ripple delete | ✅ |
 | Right-click clip | Cut · Copy · Paste · Duplicate · Delete · Ripple delete · Split | ✅ |
-| Right-click track header | Hide · Lock · Mute (audio) | ✅ |
-| Right-click ruler | Paste at playhead · Add text | ✅ |
+| Right-click track header | Hide · Lock · Mute/Solo (audio) · Rename · Height · Delete | ✅ |
+| Right-click ruler | Paste · Add text · Marker · Delete left/right · Fit | ✅ |
 | Esc | Close context menu | ✅ |
 | Drag media tile → timeline | Add clip at drop time | ✅ |
 | Drag file → Media panel | Import media | ✅ |
@@ -23,9 +23,12 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | B / V | Razor / select tool | ✅ |
 | Q / W | Delete left / right of playhead | ✅ |
 | N / P | Snap / main-track magnet | 🟡 snap toggle exists, key not bound |
-| M / I / O | Marker / in / out | ⬜ planned (M1, T3) |
+| M | Add marker | ✅ |
+| ↑ / ↓ | Previous / next marker | ✅ |
+| I / O | In / out points | ⬜ planned (M1, T4) |
 | Shift+Z | Zoom to fit | ✅ |
 | F | Fullscreen preview | ⬜ planned (M1, U7) |
 | ? | Shortcut dialog | ⬜ planned (M1, U11) |
-| J / K / L | Shuttle | ⬜ planned (M1, T4) |
-| ← / → | Nudge one frame (Shift = 1 s) | ⬜ planned (M1, T2) |
+| J / K / L | Pause + step back 1 s / pause / play | 🟡 shuttle speeds not yet |
+| ← / → | Nudge one frame (Shift = 1 s) | ✅ |
+| Home / End | Go to start / end | ✅ |

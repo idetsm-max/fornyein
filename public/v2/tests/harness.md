@@ -21,6 +21,8 @@ BASE=http://localhost:8765 PUPPETEER=puppeteer-core CHROME=/usr/bin/chromium \
   node public/v2/tests/e2e/audio.js
 BASE=http://localhost:8765 PUPPETEER=puppeteer-core CHROME=/usr/bin/chromium \
   node public/v2/tests/e2e/layout.js
+BASE=http://localhost:8765 PUPPETEER=puppeteer-core CHROME=/usr/bin/chromium \
+  node public/v2/tests/e2e/groups.js
 ```
 
 `phase1.js` covers text/timeline/autosave/projects/theme. `ux.js` covers the
@@ -28,7 +30,8 @@ inspector registry (U1), context menu + clipboard (U2) and drag & drop (U3).
 `audio.js` covers the AudioContext clock (S4) and the shared preview/export
 graph (S6), including a deterministic two-render comparison. `layout.js` covers
 panel splitters/collapse, track mute/solo/rename/height, razor split and undo
-labels (T1/U4–U6).
+labels (T1/U4–U6). `groups.js` covers link groups, markers and the
+Home/End/M transport keys (T3/T4).
 
 ## Export check (needs ffprobe)
 

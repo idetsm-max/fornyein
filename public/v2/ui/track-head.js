@@ -4,8 +4,12 @@ import { Icon } from './icons.js';
 import { IconBtn, cx } from './widgets.js';
 import { toggleTrack } from '../engine/actions.js';
 import { renameTrack } from '../engine/tracks.js';
+import { L } from './strings.js';
+const TRACK_UI = { text: ['text', 'trackText'], video: ['video', 'trackVideo'], overlay: ['layers', 'trackOverlay'], audio: ['audio', 'trackAudio'] };
 
-export function TrackHead({ store, track, icon, label, renaming, setRenaming, onMenu }) {
+export function TrackHead({ store, track, renaming, setRenaming, onMenu }) {
+  const [icon, key] = TRACK_UI[track.kind] || ['layers', 'trackOverlay'];
+  const label = L(key);
   const toggle = (key) => () => toggleTrack(store, track.id, key);
   const onContext = (e) => { e.preventDefault(); onMenu?.({ trackId: track.id, x: e.clientX, y: e.clientY }); };
   return html`<div class=${cx('thead', track.kind, track.height && `h-${track.height}`)} onContextMenu=${onContext}>

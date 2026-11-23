@@ -5,7 +5,8 @@ import { clipEnd, findClip, uid } from './model.js';
 import { nearestFreeStart } from './lanes.js';
 import { quantize, frameStep } from './time.js';
 import { clipSpeed, sourceRange, slipSource, trimSourceLeft, trimSourceRight } from './clip.js';
-import { deleteClips as deleteAction } from './actions.js';
+import { deleteClips as deleteAction, snapTime } from './actions.js';
+import { linkedIds } from './groups.js';
 
 const minDur = () => frameStep();
 const labelFor = (verb, n) => `${verb} ${n} clip${n === 1 ? '' : 's'}`;
@@ -81,7 +82,7 @@ function targetTrack(draft, clip, trackKind) {
 }
 
 export function moveClips(store, ids, dt, { snap = true, copy = false, toTrack = null } = {}) {
-  const set = [...new Set((ids || []).filter(Boolean))];
+  const set = linkedIds(store.get().project, ids);
   if (!set.length) return [];
   const made = [];
   store.edit((d) => {
@@ -99,6 +100,18 @@ export function moveClips(store, ids, dt, { snap = true, copy = false, toTrack =
   }, { key: `move:${set.join(',')}`, label: labelFor(copy ? 'Copy' : 'Move', set.length) });
   if (made.length) store.select(made[made.length - 1]);
   return made;
+}
+
+// Absolute move used by pointer drags: snaps the primary clip, then shifts the
+// whole link group by the same delta in one (coalesced) undo step.
+export function moveGroup(store, id, targetStart, { snap = true } = {}) {
+  const project = store.get().project;
+  const primary = findClip(project, id);
+  if (!editable(primary)) return;
+  const target = snap ? snapTime(targetStart, project, id, true) : Math.max(0, targetStart);
+  const delta = target - primary.clip.start;
+  if (Math.abs(delta) < 1e-6) return;
+  moveClips(store, [id], delta, { snap: false });
 }
 
 export function trimClip(store, id, side, value, { mode = 'normal', snap = true } = {}) {
@@ -173,11 +186,11 @@ export function slideClip(store, id, dt) {
 }
 
 export function deleteClips(store, ids, { ripple = false } = {}) {
-  deleteAction(store, ids, { ripple });
+  deleteAction(store, linkedIds(store.get().project, ids), { ripple });
 }
 
 export function duplicateClips(store, ids) {
-  const set = [...new Set((ids || []).filter(Boolean))];
+  const set = linkedIds(store.get().project, ids);
   const made = [];
   if (!set.length) return made;
   store.edit((d) => {

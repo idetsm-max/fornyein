@@ -1,6 +1,6 @@
 # VERIFY.md — v2 editor စစ်ဆေးမှု အစီရင်ခံစာ (Nov 2026)
 
-နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S4 audio clock၊ S5 lanes၊ S6 shared graph၊ S7 CI/lint၊ T1 commands၊ U1–U6 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
+နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S4 audio clock၊ S5 lanes၊ S6 shared graph၊ S7 CI/lint၊ T1/T3/T4 commands၊ U1–U6 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
 
 ပြန်စစ်ရန်:
 
@@ -23,8 +23,8 @@ node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
 | **B7 lane overlap (S5)** | ✅ ပြင်ပြီး | `engine/lanes.js` — move/add/paste/duplicate အားလုံး free slot ရှာပြီး lane မထပ်စေ။ known-bugs PASS + unit property test ၃၀၀ move |
 | **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
 | **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
-| Unit tests | ✅ ၇၄ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ timeline 9 |
-| E2E browser tests | ✅ phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ | `tests/e2e/{phase1,ux,audio,layout}.js` (headless Chromium) — page error မရှိ |
+| Unit tests | ✅ ၇၉ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ timeline 9 |
+| E2E browser tests | ✅ phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၇ | `tests/e2e/{phase1,ux,audio,layout,groups}.js` (headless Chromium) — page error မရှိ |
 | **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
 `node scripts/validate-export.mjs` ရလဒ်:
@@ -78,10 +78,12 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **U4**: splitters (left 240–480၊ inspector 280–420၊ timeline 200–60%)၊ double-click reset၊ collapse toggles၊ localStorage။ e2e စစ်ပြီး။
 - **U5**: track header mute/solo၊ double-click rename၊ height S/M/L (context menu)။ e2e စစ်ပြီး။
 - **U6/T2**: razor tool (B/V)၊ fit (Shift+Z)၊ delete left/right (Q/W)၊ undo tooltip label။ e2e စစ်ပြီး။
+- **T3**: `engine/groups.js` link/unlink + group move/delete၊ `engine/markers.js` markers (M၊ ↑↓၊ right-click delete)၊ snap points တွင် marker ပါ။ unit ၅ + e2e။
+- **T4**: ←/→ (Shift = ၁ စက္ကန့်)၊ Home/End၊ J/K/L (J = pause + ၁ စက္ကန့် နောက်ဆုတ်)။ e2e စစ်ပြီး။
 
 ### မပြီးသေးသည့်အချက်များ
 
-T2 ကျန် gesture (ripple/roll/slip drag, In/Out, magnet)၊ T3–T6၊ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
+T2 ကျန် gesture (ripple/roll/slip drag, In/Out, magnet)၊ T3 ကျန် (box select, select-all-right)၊ T4 ကျန် (audio scrub, edit points, loop)၊ T5–T6၊ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
 
 ## ၃။ User Chrome တွင် လက်ဖြင့်စစ်ရန်
 
