@@ -110,6 +110,16 @@ const box = (p, sel) => p.evaluate((s) => {
 
   await page.keyboard.press('End'); await sleep(120);
   const tcode = () => page.evaluate(() => document.querySelector('.tcode').textContent);
+  await page.evaluate(() => { const el = document.querySelector('.zoomrange'); el.value = 100; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await sleep(150);
+  const onScreen = await page.evaluate(() => document.querySelectorAll('.clip').length);
+  await page.evaluate(() => { const el = document.querySelector('.tlscroll'); el.scrollLeft = 5000; el.dispatchEvent(new Event('scroll')); });
+  await sleep(200);
+  const offScreen = await page.evaluate(() => document.querySelectorAll('.clip').length);
+  ok('virtualization drops off-screen clips', offScreen < onScreen && offScreen === 0, `${offScreen}/${onScreen}`);
+  await page.evaluate(() => { const el = document.querySelector('.tlscroll'); el.scrollLeft = 0; el.dispatchEvent(new Event('scroll')); });
+  await page.keyboard.down('Shift'); await page.keyboard.press('z'); await page.keyboard.up('Shift'); await sleep(150);
+
   ok('End seeks to the project end', !/^00:00:00:00/.test(await tcode()));
   await page.keyboard.press('Home'); await sleep(120);
   ok('Home seeks to zero', /^00:00:00:00/.test(await tcode()));
