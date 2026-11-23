@@ -67,10 +67,6 @@
     "lines": 50,
     "long": 5
   },
-  "public/v2/tests/e2e/tools.js": {
-    "lines": 70,
-    "long": 1
-  },
   "public/v2/tests/unit/engine.test.mjs": {
     "lines": 35,
     "long": 3
@@ -103,6 +99,10 @@
     "lines": 90,
     "long": 14
   },
+  "public/v2/ui/curve-editor.js": {
+    "lines": 31,
+    "long": 4
+  },
   "public/v2/ui/export-dialog.js": {
     "lines": 36,
     "long": 2
@@ -120,8 +120,8 @@
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 215,
-    "long": 86
+    "lines": 219,
+    "long": 87
   },
   "public/v2/ui/shortcuts-dialog.js": {
     "lines": 9,

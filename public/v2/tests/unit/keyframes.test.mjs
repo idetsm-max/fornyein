@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addKeyframe, removeKeyframeAt, sampleKeyframes, resolvedTransform, keyframeTimes, clearKeyframes } from '../../engine/keyframes.js';
+import { addKeyframe, removeKeyframeAt, sampleKeyframes, resolvedTransform, keyframeTimes, clearKeyframes, setKeyframeValue } from '../../engine/keyframes.js';
 
 const clip = () => ({ start: 0, dur: 4, pos: { x: 50, y: 50, scale: 1, rot: 0 }, opacity: 100 });
 
@@ -46,4 +46,15 @@ test('removeKeyframeAt and clearKeyframes', () => {
   assert.equal(c.keys, undefined);
   addKeyframe(c, 0); clearKeyframes(c);
   assert.equal(c.keys, undefined);
+});
+
+test('setKeyframeValue updates an existing key or creates one', () => {
+  const c = clip();
+  addKeyframe(c, 1, { x: 50, y: 50, scale: 1, opacity: 100 });
+  setKeyframeValue(c, 1, 'x', 10);
+  assert.equal(c.keys.length, 1);
+  assert.equal(c.keys[0].x, 10);
+  setKeyframeValue(c, 2, 'scale', 3);
+  assert.equal(c.keys.length, 2);
+  assert.equal(c.keys[1].scale, 3);
 });

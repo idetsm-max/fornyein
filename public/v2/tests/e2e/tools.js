@@ -53,9 +53,20 @@ const ok = (name, cond, extra = '') => {
   ok('preview zoom changes', zoomBefore !== zoomAfter, zoomBefore + ' -> ' + zoomAfter);
 
   ok('clips are keyboard reachable', (await page.evaluate(() => document.querySelector('.clip')?.tabIndex)) === 0);
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((t) => t.textContent === 'Keys')?.click());
+  await sleep(250);
+  ok('Keys tab renders the curve editor', await page.evaluate(() => !!document.querySelector('.curve')));
+  const dotsBefore = await page.evaluate(() => document.querySelectorAll('.cpt').length);
+  const box = await page.$eval('.curve', (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  await page.mouse.click(box.x + box.w * 0.7, box.y + box.h * 0.35); await sleep(250);
+  const dotsAfter = await page.evaluate(() => document.querySelectorAll('.cpt').length);
+  ok('clicking the curve adds a keyframe', dotsAfter > dotsBefore, `${dotsBefore}->${dotsAfter}`);
+  ok('curve keys reach the timeline', (await page.evaluate(() => document.querySelectorAll('.kfdot').length)) === dotsAfter);
+
   await page.click('.langbtn'); await sleep(250);
   ok('language toggle switches the rail to Burmese', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'မီဒီယာ');
   ok('language choice persists', (await page.evaluate(() => localStorage.getItem('fornyein.locale'))) === 'my');
+
   await page.click('.langbtn'); await sleep(250);
   ok('language toggles back to English', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'Media');
 

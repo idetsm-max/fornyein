@@ -25,7 +25,7 @@ const { wavFile } = require('./_media.js');
   await page.evaluate(() => document.querySelector('.rail .railbtn:nth-child(3)').click());
   await sleep(100);
   await page.click('.uploadbtn'); await sleep(200);
-  ok('text clip inspector tabs', (await tabs()).join(',') === 'Text,Animation,Timing', (await tabs()).join(','));
+  ok('text clip inspector tabs', (await tabs()).join(',') === 'Text,Animation,Keys,Timing', (await tabs()).join(','));
 
   const clipBox = await (await page.$('.trow.text .clip')).boundingBox();
   await page.mouse.click(clipBox.x + 20, clipBox.y + 10, { button: 'right' }); await sleep(150);

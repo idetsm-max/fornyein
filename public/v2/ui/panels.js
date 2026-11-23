@@ -3,6 +3,8 @@ import { Icon } from './icons.js';
 import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
 import { ToolsPanel } from './panels-tools.js';
 import { addKeyframe, clearKeyframes } from '../engine/keyframes.js';
+import { CurveEditor } from './curve-editor.js';
+import { T } from './locale-core.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
@@ -116,7 +118,7 @@ export function Inspector({ store, fonts, transport }) {
     <${Field} label="Ratio" tip="ဗီဒီယို အချိုး"><${Select} value=${project.size} onChange=${(v) => updProject('size', (d) => { d.size = v; })} options=${Object.keys(RATIOS)} /><//>
     <${Field} label="FPS" tip="တစ်စက္ကန့် frame အရေအတွက်"><${Select} value=${String(project.fps || 30)} onChange=${(v) => updProject('fps', (d) => { d.fps = +v; })} options=${['24', '25', '30', '60']} /><//>
     <${Field} label="Background" tip="နောက်ခံအရောင်"><label class="swatch"><input type="color" value=${project.background || '#0b0e14'} onInput=${(e) => updProject('bg', (d) => { d.background = e.target.value; })} /><span style=${{ background: project.background || '#0b0e14' }}></span></label><//>
-    <div class="empty"><${Icon} name="text" size=${30} /><p>Select a clip</p><small>Clip တစ်ခု ရွေးရင် ဒီနေရာမှာ သူ့ဆက်တင်တွေ ပြပါမယ်</small></div>
+    <div class="empty"><${Icon} name="text" size=${30} /><p>${T('Select a clip', 'Clip တစ်ခု ရွေးပါ')}</p><small>Clip တစ်ခု ရွေးရင် ဒီနေရာမှာ သူ့ဆက်တင်တွေ ပြပါမယ်</small></div>
   </div></aside>`;
   if (c.kind === 'audio') return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
     <div class="audioins"><b>${c.name || project.media?.[clipMediaId(c)]?.name || 'Audio clip'}</b><small>Audio clip settings</small></div>
@@ -147,6 +149,7 @@ export function Inspector({ store, fonts, transport }) {
     <${Slider} label="Opacity" value=${c.opacity ?? 100} min=${0} max=${100} onChange=${(v) => upd('opacity', (k) => { k.opacity = v; })} unit="%" />
     ${found.track.kind === 'overlay' && html`<${Slider} label="Logo size" value=${Math.round((c.pos?.scale || .18) * 100)} min=${5} max=${60} onChange=${(v) => upd('logosize', (k) => { k.pos = { ...(k.pos || {}), scale: v / 100 }; })} unit="%" />`}
     `}
+    ${tab === 'keys' && html`<${CurveEditor} store=${store} clipId=${c.id} clip=${c} transport=${transport} />`}
     ${tab === 'adjust' && html`<${Slider} label="Brightness" value=${a.brightness || 0} min=${-100} max=${100} onChange=${(v) => updMedia('brightness', (k) => { k.adjust = { ...(k.adjust || {}), brightness: v }; })} unit="%" />
     <${Slider} label="Contrast" value=${a.contrast || 0} min=${-100} max=${100} onChange=${(v) => updMedia('contrast', (k) => { k.adjust = { ...(k.adjust || {}), contrast: v }; })} unit="%" />
     <${Slider} label="Saturation" value=${a.saturation || 0} min=${-100} max=${100} onChange=${(v) => updMedia('saturation', (k) => { k.adjust = { ...(k.adjust || {}), saturation: v }; })} unit="%" />
@@ -157,9 +160,10 @@ export function Inspector({ store, fonts, transport }) {
   const s = c.style || {}, fontOpts = fonts.includes(s.font) ? fonts : [s.font, ...fonts];
   return html`<aside class="panel inspector">${tabs}
     <div class="pbody scroll">
+      ${tab === 'keys' && html`<${CurveEditor} store=${store} clipId=${c.id} clip=${c} transport=${transport} />`}
       ${tab === 'text' ? html`
         <div class="textbox"><textarea value=${c.text} maxlength="500" onInput=${(e) => upd('text', (k) => { k.text = e.target.value; })} placeholder="စာသား ရိုက်ပါ" /><span class="count">${c.text.length} / 500</span></div>
-        <div class="kfrow"><span>Keyframes: ${(c.keys || []).length}</span><button type="button" class="btn" onClick=${() => store.edit((d) => { const g = findClip(d, c.id); if (g) addKeyframe(g.clip, transport?.t ?? 0); }, { key: 'kf-' + c.id })}>◆ Add at playhead</button><button type="button" class="btn" onClick=${() => store.edit((d) => { const g = findClip(d, c.id); if (g) clearKeyframes(g.clip); }, { key: 'kf-clear-' + c.id })}>Clear</button></div>
+        <div class="kfrow"><span>${T('Keyframes:', 'ကီးဖရိမ်:')} ${(c.keys || []).length}</span><button type="button" class="btn" onClick=${() => store.edit((d) => { const g = findClip(d, c.id); if (g) addKeyframe(g.clip, transport?.t ?? 0); }, { key: 'kf-' + c.id })}>◆ Add at playhead</button><button type="button" class="btn" onClick=${() => store.edit((d) => { const g = findClip(d, c.id); if (g) clearKeyframes(g.clip); }, { key: 'kf-clear-' + c.id })}>Clear</button></div>
         <div class="reviewrow"><span>Review</span><${IconBtn} name="edit" active=${c.review === 'draft'} title="Draft" onClick=${() => upd('review-draft', (k) => { k.review = 'draft'; })} /><${IconBtn} name="check" active=${c.review === 'review'} title="Review" onClick=${() => upd('review', (k) => { k.review = 'review'; })} /><${IconBtn} name="lock" active=${!!c.locked} title="Lock" onClick=${() => upd('lock', (k) => { k.locked = !k.locked; })} /></div>
         <${Field} label="Reveal" tip="Typewriter / Word reveal"><${Select} value=${c.reveal?.mode || 'none'} onChange=${(v) => upd('reveal', (k) => { k.reveal = { ...(k.reveal || {}), mode: v }; })} options=${[['none', 'None'], ['typewriter', 'Typewriter'], ['word', 'Word reveal']]}/><//>
         <${Field} label=${L('font')} tip=${H('font')}><${Select} value=${s.font} onChange=${(v) => upd('font', (k) => { k.style.font = v; })} options=${fontOpts} /><//>

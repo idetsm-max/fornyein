@@ -49,3 +49,11 @@ export function resolvedTransform(clip, t) {
 }
 
 export const keyframeTimes = (clip) => (clip.keys || []).map((k) => k.t);
+
+export function setKeyframeValue(clip, t, field, value) {
+  const key = (clip.keys || []).find((k) => Math.abs(k.t - t) <= EPS);
+  if (key) key[field] = value;
+  else addKeyframe(clip, t, { ...snapshot(clip, t), [field]: value });
+  clip.keys.sort((a, b) => a.t - b.t);
+  return clip.keys;
+}

@@ -191,7 +191,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | U6 | **Timeline toolbar** အပြည့် (Razor, Magnet, Link, Marker, In/Out, Delete L/R, Fit) | G8 | T2–T3 |
 | U7 | **Player** handles + snap guides + safe-area + canvas zoom/ratio + floating toolbar 🟢 (safe area၊ center guide၊ zoom 25–200%၊ F၊ visual box) | G9, G10 | M3 |
 | U8 | **Left panels အပြည့်** 🟢 (`panels-tools.js` — Audio/Stickers/Effects/Transitions/Filters/Adjust/Templates/More၊ demo panel ဖယ်ပြီး) | G4, G5 | M2–M6 |
-| U9 | **Keyframes UI** 🟢 (`keyframes.js`၊ ◆၊ timeline diamond၊ inspector) — curve editor ကျန် | G9 | M3 |
+| U9 | **Keyframes UI** 🟢 (`keyframes.js`၊ ◆၊ timeline diamond၊ inspector၊ **curve editor** `ui/curve-editor.js`) | G9 | M3 |
 | U10 | **Export dialog** (preset/format/range/captions) ✅ (E1) | – | S2 |
 | U11 | **Shortcuts dialog + CapCut keymap + registry** ✅ (`ui/keymap.js`, `ui/shortcuts-dialog.js`) | – | T-all |
 | U12 | **Toast/Coach marks/Empty-state CTA/Microcopy (မြန်မာ)** 🟢 toast၊ empty-state card၊ ၅ ဆင့် coach tour | G11, G13 | – |

@@ -13,6 +13,8 @@ export function setLocale(next) {
   subs.forEach((fn) => fn());
 }
 
+export const T = (en, my) => (current === 'my' ? my : en);
+
 export function toggleLocale() { setLocale(current === 'my' ? 'en' : 'my'); return current; }
 
 export function subscribeLocale(fn) { subs.add(fn); return () => subs.delete(fn); }
