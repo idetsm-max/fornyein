@@ -5,7 +5,7 @@ import { addMarker, nextMarker, prevMarker } from '../engine/markers.js';
 import { projectDuration } from '../engine/model.js';
 import { frameStep } from '../engine/time.js';
 
-export function useTimelineKeys({ store, transport, setRazor, onFit }) {
+export function useTimelineKeys({ store, transport, setRazor, setSnap, onFit }) {
   const fitRef = useRef(onFit);
   fitRef.current = onFit;
   useEffect(() => {
@@ -18,6 +18,11 @@ export function useTimelineKeys({ store, transport, setRazor, onFit }) {
       else if (key === 'q') { e.preventDefault(); deleteLeft(store, transport.t); }
       else if (key === 'w') { e.preventDefault(); deleteRight(store, transport.t); }
       else if (key === 'm') { e.preventDefault(); addMarker(store, transport.t); }
+      else if (key === 'n') { e.preventDefault(); setSnap?.((v) => !v); }
+      else if (key === 'i' && e.shiftKey) { e.preventDefault(); transport.setRange({ in: null }); }
+      else if (key === 'o' && e.shiftKey) { e.preventDefault(); transport.setRange({ out: null }); }
+      else if (key === 'i') { e.preventDefault(); transport.setRange({ in: transport.t }); }
+      else if (key === 'o') { e.preventDefault(); transport.setRange({ out: transport.t }); }
       else if (key === 'arrowleft') { e.preventDefault(); transport.seek(transport.t - (e.shiftKey ? 1 : frameStep())); }
       else if (key === 'arrowright') { e.preventDefault(); transport.seek(transport.t + (e.shiftKey ? 1 : frameStep())); }
       else if (key === 'arrowup') { const m = prevMarker(store.get().project, transport.t); if (m) transport.seek(m.t); }
@@ -31,5 +36,5 @@ export function useTimelineKeys({ store, transport, setRazor, onFit }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [store, transport, setRazor]);
+  }, [store, transport, setRazor, setSnap]);
 }

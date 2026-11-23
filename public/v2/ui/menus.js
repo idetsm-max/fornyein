@@ -6,6 +6,7 @@ import { renameTrack, setTrackHeight, deleteTrack } from '../engine/tracks.js';
 import { copyClips, cutClips, pasteClips, hasClipboard } from '../engine/clipboard.js';
 import { deleteLeft, deleteRight } from '../engine/timeline.js';
 import { addMarker, removeMarkerAt } from '../engine/markers.js';
+import { deleteRange } from '../engine/timeline.js';
 
 export function clipMenu({ store, transport, clipId, x, y }) {
   const found = findClip(store.get().project, clipId);
@@ -59,6 +60,15 @@ export function rulerMenu({ store, transport, x, y, onFit }) {
       { sep: true },
       { label: 'Delete left of playhead', shortcut: 'Q', run: () => deleteLeft(store, transport.t) },
       { label: 'Delete right of playhead', shortcut: 'W', run: () => deleteRight(store, transport.t) },
+      { label: 'Lift in–out', run: () => {
+        const { in: a, out: b } = transport.range;
+        if (a != null && b != null && b > a) deleteRange(store, a, b);
+      } },
+      { label: 'Extract in–out', run: () => {
+        const { in: a, out: b } = transport.range;
+        if (a != null && b != null && b > a) deleteRange(store, a, b, { ripple: true });
+      } },
+      { label: 'Clear in–out', run: () => transport.setRange({ in: null, out: null }) },
       { label: 'Zoom to fit', shortcut: 'Shift+Z', run: () => onFit?.() },
     ],
   };

@@ -52,6 +52,34 @@ const box = (p, sel) => p.evaluate((s) => {
   const d0 = byId(after, before[0].id) - before[0].left, d1 = byId(after, before[1].id) - before[1].left;
   ok('linked clips move together', Math.abs(d0 - d1) < 2 && d0 > 10, `${d0} / ${d1}`);
 
+  await page.keyboard.press('b');
+  const first = (await clipBoxes())[0];
+  await page.mouse.click(first.x + first.w / 2, first.y + first.h / 2); await sleep(150);
+  await page.keyboard.press('v');
+  let pair = await clipBoxes();
+  ok('razor makes an adjacent pair', pair.length === 3, String(pair.length));
+  pair.sort((a, b) => a.left - b.left);
+  const left0 = pair[0], right0 = pair[1];
+  await page.keyboard.down('Alt');
+  await page.mouse.move(right0.x + 2, right0.y + right0.h / 2);
+  await page.mouse.down();
+  await page.mouse.move(right0.x + 42, right0.y + right0.h / 2, { steps: 5 });
+  await page.mouse.up();
+  await page.keyboard.up('Alt'); await sleep(150);
+  const pair2 = await clipBoxes();
+  const left1 = pair2.find((c) => c.id === left0.id), right1 = pair2.find((c) => c.id === right0.id);
+  ok('Alt-drag rolls the shared edit point', Math.abs((left1.w - left0.w) - 40) < 3 && Math.abs((right1.left - right0.left) - 40) < 3,
+    `${left1.w - left0.w} / ${right1.left - right0.left}`);
+
+  await page.keyboard.press('Home'); await sleep(80);
+  await page.keyboard.press('i'); await sleep(80);
+  await page.keyboard.press('End'); await sleep(80);
+  await page.keyboard.press('o'); await sleep(120);
+  const rng = await box(page, '.ruler .range');
+  ok('I/O draw the range', !!rng && rng.w > 10, rng && String(rng.w));
+  await page.click('.tltools .ibtn[title="Loop in–out"]'); await sleep(100);
+  ok('loop toggles', await page.evaluate(() => document.querySelector('.tltools .ibtn[title="Loop in–out"]').classList.contains('on')));
+
   await page.keyboard.press('m'); await sleep(120);
   ok('M adds a marker', (await page.$$('.ruler .marker')).length === 1);
   await page.evaluate(() => document.querySelector('.ruler .marker').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true })));

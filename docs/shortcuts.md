@@ -21,11 +21,18 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Ctrl+S | Save project | ⬜ planned (M1, T2) |
 | Ctrl+E | Export | ⬜ planned (M1, U10) |
 | B / V | Razor / select tool | ✅ |
+| Shift-drag clip edge | Ripple trim | ✅ |
+| Alt-drag clip edge | Roll trim (shared edit point) | ✅ |
+| Alt-drag clip body | Slip source | ✅ |
+| Ctrl-drag clip body | Slide clip | ✅ |
+| N | Snap on / off | ✅ |
 | Q / W | Delete left / right of playhead | ✅ |
 | N / P | Snap / main-track magnet | 🟡 snap toggle exists, key not bound |
 | M | Add marker | ✅ |
 | ↑ / ↓ | Previous / next marker | ✅ |
-| I / O | In / out points | ⬜ planned (M1, T4) |
+| I / O | Set in / out | ✅ |
+| Shift+I / Shift+O | Clear in / out | ✅ |
+| Loop button | Loop in–out playback | ✅ |
 | Shift+Z | Zoom to fit | ✅ |
 | F | Fullscreen preview | ⬜ planned (M1, U7) |
 | ? | Shortcut dialog | ⬜ planned (M1, U11) |

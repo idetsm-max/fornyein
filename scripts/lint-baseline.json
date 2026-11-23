@@ -40,7 +40,7 @@
     "long": 1
   },
   "public/v2/engine/transport.js": {
-    "lines": 20,
+    "lines": 23,
     "long": 1
   },
   "public/v2/engine/visual.js": {
@@ -113,7 +113,7 @@
   },
   "public/v2/ui/stage.js": {
     "lines": 126,
-    "long": 25
+    "long": 24
   },
   "public/v2/ui/strings.js": {
     "lines": 18,
