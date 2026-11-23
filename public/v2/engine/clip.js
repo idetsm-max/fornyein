@@ -19,6 +19,17 @@ export function srcTime(clip, t) {
   return clip.reverse ? Math.max(tin, tout - local) : Math.min(tout, tin + local);
 }
 
+export const SPEED_MIN = 0.25, SPEED_MAX = 4;
+
+// Changing speed keeps the same slice of the source; only timeline length changes.
+export function setClipSpeed(clip, speed) {
+  const next = Math.max(SPEED_MIN, Math.min(SPEED_MAX, Number(speed) || 1));
+  const { in: tin, out: tout } = sourceRange(clip);
+  clip.speed = r6(next);
+  clip.dur = r6(Math.max(frameStep(), (tout - tin) / next));
+  return clip;
+}
+
 export function srcDuration(clip) {
   const { in: tin, out: tout } = sourceRange(clip);
   return Math.max(0, tout - tin);

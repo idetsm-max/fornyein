@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { newProject, newAudioClip, newTextClip, textTrack, findClip, clipEnd } from '../../engine/model.js';
 import { createStore } from '../../engine/store.js';
 import { addMedia, splitClip, trimClip, slipClip, moveClip } from '../../engine/actions.js';
-import { srcTime, sourceRange, clipRangeValid } from '../../engine/clip.js';
+import { srcTime, sourceRange, clipRangeValid, setClipSpeed, SPEED_MIN, SPEED_MAX } from '../../engine/clip.js';
 import { migrate, validate } from '../../engine/migrate.js';
 import { nearestFreeStart, laneFor, placeClip, trackHasRoom } from '../../engine/lanes.js';
 import { quantize } from '../../engine/time.js';
@@ -128,4 +128,18 @@ test('addMedia at the same playhead stacks instead of overlapping', () => {
   const clips = audioClips(s.get().project).sort((a, b) => a.start - b.start);
   assert.equal(clips.length, 2);
   assert.ok(clips[1].start >= clipEnd(clips[0]) - 1e-6);
+});
+
+test('setClipSpeed keeps the source slice and rescales duration', () => {
+  const c = { start: 0, dur: 4, src: { mediaId: 'm', in: 2, out: 6 }, speed: 1 };
+  setClipSpeed(c, 2);
+  assert.equal(c.speed, 2);
+  assert.equal(c.dur, 2);
+  assert.deepEqual(sourceRange(c), { in: 2, out: 6 });
+  setClipSpeed(c, 0.5);
+  assert.equal(c.dur, 8);
+  setClipSpeed(c, 99);
+  assert.equal(c.speed, SPEED_MAX);
+  setClipSpeed(c, 0.01);
+  assert.equal(c.speed, SPEED_MIN);
 });

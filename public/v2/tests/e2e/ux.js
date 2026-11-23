@@ -66,7 +66,7 @@ const { wavFile } = require('./_media.js');
   });
   await sleep(400);
   ok('drag & drop adds another audio clip', (await clips('audio')) === 2);
-  ok('audio clip inspector tabs', (await tabs()).join(',') === 'Basic,Effects', (await tabs()).join(','));
+  ok('audio clip inspector tabs', (await tabs()).join(',') === 'Basic,Effects,Speed', (await tabs()).join(','));
 
   await page.screenshot({ path: process.env.SHOT || '/tmp/ux.png' });
   ok('no page errors', errors.length === 0, JSON.stringify(errors));

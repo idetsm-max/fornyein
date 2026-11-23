@@ -28,7 +28,7 @@ export function clearVisualCache({ keep = [] } = {}) { const retain = new Set(ke
 export function visualCacheStats() { return { entries: visualCache.size, ready: [...visualCache.values()].filter((x) => x.ready).length }; }
 function drawVisual(ctx, cw, ch, project, c, t) {
   const media = project.media?.[clipMediaId(c)], item = ensureVisual(media); item.lastUsed = performance.now(); if (!item.ready || !item.el) return;
-  if (c.kind === 'video') { const local = srcTime(c, t); if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local; item.el.play?.().catch(() => {}); }
+  if (c.kind === 'video') { const local = srcTime(c, t); if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local; if (!c.reverse) item.el.play?.().catch(() => {}); }
   const fx = transitionFx(transitionState(c, t), cw, ch), base = filterString(media.adjust);
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, (c.opacity ?? 100) / 100 * fx.alpha));

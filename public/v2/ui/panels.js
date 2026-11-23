@@ -6,6 +6,7 @@ import { addKeyframe, clearKeyframes } from '../engine/keyframes.js';
 import { CurveEditor } from './curve-editor.js';
 import { T } from './locale-core.js';
 import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
+import { SpeedPanel } from './speed-panel.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
@@ -123,6 +124,7 @@ export function Inspector({ store, fonts, transport }) {
   </div></aside>`;
   if (c.kind === 'audio') return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
     <div class="audioins"><b>${c.name || project.media?.[clipMediaId(c)]?.name || 'Audio clip'}</b><small>Audio clip settings</small></div>
+    ${tab === 'speed' && html`<${SpeedPanel} store=${store} clipId=${c.id} clip=${c} />`}
     ${tab === 'basic' && html`<${Slider} label="Track volume" tip="Audio track master volume" value=${Math.round((found.track.mixer?.volume ?? 1) * 100)} min=${0} max=${150} onChange=${(v) => updTrack('volume', (k) => { k.mixer = { ...(k.mixer || {}), volume: v / 100 }; })} unit="%" />
     <${Slider} label="Track pan" tip="Audio track pan" value=${Math.round((found.track.mixer?.pan || 0) * 100)} min=${-100} max=${100} onChange=${(v) => updTrack('pan', (k) => { k.mixer = { ...(k.mixer || {}), pan: v / 100 }; })} unit="%" />
     <${Field} label="Ducking" tip="Voice clip ပေါ်ချိန် Music အသံလျှော့"><label class="switch"><input type="checkbox" checked=${!!found.track.mixer?.ducking} onChange=${() => updTrack('ducking', (k) => { k.mixer = { ...(k.mixer || {}), ducking: !k.mixer?.ducking }; })} /><i></i></label><//>
@@ -151,6 +153,7 @@ export function Inspector({ store, fonts, transport }) {
     ${found.track.kind === 'overlay' && html`<${Slider} label="Logo size" value=${Math.round((c.pos?.scale || .18) * 100)} min=${5} max=${60} onChange=${(v) => upd('logosize', (k) => { k.pos = { ...(k.pos || {}), scale: v / 100 }; })} unit="%" />`}
     `}
     ${tab === 'keys' && html`<${CurveEditor} store=${store} clipId=${c.id} clip=${c} transport=${transport} />`}
+    ${tab === 'speed' && html`<${SpeedPanel} store=${store} clipId=${c.id} clip=${c} />`}
     ${tab === 'adjust' && html`<${Slider} label="Brightness" value=${a.brightness || 0} min=${-100} max=${100} onChange=${(v) => updMedia('brightness', (k) => { k.adjust = { ...(k.adjust || {}), brightness: v }; })} unit="%" />
     <${Slider} label="Contrast" value=${a.contrast || 0} min=${-100} max=${100} onChange=${(v) => updMedia('contrast', (k) => { k.adjust = { ...(k.adjust || {}), contrast: v }; })} unit="%" />
     <${Slider} label="Saturation" value=${a.saturation || 0} min=${-100} max=${100} onChange=${(v) => updMedia('saturation', (k) => { k.adjust = { ...(k.adjust || {}), saturation: v }; })} unit="%" />

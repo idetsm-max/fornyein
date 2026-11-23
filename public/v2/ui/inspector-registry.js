@@ -4,8 +4,8 @@ const tab = (key, label, tip) => ({ key, label, tip });
 
 export const INSPECTOR_TABS = {
   text: [tab('text', 'Text', 'စာသား'), tab('anim', 'Animation', 'Animation'), tab('keys', 'Keys', 'Keyframe curve'), tab('timing', 'Timing', 'အချိန်')],
-  audio: [tab('basic', 'Basic', 'အခြေခံ အသံ'), tab('effects', 'Effects', 'EQ၊ Reverb၊ Echo')],
-  video: [tab('video', 'Video', 'ဗီဒီယို'), tab('adjust', 'Adjust', 'အလင်း၊ အရောင်'), tab('keys', 'Keys', 'Keyframe curve')],
+  audio: [tab('basic', 'Basic', 'အခြေခံ အသံ'), tab('effects', 'Effects', 'EQ၊ Reverb၊ Echo'), tab('speed', 'Speed', 'အမြန်နှုန်း')],
+  video: [tab('video', 'Video', 'ဗီဒီယို'), tab('adjust', 'Adjust', 'အလင်း၊ အရောင်'), tab('keys', 'Keys', 'Keyframe curve'), tab('speed', 'Speed', 'အမြန်နှုန်း')],
   image: [tab('video', 'Video', 'ပုံ'), tab('adjust', 'Adjust', 'အလင်း၊ အရောင်'), tab('keys', 'Keys', 'Keyframe curve')],
   sticker: [tab('basic', 'Basic', 'အခြေခံ')],
   project: [tab('project', 'Project', 'Project ဆက်တင်')],

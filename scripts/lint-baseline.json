@@ -68,8 +68,8 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 87,
-    "long": 1
+    "lines": 106,
+    "long": 4
   },
   "public/v2/tests/unit/engine.test.mjs": {
     "lines": 35,
@@ -119,17 +119,25 @@
     "lines": 74,
     "long": 1
   },
+  "public/v2/ui/inspector-registry.js": {
+    "lines": 14,
+    "long": 1
+  },
   "public/v2/ui/panels-tools.js": {
     "lines": 104,
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 220,
+    "lines": 223,
     "long": 87
   },
   "public/v2/ui/shortcuts-dialog.js": {
     "lines": 9,
     "long": 1
+  },
+  "public/v2/ui/speed-panel.js": {
+    "lines": 20,
+    "long": 4
   },
   "public/v2/ui/stage.js": {
     "lines": 153,

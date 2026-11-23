@@ -43,6 +43,25 @@ const ok = (name, cond, extra = '') => {
   await page.click('.panel.tools .fxtile'); await sleep(200);
   ok('effect tile toggles on', (await page.evaluate(() => document.querySelectorAll('.panel.tools .fxtile.on').length)) >= 1);
 
+  await page.evaluate(() => window.__store.edit((d) => {
+    d.media = d.media || {};
+    d.media.vid1 = { id: 'vid1', name: 'test.mp4', kind: 'video', dur: 8 };
+    d.tracks.find((t) => t.kind === 'video').clips.push({ id: 'vc1', kind: 'video', start: 0, dur: 4, src: { mediaId: 'vid1', in: 0, out: 4 }, pos: { x: 50, y: 50, scale: 1 } });
+  }));
+  await sleep(250);
+  await page.click('.trow.video .clip'); await sleep(200);
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((t) => t.textContent === 'Speed')?.click());
+  await sleep(200);
+  ok('speed tab shows presets', (await page.evaluate(() => document.querySelectorAll('.speedwrap .chipbtn').length)) >= 6);
+  const durBefore = await page.evaluate(() => window.__store.get().project.tracks.find((t) => t.kind === 'video').clips[0].dur);
+  await page.evaluate(() => [...document.querySelectorAll('.speedwrap .chipbtn')].find((b) => b.textContent === '2×')?.click());
+  await sleep(250);
+  const spd = await page.evaluate(() => { const c = window.__store.get().project.tracks.find((t) => t.kind === 'video').clips[0]; return { dur: c.dur, speed: c.speed }; });
+  ok('2× halves the clip length', Math.abs(spd.dur - durBefore / 2) < 0.01 && spd.speed === 2, `${durBefore}->${spd.dur} @${spd.speed}`);
+  await page.click('.speedwrap .switchrow input'); await sleep(200);
+  ok('reverse toggle lands on the clip', (await page.evaluate(() => !!window.__store.get().project.tracks.find((t) => t.kind === 'video').clips[0].reverse)) === true);
+  await page.click('.trow.text .clip'); await sleep(200);
+
   await page.click('.railbtn[aria-label="Transitions"]'); await sleep(150);
   ok('transitions panel lists nine options', (await page.evaluate(() => document.querySelectorAll('.panel.tools .fxtile').length)) === 9);
   await page.evaluate(() => [...document.querySelectorAll('.panel.tools .fxtile')].find((b) => b.textContent.includes('Wipe'))?.click());
