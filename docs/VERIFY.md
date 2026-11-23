@@ -1,6 +1,6 @@
 # VERIFY.md — v2 editor စစ်ဆေးမှု အစီရင်ခံစာ (Nov 2026)
 
-နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S4 audio clock၊ S5 lanes၊ S6 shared graph၊ S7 CI/lint၊ U1–U3 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
+နောက်ဆုံး update: 2026-11-23၊ `feat/stabilization-s1-s2` (S3 src{in,out}၊ S4 audio clock၊ S5 lanes၊ S6 shared graph၊ S7 CI/lint၊ T1 commands၊ U1–U6 UX)။ စမ်းသပ်သူ: OpenHands၊ Node.js unit/regression + headless Chromium 131 (phase1 + ux e2e)။ ffprobe စစ်ဆေးမှုကို 2026-11-12 session မှာ ရလဒ်ရှိပြီး၊ ယခု sandbox တွင် ffprobe မရှိ၍ ပြန်မစစ်ရပါ။ သင့်ကိုယ်ပိုင် Chrome၊ VLC/ဖုန်းမှာ လက်ဖြင့်စစ်ခြင်း မလုပ်ရသေးပါ။
 
 ပြန်စစ်ရန်:
 
@@ -23,8 +23,8 @@ node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
 | **B7 lane overlap (S5)** | ✅ ပြင်ပြီး | `engine/lanes.js` — move/add/paste/duplicate အားလုံး free slot ရှာပြီး lane မထပ်စေ။ known-bugs PASS + unit property test ၃၀၀ move |
 | **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
 | **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
-| Unit tests | ✅ ၆၁ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline 9 |
-| E2E browser tests | ✅ phase1 ၁၄ + ux ၁၂ + audio ၁၀ | `tests/e2e/{phase1,ux,audio}.js` (headless Chromium) — page error မရှိ |
+| Unit tests | ✅ ၇၄ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ timeline 9 |
+| E2E browser tests | ✅ phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ | `tests/e2e/{phase1,ux,audio,layout}.js` (headless Chromium) — page error မရှိ |
 | **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
 `node scripts/validate-export.mjs` ရလဒ်:
@@ -74,10 +74,14 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **U3 (G3)**: media tile ကို drag → timeline/player ချ၊ ဖိုင် drag → Media panel import၊ drop indicator။ e2e စစ်ပြီး။
 - **S4**: `engine/playback.js` — pure `planSchedule()` + live engine (AudioContext clock၊ buffer/element path၊ debounce reschedule၊ visibility pause၊ meters)။ unit ၁၀ + e2e ၁၀။
 - **S6**: `engine/audio-graph.js` — shared preview/export graph၊ seeded IR၊ limiter၊ track buses။ e2e parity diff 0။
+- **T1**: `engine/timeline.js` — move/trim(ripple,roll)/split(all)/slip/slide/delete/lift/extract/insert/overwrite/setProp၊ locked guard၊ one-step undo + `history.js` labels။ unit ၁၃။
+- **U4**: splitters (left 240–480၊ inspector 280–420၊ timeline 200–60%)၊ double-click reset၊ collapse toggles၊ localStorage။ e2e စစ်ပြီး။
+- **U5**: track header mute/solo၊ double-click rename၊ height S/M/L (context menu)။ e2e စစ်ပြီး။
+- **U6/T2**: razor tool (B/V)၊ fit (Shift+Z)၊ delete left/right (Q/W)၊ undo tooltip label။ e2e စစ်ပြီး။
 
 ### မပြီးသေးသည့်အချက်များ
 
-T1–T6 command/gesture layer အပြည့်၊ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
+T2 ကျန် gesture (ripple/roll/slip drag, In/Out, magnet)၊ T3–T6၊ U4 splitters/collapse၊ U5 track header mute/solo/rename၊ U6 toolbar (razor/marker/in-out/fit)၊ U7 player handles/guides၊ font/rendering matrix၊ မူပိုင် R2 font၊ Cloudflare Access၊ ASR benchmark။
 
 ## ၃။ User Chrome တွင် လက်ဖြင့်စစ်ရန်
 
@@ -87,6 +91,7 @@ T1–T6 command/gesture layer အပြည့်၊ U4 splitters/collapse၊ U5 
 - Right-click menu (clip/track/ruler)၊ Ctrl+C/X/V paste၊ media tile ကို timeline ပေါ် drag ချခြင်း။
 - Audio clip ရွေးရင် Inspector က Basic/Effects ပဲပြ၊ Video clip ရွေးရင် Video/Adjust ပဲပြ။
 - သီချင်းတစ်ပုဒ်ကို EQ/reverb/echo ဖွင့်ပြီး preview နဲ့ export ကို နားနှိုင်းယှဉ်ခြင်း (S6)။
+- Panel တွေ ဆွဲချဲ့/ချုံ့၊ ပိတ်/ဖွင့်၊ track rename/mute/solo/height ကို သင့် Chrome မှာ စမ်းခြင်း (U4/U5)။
 - မိနစ် ၁၀ ကျော် အသံဖိုင်နဲ့ playback/seek စမ်းခြင်း (element path)။
 - MP4/WebM ကို VLC နှင့် ဖုန်းတွင်ဖွင့်စစ်ခြင်း၊ အချိန်ရှည် export စမ်းခြင်း။
 - Myanmar fonts, text effects/animation နှင့် R2 private fonts ကိုစစ်ခြင်း။

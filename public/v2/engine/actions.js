@@ -138,7 +138,7 @@ export function moveClip(store, id, start, { snap = true, key = 'move', toTrack 
     const wanted = snapTime(start, d, id, snap);
     f.clip.start = nearestFreeStart(track, wanted, f.clip.dur, id);
     if (!track.clips.includes(f.clip)) track.clips.push(f.clip);
-  }, { key: `${key}:${id}` });
+  }, { key: `${key}:${id}`, label: 'Move clip' });
 }
 export function trimClip(store, id, edge, value, { snap = true } = {}) {
   store.edit((d) => {
@@ -153,7 +153,7 @@ export function trimClip(store, id, edge, value, { snap = true } = {}) {
       if (c.kind === 'text') c.dur = +Math.max(MIN_DUR, nextEnd - c.start).toFixed(6);
       else trimSourceRight(c, nextEnd);
     }
-  }, { key: `trim:${id}:${edge}` });
+  }, { key: `trim:${id}:${edge}`, label: 'Trim clip' });
 }
 export function splitClip(store, id, at, { snap = true } = {}) {
   let rightId = null;
@@ -170,11 +170,11 @@ export function splitClip(store, id, at, { snap = true } = {}) {
     }
     c.dur = cut - c.start;
     f.track.clips.splice(f.ci + 1, 0, right); rightId = right.id;
-  });
+  }, { key: `split:${id}`, label: 'Split clip' });
   if (rightId) store.select(rightId); return rightId;
 }
 export function slipClip(store, id, deltaSrc) {
-  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked || f.clip.kind === 'text') return; slipSource(f.clip, deltaSrc); }, { key: `slip:${id}` });
+  store.edit((d) => { const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked || f.clip.kind === 'text') return; slipSource(f.clip, deltaSrc); }, { key: `slip:${id}`, label: 'Slip clip' });
 }
 export function deleteClips(store, ids, { ripple = false } = {}) {
   const set = new Set(ids.filter(Boolean)); if (!set.size) return;
@@ -187,7 +187,7 @@ export function deleteClips(store, ids, { ripple = false } = {}) {
       t.clips = t.clips.filter((c) => !set.has(c.id));
       if (ripple) for (const c of t.clips) if (c.start >= first) c.start = Math.max(0, c.start - shift);
     }
-  });
+  }, { key: 'delete', label: `Delete ${set.size} clip${set.size === 1 ? '' : 's'}` });
 }
 export function deleteSelected(store, { ripple = false } = {}) { const id = store.get().selection; if (id) deleteClips(store, [id], { ripple }); }
 export function duplicateSelected(store) {
@@ -198,8 +198,10 @@ export function duplicateSelected(store) {
     const c = JSON.parse(JSON.stringify(f.clip));
     c.id = uid(); c.start = nearestFreeStart(f.track, clipEnd(f.clip), c.dur, id);
     f.track.clips.push(c); nid = c.id;
-  });
+  }, { key: `duplicate:${id}`, label: 'Duplicate clip' });
   if (nid) store.select(nid); return nid;
 }
-export function toggleTrack(store, trackId, key) { store.edit((d) => { const t = d.tracks.find((x) => x.id === trackId); if (t) t[key] = !t[key]; }); }
+export function toggleTrack(store, trackId, key) {
+  store.edit((d) => { const t = d.tracks.find((x) => x.id === trackId); if (t) t[key] = !t[key]; }, { key: 'track:' + key, label: 'Toggle ' + key });
+}
 export { clipMediaId };

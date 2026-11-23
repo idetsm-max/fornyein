@@ -4,20 +4,12 @@
     "long": 3
   },
   "public/v2/engine/actions.js": {
-    "lines": 205,
+    "lines": 207,
     "long": 5
   },
   "public/v2/engine/asr.js": {
     "lines": 9,
     "long": 4
-  },
-  "public/v2/engine/audio.js": {
-    "lines": 55,
-    "long": 9
-  },
-  "public/v2/engine/export.js": {
-    "lines": 353,
-    "long": 0
   },
   "public/v2/engine/fonts.js": {
     "lines": 16,
@@ -44,7 +36,7 @@
     "long": 4
   },
   "public/v2/engine/store.js": {
-    "lines": 26,
+    "lines": 24,
     "long": 1
   },
   "public/v2/engine/transport.js": {
@@ -60,12 +52,16 @@
     "long": 1
   },
   "public/v2/main.js": {
-    "lines": 41,
+    "lines": 42,
     "long": 5
   },
   "public/v2/styles.css": {
-    "lines": 213,
+    "lines": 210,
     "long": 26
+  },
+  "public/v2/tests/e2e/layout.js": {
+    "lines": 85,
+    "long": 3
   },
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
@@ -100,7 +96,7 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 77,
+    "lines": 79,
     "long": 16
   },
   "public/v2/ui/hooks.js": {
@@ -116,7 +112,7 @@
     "long": 85
   },
   "public/v2/ui/stage.js": {
-    "lines": 121,
+    "lines": 126,
     "long": 25
   },
   "public/v2/ui/strings.js": {

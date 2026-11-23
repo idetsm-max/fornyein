@@ -20,10 +20,11 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Drag file → Media panel | Import media | ✅ |
 | Ctrl+S | Save project | ⬜ planned (M1, T2) |
 | Ctrl+E | Export | ⬜ planned (M1, U10) |
-| B / V | Razor / select tool | ⬜ planned (M1, T2) |
+| B / V | Razor / select tool | ✅ |
+| Q / W | Delete left / right of playhead | ✅ |
 | N / P | Snap / main-track magnet | 🟡 snap toggle exists, key not bound |
 | M / I / O | Marker / in / out | ⬜ planned (M1, T3) |
-| Shift+Z | Zoom to fit | ⬜ planned (M1, U6) |
+| Shift+Z | Zoom to fit | ✅ |
 | F | Fullscreen preview | ⬜ planned (M1, U7) |
 | ? | Shortcut dialog | ⬜ planned (M1, U11) |
 | J / K / L | Shuttle | ⬜ planned (M1, T4) |

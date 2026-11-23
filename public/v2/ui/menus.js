@@ -2,7 +2,9 @@
 // buttons in a component.
 import { findClip } from '../engine/model.js';
 import { duplicateSelected, deleteClips, splitClip, toggleTrack, addText, addMediaAt, addOverlayLogo } from '../engine/actions.js';
+import { renameTrack, setTrackHeight, deleteTrack } from '../engine/tracks.js';
 import { copyClips, cutClips, pasteClips, hasClipboard } from '../engine/clipboard.js';
+import { deleteLeft, deleteRight } from '../engine/timeline.js';
 
 export function clipMenu({ store, transport, clipId, x, y }) {
   const found = findClip(store.get().project, clipId);
@@ -26,21 +28,35 @@ export function trackMenu({ store, trackId, x, y }) {
   const track = store.get().project.tracks.find((t) => t.id === trackId);
   if (!track) return null;
   return {
-    x, y, title: track.name,
+    x, y, title: track.name || 'Track',
     items: [
+      { label: 'Rename track…', run: () => { const name = window.prompt('Track name', track.name || ''); if (name) renameTrack(store, trackId, name); } },
       { label: track.hidden ? 'Show track' : 'Hide track', run: () => toggleTrack(store, trackId, 'hidden') },
       { label: track.locked ? 'Unlock track' : 'Lock track', run: () => toggleTrack(store, trackId, 'locked') },
-      ...(track.kind === 'audio' ? [{ label: track.muted ? 'Unmute track' : 'Mute track', run: () => toggleTrack(store, trackId, 'muted') }] : []),
+      ...(track.kind === 'audio' ? [
+        { label: track.muted ? 'Unmute track' : 'Mute track', run: () => toggleTrack(store, trackId, 'muted') },
+        { label: track.solo ? 'Unsolo track' : 'Solo track', run: () => toggleTrack(store, trackId, 'solo') },
+      ] : []),
+      { sep: true },
+      { label: 'Small height', checked: track.height === 's', run: () => setTrackHeight(store, trackId, 's') },
+      { label: 'Medium height', checked: !track.height || track.height === 'm', run: () => setTrackHeight(store, trackId, 'm') },
+      { label: 'Large height', checked: track.height === 'l', run: () => setTrackHeight(store, trackId, 'l') },
+      { sep: true },
+      { label: 'Delete track', run: () => deleteTrack(store, trackId), disabled: store.get().project.tracks.length < 2 },
     ],
   };
 }
 
-export function rulerMenu({ store, transport, x, y }) {
+export function rulerMenu({ store, transport, x, y, onFit }) {
   return {
     x, y, title: 'Timeline',
     items: [
       { label: 'Paste at playhead', shortcut: 'Ctrl+V', disabled: !hasClipboard(), run: () => pasteClips(store, transport) },
       { label: 'Add text at playhead', run: () => addText(store, transport) },
+      { sep: true },
+      { label: 'Delete left of playhead', shortcut: 'Q', run: () => deleteLeft(store, transport.t) },
+      { label: 'Delete right of playhead', shortcut: 'W', run: () => deleteRight(store, transport.t) },
+      { label: 'Zoom to fit', shortcut: 'Shift+Z', run: () => onFit?.() },
     ],
   };
 }

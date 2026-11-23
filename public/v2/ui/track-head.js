@@ -1,0 +1,25 @@
+// One timeline track header: visibility, lock, audio mute/solo, inline rename.
+import { html } from './deps.js';
+import { Icon } from './icons.js';
+import { IconBtn, cx } from './widgets.js';
+import { toggleTrack } from '../engine/actions.js';
+import { renameTrack } from '../engine/tracks.js';
+
+export function TrackHead({ store, track, icon, label, renaming, setRenaming, onMenu }) {
+  const toggle = (key) => () => toggleTrack(store, track.id, key);
+  const onContext = (e) => { e.preventDefault(); onMenu?.({ trackId: track.id, x: e.clientX, y: e.clientY }); };
+  return html`<div class=${cx('thead', track.kind, track.height && `h-${track.height}`)} onContextMenu=${onContext}>
+    <${IconBtn} name=${track.hidden ? 'eyeOff' : 'eye'} size=${16} onClick=${toggle('hidden')} title="Show / hide" />
+    <${IconBtn} name=${track.locked ? 'lock' : 'unlock'} size=${16} onClick=${toggle('locked')} title="Lock" active=${track.locked} />
+    ${track.kind === 'audio' && html`<${IconBtn} name=${track.muted ? 'volumeOff' : 'volume'} size=${16}
+        onClick=${toggle('muted')} title="Mute" active=${track.muted} /><button type="button"
+        class=${cx('ibtn solo', track.solo && 'on')} title="Solo" onClick=${toggle('solo')}>S</button>`}
+    ${renaming === track.id
+      ? html`<input class="trename" value=${track.name || ''} autoFocus
+          onBlur=${(e) => { renameTrack(store, track.id, e.target.value); setRenaming(null); }}
+          onKeyDown=${(e) => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') setRenaming(null); }} />`
+      : html`<span class="tname" title=${(track.name || label) + ' · double-click to rename'}
+          onDblClick=${(e) => { e.stopPropagation(); setRenaming(track.id); }}>
+          <${Icon} name=${icon} size=${15} /><span>${track.name || label}</span></span>`}
+  </div>`;
+}

@@ -13,7 +13,7 @@ export function ContextMenu({ menu, onClose }) {
         ? html`<div class="ctxsep"></div>`
         : html`<button type="button" role="menuitem" class="ctxitem" disabled=${!!item.disabled}
             onClick=${() => { onClose(); item.run?.(); }}>
-            <span>${item.label}</span>${item.shortcut && html`<kbd>${item.shortcut}</kbd>`}
+            <span>${item.checked ? '✓ ' : ''}${item.label}</span>${item.shortcut && html`<kbd>${item.shortcut}</kbd>`}
           </button>`)}
     </div>
   </div>`;

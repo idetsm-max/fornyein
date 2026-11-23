@@ -2,7 +2,7 @@ import { html, useState, useEffect, useRef } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
 import { useStore } from './hooks.js';
-import { L, H } from './strings.js';
+import { L, H } from './strings.js'; import { LayoutToggles } from './layout.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
 import { createMediabunnyJob, saveExportResult } from '../engine/export.js';
@@ -31,8 +31,9 @@ function ExportDialog({ project, onClose }) {
   const start = async () => { setError(''); setProgress(0); setRunning(true); try { const j = await createMediabunnyJob(project, preset, { format, onProgress: setProgress }); job.current = j; const result = await j.run(); await saveExportResult(result, `${project.name || 'fornyein'}.${format}`); } catch (e) { setError(e?.message || String(e)); } finally { setRunning(false); } };
   return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && !running && onClose()}><div class="exportbox"><div class="exporthead"><b>Export video</b><button type="button" class="x" disabled=${running} onClick=${onClose}>×</button></div><div class="exportbody"><label>Resolution<${Select} value=${preset} onChange=${setPreset} options=${['720p', '1080p', '9:16', '1:1']} /></label><label>Format<${Select} value=${format} onChange=${setFormat} options=${['mp4', 'webm']} /></label>${running && html`<div class="exportprogress"><div><span>Rendering…</span><b>${Math.round(progress * 100)}%</b></div><progress max="1" value=${progress}></progress></div>`}${error && html`<p class="exporterror">${error}</p>`}</div><div class="exportfoot">${running ? html`<button type="button" class="btn ghost" onClick=${() => job.current?.cancel()}>Cancel</button>` : html`<button type="button" class="btn ghost" onClick=${onClose}>Close</button><button type="button" class="btn primary" onClick=${start}>Export</button>`}</div></div></div>`;
 }
-export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson }) {
+export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout }) {
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
+  const undoLabel = useStore(store, (s) => s.undoLabel), redoLabel = useStore(store, (s) => s.redoLabel);
   const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false);
   const label = save.status === 'saving' ? 'Saving…' : save.status === 'dirty' ? 'Unsaved changes' : save.status === 'error' ? 'Save failed' : save.status === 'saved' ? L('saved') : 'New project';
   return html`<header class="topbar">
@@ -42,11 +43,12 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
     <div class=${cx('savedpill', save.status)} title=${H('saved')}><${Icon} name="cloud" size=${18} /><span><b>${label}</b> ${save.at && save.status === 'saved' ? html`<em>${ago(save.at)}</em>` : ''}</span></div>
     <div class="spacer"></div>
     <div class="topctl">
-      <${IconBtn} name="undo" title=${L('undo') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} />
-      <${IconBtn} name="redo" title=${L('redo') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} />
+      <${IconBtn} name="undo" title=${L('undo') + (undoLabel ? ': ' + undoLabel : '') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} />
+      <${IconBtn} name="redo" title=${L('redo') + (redoLabel ? ': ' + redoLabel : '') + ' · Ctrl+Y'} disabled=${!canRedo} onClick=${() => store.redo()} />
       <span class="vsep"></span>
       <${Select} value=${zoom} onChange=${setZoom} options=${['50%', '75%', '100%', '150%', '200%']} title="Zoom" cls="compact" />
       <${IconBtn} name="maximize" title=${L('fullscreen') + ' · ' + H('fullscreen')} /><button type="button" class="helpbtn" title="Keyboard shortcuts" onClick=${() => setShortcuts(true)}>?</button>
+      <${LayoutToggles} layout=${layout} setLayout=${setLayout} />
     </div>
     <button type="button" class="btn ghost" title=${H('preview')}><${Icon} name="play" size=${15} /><span>${L('preview')}</span></button>
     <button type="button" class="btn primary" title=${H('export')} onClick=${() => setExporting(true)}><${Icon} name="export" size=${16} /><span>${L('export')}</span></button>
