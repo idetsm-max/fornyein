@@ -1,251 +1,258 @@
-# ForNyein — တည်ဆောက်မှု အစီအစဉ် (Plan.md) · v3
+# ForNyein — Master Plan v5 (CapCut-like · ပြန်လည်ရေးသားထားသော စာတမ်း)
 
-ဒီဖိုင်ဟာ **တစ်ခုတည်းသော အစီအစဉ်** ဖြစ်ပါတယ်။ chat memory မရှိတဲ့အတွက် session အသစ်တိုင်း (လူ/AI မရွေး) **ဒီဖိုင်နဲ့ `docs/VERIFY.md` ကို အရင်ဖတ်ပြီးမှ** ဆက်လုပ်ပါ။
-v3 ပြင်ဆင်ချက် (Nov 2026): စစ်ဆေးမှု (`docs/VERIFY.md`) ရလဒ်နဲ့ ကိုက်အောင် status ကို ပြင်၊ **Timeline System v2 spec** (§5) ကို ရှာဖွေလေ့လာမှုအပေါ် အခြေခံပြီး အသစ်ထည့်၊ လမ်းပြမြေပုံ (§6) ကို **Stabilization အရင်** ဖြစ်အောင် ပြန်စီ၊ အလုပ်လုပ်ပုံစည်းမျဉ်း (§3) ကို တင်းကျပ်။
-Nov 12 2026 မှတ်တမ်း: S1 ၏ B1 code/regression နှင့် browser UI Unicode check၊ unit ၄၀ ခု၊ E2E ၁၄ ခုလုံး pass။ S2 ၏ B2/B3/B8 code Chromium MP4/WebM export + ffprobe စစ်ချက် pass.
-Code commit `54a692f` ကို `feat/stabilization-s1-s2` branch အဖြစ် push လုပ်ပြီးနောက် ဤ Plan update ကို ထည့်ထားသည်။ အသုံးပြုသူ၏ Chrome စမ်းသပ်ချက်၊ Rabbit live conversion၊ B4/B7/B6 နှင့် Phase S ကျန်အပိုင်းများ မပြီးသေးပါ။ အသေးစိတ်အထောက်အထားကို `docs/VERIFY.md` တွင်ထားသည်။
+> **ForNyein = CapCut လို အလုပ်လုပ်ပြီး၊ CapCut လို ခံစားရတဲ့ (UX)၊ Browser ထဲမှာပဲ သုံးရတဲ့၊ မြန်မာစာကို အကောင်းဆုံးကိုင်တွယ်တဲ့ ဗီဒီယိုတည်းဖြတ်ကိရိယာ။**
 
----
+ဒီ v5 က Plan ကို **အစကနေ CapCut ဦးတည်ပြီး ပြန်ရေး** ထားတာပါ။ ပြင်ဆင်ချက်: (၁) **UI/UX ကို Plan ရဲ့ ဗဟိုအပိုင်း** (§၃) အဖြစ် ထည့် — CapCut-like interaction တစ်ခုချင်းကို သတ်မှတ်၊ (၂) လက်ရှိ UI ကို **တကယ်စမ်းပြီး audit** လုပ်ထားတဲ့ ရလဒ် (§၂)၊ (၃) Milestone တိုင်းမှာ **engine + UX အလုပ်** နှစ်ခုလုံး ပါ (§၆)၊ (၄) အရင်စာတမ်းတွေကို ပေါင်းစည်းပြီး ရှင်းလင်းအောင် ဖွဲ့စည်းထားတယ်။
+**ကိုးကားထားတဲ့ အသေးစိတ်**: `docs/plan/INDEX.md` · `docs/plan/DECISIONS.md` (ဆုံးဖြတ်ချက်) · `docs/plan/L2a-…` (CapCut parity matrix) · `docs/plan/L2-…` (Poem Mode၊ FR/NFR) · `docs/plan/L3-m1-breakdown.md` (M1 လုပ်ငန်းခွဲ) · `docs/VERIFY.md` (စစ်ဆေးမှု)။ ဒီဖိုင်နဲ့ ကွဲလွဲရင် **ဒီဖိုင် (နဲ့ DECISIONS.md)** ကို အရင်ယုံ။
 
-## ၁။ ရည်ရွယ်ချက်
-
-မြန်မာကဗျာ ဖတ်သံ/ဗီဒီယိုကို **CapCut လို အလုပ်လုပ်ပုံ** (Track → Clip၊ split/trim/ရွှေ့/ဖျက်/ကပ်၊ ညာဘက် Inspector) နဲ့ **ကိုယ်ပိုင် UI** (VidPro နမူနာအတိုင်း) ပါတဲ့ editor၊ Browser ထဲမှာပဲ MP4 ထုတ်ပေးနိုင်ရမယ်။
-
-**"ပြီးပြီ" ဆိုတာ ဒီအချက်တွေ အားလုံး မှန်တာ (Release gate)**
-1. ကဗျာတစ်ပုဒ် (ဖတ်သံ + စာသား) ကို ထည့်၊ စာတန်းချိန်ကိုက်၊ စာပုံစံ/animation ပြင်၊ Music/နောက်ခံ ထည့်ပြီး **အသံပါ MP4 ထုတ်လို့ရ** — အသံ/ပုံ ကိုက်ညီ၊ **မြန်မာစာ ဘယ်အဆင့်မှာမှ မပျက်**။
-2. Reload လုပ်ရင် project + media မပျောက်။
-3. ဖြတ်/ဖျက်/ရွှေ့/trim/undo တိုင်း မကျိုး၊ **Preview ကြားရ/မြင်ရတာ = Export ထွက်တာ**။
-4. Chrome/Edge (desktop) မှာ တည်ငြိမ်၊ ၅ မိနစ်ကဗျာ project မှာ ချောမွေ့။
-5. ကိုယ်ပိုင် font (R2 private) သုံးလို့ရ။
+**Session အသစ် (လူ/AI) တိုင်း**: ဒီဖိုင် → `DECISIONS.md` → `VERIFY.md` ကို အရင်ဖတ်ပြီးမှ ဆက်လုပ်ပါ။
 
 ---
 
-## ၂။ လက်ရှိအခြေအနေ (စစ်ဆေးမှု အခြေခံ — Nov 2026)
+## ၁။ ဦးတည်ချက်နဲ့ မူများ
 
-**Status စကားလုံး (အစဉ်အလာ ပြောင်း)**: 🟡 = ကုဒ်ရေးပြီး (မစစ်/တစ်စိတ်တစ်ပိုင်းစစ်) · 🟢 = **စစ်ပြီး** (ဘယ်သူ၊ ဘာနဲ့ စစ်ကြောင်း မှတ်) · 🔴 = အမှားတွေ့/ပိတ်ဆို့ · ⏸ = ရပ်ထား။ **အထောက်အထားမပါဘဲ 🟢/✅ မရေးရ။**
+**ဘာကို ဆောက်နေတာလဲ**: CapCut desktop လို multi-track video editor — web app တစ်ခု။ **ကွဲပြားချက် = မြန်မာစာ** (Unicode မပျက်၊ Zawgyi ပြောင်း၊ font manager၊ ကဗျာ Poem Mode)။ အသုံးပြုသူ (assumption): Facebook Reels/TikTok/YouTube မှာ တင်မယ့် မြန်မာ short-video/ကဗျာ ဖန်တီးသူ၊ Windows Chrome/Edge။
 
-| အပိုင်း | အခြေအနေ | အထောက်အထား / မှတ်ချက် |
+**မူ ၈ ချက်**
+1. **CapCut = လုပ်ဆောင်ပုံ + ခံစားမှု (UX) ရဲ့ ကိုးကား**၊ **ရုပ်ရည်/icon/asset/စာသား = ကိုယ်ပိုင်** (VidPro နမူနာ)။ CapCut ကို မကူး။
+2. **ရွေးတာ → Inspector ပြောင်း** (selection-driven)၊ **ဆွဲ/ချ/click/right-click/shortcut** ကို CapCut လိုမျိုးပဲ။
+3. **Non-destructive**: ဖိုင်မူရင်းကို မထိ၊ clip တိုင်း `src{in,out}`၊ **Undo ၁၀၀%**၊ autosave။
+4. **Preview = Export** (renderer/audio graph တစ်ခုတည်း)။
+5. **မြန်မာစာ မပြောင်းမလဲ** (အသုံးပြုသူ confirm မပါဘဲ စာသား မပြောင်း)။
+6. **အဆင့်ဆင့်၊ စစ်မှ ✅**: အထောက်အထားမပါရင် "ပြီး" မရေး။
+7. **Browser-only + privacy**: ဒေတာ ကိုယ့်စက်ထဲ၊ AI/ASR သုံးမှ ခွင့်ပြုချက်တောင်း။
+8. **အစကတည်းက ကြိုတင်ဖွဲ့စည်း** (keyframe/effect/transition/mask/speed အတွက် model နဲ့ pipeline) — နောက်မှ ပုံစံပြောင်းစရာ မလို။
+
+**Non-goals**: mobile app၊ cloud/collab၊ account/login၊ 4K/HDR pro grading၊ ကူးခွင့်ရှိတဲ့ music library၊ social share၊ motion tracking။
+
+---
+
+## ၂။ လက်ရှိအခြေအနေ (အထောက်အထားအခြေခံ)
+
+**Status စကားလုံး**: 🟡 ကုဒ်ရေးပြီး (မစစ်) · 🟢 **စစ်ပြီး** (အထောက်အထားနဲ့) · 🔴 အမှားတွေ့ · ⏸ ရပ်ထား · ⬜ မစရသေး။
+
+### ၂.၁ လုပ်ဆောင်ချက် စစ်ဆေးမှု (`docs/VERIFY.md`)
+| အပိုင်း | | မှတ်ချက် |
 |---|---|---|
-| v1 (`/app`) | ⏸ `/v2` သို့ redirect လုပ်ပြီး၊ ကုဒ်ကို `public/legacy/` မှာ သိမ်း | ဖျက်ခွင့် = Release gate ပြီးမှ |
-| Shell (UI/theme) | 🟢 | user screenshot + sandbox screenshot (dark/light) |
-| Engine core (store/undo/autosave/render/transport) | 🟢 | unit ၈ + e2e ၁၄ pass (VERIFY §1) |
-| Timeline ops (move/trim/split/ripple/snap/multi-select/zoom) | 🔴 | action အဆင့် pass (text split+undo, ripple, lock, trim limit)၊ **B4** (audio in-point) နဲ့ **B7** (clip ထပ်လို့ရ) ကျ။ Mouse gesture မစစ်ရသေး |
-| Media import + audio clip + waveform | 🟡 | import→tile→audio clip browser test pass။ **B5** (preview re-seek ~8/s) မပြင်၊ နားဖြင့်မစစ်ရသေး |
-| Text tools + poem workflow | 🟡 | B1 ပြင်ပြီး: Unicode string မပြောင်း၊ Add lines/Auto-draft/ASR path regression pass၊ browser UI Add-lines စစ်ချက် pass။ Rabbit live conversion နှင့် သင့် Chrome စစ်ချက် မလုပ်ရသေး |
-| Audio mixer (EQ/comp/reverb/echo/duck) preview | 🟡 | UI ရှိ၊ အသံ နားနဲ့ မစစ်ရသေး |
-| Visual (video/photo/filters/overlay logo/transitions) | 🟡 | မစစ်ရသေး |
-| **Export (MP4/WebM)** | 🟡 | B2/B3/B8 ပြင်ပြီး၊ Chromium export + ffprobe: MP4 H.264+Opus 6.0135s, drift 13.5ms; WebM VP9+Opus 6.02s။ **B6** (EQ/reverb/echo/loop parity) မပြင်ရသေး၊ WebM stream-level drift metadata မရ |
-| Auto caption (Cloudflare Workers AI Whisper) | 🔴/⏸ | Workers AI Whisper က မြန်မာအသံကို တခြားစာလုံး (Georgian/Cyrillic) နဲ့ ပြန်ထုတ်ကြောင်း စမ်းပြီး (Nov 2026)။ ကုဒ်ရှိနေပေမဲ့ **မြန်မာအတွက် အသုံးမကျ** — §6 အဆင့် A ရဲ့ benchmark မှာ ပြန်စစ် |
-| Cloudflare Access | ⏸ မဖွင့်ရသေး | `/api/*` public (origin စစ်ပဲ ရှိ) |
-| `local-asr/` | ⏸ ပြင်ဆင်ထား၊ မစမ်းရ | |
+| Shell/theme၊ Engine core (store/undo/autosave/render) | 🟢 | unit + e2e ၁၄ pass |
+| Media import → audio clip၊ Text presets၊ **Auto-draft** (±၀.၀၂ s)၊ SRT | 🟢 | |
+| Timeline ops (text split+undo, ripple, lock, trim limit) | 🟡 | **B4** audio split/trim-left မှန်မှန်မပြေ၊ **B7** clip ထပ်လို့ရ |
+| **မြန်မာ Unicode စာ** | 🟢 | **B1 ပြင်ပြီး** (`feat/stabilization-s1-s2`) — `normalizeMyanmar` ဖျက်၊ Zawgyi = confirm ပဲ။ Evidence: known-bugs B1 (၇ check) + unit + e2e |
+| **Export အသံပါ** | 🟡 | **B2/B3/B8 ပြင်ပြီး** — ffprobe: MP4 H.264+Opus 6.0135 s (drift 13.5 ms)၊ WebM VP9+Opus။ **နားနဲ့/VLC/သင့် Chrome မစစ်ရသေး** |
+| Audio Preview | 🟡 | **B5** play နေစဉ် `<audio>` ကို ~၈/s seek |
+| Preview=Export အသံ | 🔴 | **B6** export က EQ/reverb/echo/loop မသုံး |
+| အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay/Filters | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
+| Auto caption (Workers AI Whisper) | 🔴/⏸ | မြန်မာမှာ တခြားစာလုံးထွက် — M7 benchmark |
+| Cloudflare Access | ⏸ | `/api/*` public |
 
-**ဖြစ်ရပ်မှတ်**: repo ကို session နှစ်ခုက တစ်ပြိုင်နက် ရေးရင် ဖိုင်ထပ်ရေးခံရတာ ၂ ကြိမ်ကြုံ။ ပြီးခဲ့တဲ့ ✅ တွေကို VERIFY နဲ့ ပြန်တိုက်ပြီး အပေါ်ကလို ပြင်ထားတယ်။
-
----
-
-## ၃။ အလုပ်လုပ်မယ့် နည်းလမ်း (တင်းကျပ်)
-
-1. **Writer တစ်ယောက်ပဲ**: repo မှာ တစ်ချိန်တည်း ရေးသူ တစ်ဦးတည်း။ မရေးခင် `git pull`/နောက်ဆုံး main ကို ဖတ်၊ ဖိုင်ကို SHA နဲ့မှ update။ **Feature ကြီးတွေကို branch (`feat/...`) မှာ လုပ်ပြီး စစ်ပြီးမှ main သို့ merge** (PR)။
-2. **စမ်းမှ တင်**: node syntax + unit + `known-bugs.mjs` + e2e (`public/v2/tests/`)။ **Export ပြောင်းရင် ffprobe နဲ့ အသံ/ပုံ ပါ/မပါ၊ duration စစ်** ဖို့ မဖြစ်မနေ။
-3. **စစ်ပြီးသားဆိုတာ အထောက်အထားနဲ့**: Plan §2 ကို ပြင်တိုင်း "ဘာနဲ့ စစ်" ရေး (`tests/...`, screenshot, ffprobe output)။
-4. **သင့် Chrome မှာ စစ်** (မြန်မာ font၊ အသံကြား၊ mouse gesture၊ အစစ် export) — sandbox မှာ မရတာတွေကို `docs/VERIFY.md` §3 ထဲ စာရင်းသွင်းထား။
-5. **CI**: `.github/workflows/test.yml` မှာ unit + known-bugs ကို push တိုင်း run (ပျက်ရင် merge မလုပ်)။ (အဆင့် S မှာ ထည့်)
-6. **ကုဒ်ပုံစံ**: ဖိုင် ~၃၀၀ လိုင်းအောက်၊ **လိုင်းတစ်ခု ~၁၆၀ လုံးအောက်** (အခု one-liner ရှည်တွေက review မလုပ်နိုင်လို့)။ Module တစ်ခုက တာဝန်တစ်ခု။
-7. Binary ဖိုင် (font/ပုံ) ကို connector နဲ့ မတင်နိုင် — သင်ကိုယ်တိုင် R2 / GitHub web မှာ တင်။
-8. **Definition of Done**: unit test + e2e (သို့ ffprobe) + လက်ဖြင့်စစ်စာရင်း ✓ + docs update။ တစ်ခုမပြည့်ရင် 🟡 ပဲ။
-
----
-
-## ၄။ ဖွဲ့စည်းပုံ (Architecture)
-
-### ၄.၁ Tech
-- Build tool မရှိ (Workers static assets က `public/` ကို တိုက်ရိုက်ပေး)။ Native ES modules။ UI = **Preact + htm** (CDN ပုံသေ version)။
-- Preview/Export = **Canvas 2D `drawFrame`** တစ်ခုတည်း၊ အသံ = **Web Audio** graph builder တစ်ခုတည်း (Preview + OfflineAudioContext)၊ MP4/WebM = **Mediabunny** (WebCodecs)။
-- သိမ်း = **IndexedDB** (project JSON + media Blob + waveform/thumbnail cache)၊ Library = **R2 private**၊ Worker = `/api/library|asset|presets|transcribe`။
-- `navigator.storage.persist()` ကို တောင်းပြီး browser က IndexedDB ကို မဖျက်အောင်။
-
-### ၄.၂ Project model (JSON v3 → **v3.1: source range ထည့်**)
-```
-project = { version:3, id, name, size, fps:30, tracks:[track], markers:[{id,t,label}], media:{id:{name,kind,dur,src}} , links:{} }
-track   = { id, kind:'text'|'video'|'overlay'|'audio', name, hidden, locked, muted, solo, height:'s|m|l', magnet?:bool, clips:[clip] }
-clip    = { id, kind, start, dur,                       // timeline range (စက္ကန့်၊ frame ကို quantize)
-            src?: { mediaId, in, out, speed:1 },        // SOURCE range (OTIO source_range လို) — media clip အားလုံးမှာ မဖြစ်မနေ
-            link?: groupId, ...kind ဆိုင်ရာ }
-  text  : { text, style:{...}, anim:{in,out,loop}, pos:{x%,y%,rot}, state:'draft|review|locked', conf }
-  audio : { role:'voice|music|sfx', gain, fade:{in,out}, fx:{eq,comp,reverb,echo}, loop }
-  video/image: { fit, filters:{...}, pos, scale, opacity }
-```
-- **dur = (src.out − src.in) / speed** (loop မဟုတ်ရင်)။ **Split** = နှစ်ပိုင်းစလုံး `src.in/out` ခွဲ၊ **trim-left** = `src.in += Δ`၊ **slip** = start/dur မပြောင်းဘဲ `src.in/out` ရွှေ့။ (B4 ကို အရင်းကပြင်။)
-- **Time quantize**: edit တိုင်းမှာ `start/dur` ကို `round(t·fps)/fps` (`engine/time.js`)။ အကြောင်းရင်း: float drift၊ frame-accurate export၊ SRT။ (နောက်ပိုင်းမှာ integer frame / rational ပြောင်းဖို့ ချန်ထား။)
-- **Schema migration**: `migrate(project)` (v1→v3→v3.1)၊ project ဖွင့်တိုင်း validate၊ မှားရင် ပြင်/တိုင်ကြား (ပျောက်မသွားစေ)။
-- Undo = snapshot history (အခုအတိုင်း၊ ≤ ၅၀၀၀ clip အထိ ပြဿနာမရှိ)၊ **drag တစ်ခုလုံး = undo ၁ ဆင့်**၊ undo label (e.g. "Split clip") ကို tooltip မှာ ပြ။
-
-### ၄.၃ Engine ပိုင်းများ
-`model.js` `store.js` `storage.js` `transport.js` `render.js` `fonts.js` `actions.js` (ရှိပြီး) · **အသစ်/ပြင်**: `time.js` (quantize)၊ `timeline.js` (clip ops တစ်နေရာထဲ)၊ `audio-graph.js` (Preview/Export မျှဝေ)၊ `peaks.js` (waveform LOD)၊ `myanmar.js` (syllable/Zawgyi)၊ `migrate.js`။
-
----
-
-## ၅။ Timeline System v2 — ရှာဖွေလေ့လာမှုအပေါ် အခြေခံ spec
-
-လေ့လာမှု: DaVinci Resolve / Final Cut / Nuke-Hiero ရဲ့ edit mode များ၊ OpenTimelineIO (source range + rational time)၊ CapCut desktop (magnetic main track, snapping, split/delete-left/right)၊ web editor များ (OpenCut, OpenReel, Kapwing, Editframe) ရဲ့ performance ဗျူဟာ။
-
-### ၅.၁ အချိန်နဲ့ Clip model (အခြေခံ — T1)
-- §၄.၂ ရဲ့ `src {in,out}` + frame-quantized time။ **Audio/video clip ကို split/trim လုပ်ရင် အသံ/ပုံ မရွေ့၊ မပြန်စ။**
-- Clip မှာ တူညီသော ပြင်ဆင်မှု API (`timeline.js`): `move / trim(side) / split / slip / slide / roll / ripple* / delete(ripple?) / duplicate / insert / overwrite`။ UI၊ keyboard၊ test အားလုံး ဒီ API ကိုပဲ ခေါ်။
-
-### ၅.၂ Track နဲ့ lane စည်းမျဉ်း (B7 ကိုဖြေ — T1)
-- **တစ်ခု lane မှာ clip မထပ်ရ။** ထပ်မယ့် drop/move ဆိုရင် (က) text/overlay = **lane အသစ် အလိုအလျောက်ဖွဲ့** (CapCut လို track အသစ်)၊ (ခ) main track = နောက်ကို တွန်း (insert) သို့ ပယ်။
-- **Main track (Video) magnetic** ဖွင့်/ပိတ် (CapCut `P`): ဖွင့်ရင် ဖျက်တာ၊ trim တာ ကွက်လပ်မကျန်အောင် ကပ်လာ။
-- Track control: hide / lock / **mute / solo** / ပြန်စီ (drag) / height S-M-L / collapse / နာမည်ပြောင်း / ဖျက်။ Lock = ဘယ်လုပ်ဆောင်ချက်မှ မထိ (အခု ပြီး)။
-- **Link group** (`clip.link`): ဖတ်သံ clip + ၎င်းကနေ ထုတ်ထားတဲ့ စာတန်းတွေကို ချိတ် — ဖတ်သံကို ရွှေ့/ဖြတ်ရင် စာတန်းပါ လိုက် (v1 "စာတန်းပါလိုက်")၊ link ဖြုတ်လို့ရ။
-
-### ၅.၃ Edit tools (CapCut + DaVinci "smart trim" — T2)
-| လုပ်ဆောင်ချက် | အပြုအမူ |
-|---|---|
-| Select/Move | clip အလယ်ကို ဆွဲ၊ **Shift = snap ပိတ်၊ Alt = copy** |
-| Trim | အစွန်း ၉ px ဆွဲ၊ **modifier မပါ = normal၊ Shift = ripple trim (နောက်က ကပ်ရွှေ့)၊ Ctrl/Cmd = roll (ကပ်နေတဲ့ clip နှစ်ခုကြားနယ်ကို ရွှေ့)** |
-| Slip / Slide | media clip အလယ်ကို **Alt+ဆွဲ = slip** (အကြောင်းအရာရွှေ့)၊ **Ctrl+Alt = slide** |
-| Razor / Split | `B` tool၊ `Ctrl+B`/`S` playhead မှာ ရွေးထားတာ (မရွေးရင် under-playhead အားလုံး)၊ `Ctrl+Shift+B` = track အားလုံး |
-| Delete | `Del` = ကွက်လပ်ချန်၊ `Shift+Del` = ripple၊ `Q`/`W` = playhead ရဲ့ ဘယ်/ညာ ဖျက် |
-| In/Out range | `I`/`O` မှတ် → **Lift (ကွက်လပ်ချန်) / Extract (ripple) ဖြတ်ထုတ်** (`X`/`Shift+X`)၊ ဖတ်သံထဲက မလိုတဲ့အပိုင်းဖြတ်ရန် v1 အလုပ် |
-| Drop media | Timeline ပေါ် drop = **Overwrite** (ပုံမှန်)၊ `Ctrl` = **Insert** (ripple) |
-| Multi-select | Shift/Ctrl+click၊ **box select**၊ select-all-right (`Alt+→`)၊ ရွေးထားတာအားလုံး တူညီစွာ ရွှေ့/ဖျက်/trim |
-| Nudge | ရွေးထားတာကို `←/→` = ၁ frame၊ `Shift+←/→` = ၁ s |
-| Marker | `M` (playhead)၊ marker ကို snap point အဖြစ်သုံး၊ ruler မှာ ပြ |
-
-### ၅.၄ Snapping
-- Snap points: playhead၊ clip အစ/အဆုံး (track အားလုံး)၊ marker၊ In/Out၊ **ဖတ်သံ VAD phrase boundary** (စာတန်းကို ဖတ်သံနဲ့ ကပ်ဖို့)၊ ruler grid။
-- Threshold **၈ px** (zoom မှ မူတည်)၊ ဖြူမျဉ်း guide၊ **Shift = ပိတ်**၊ toolbar ရဲ့ Snap toggle (`N`)။ Snap ရလဒ်ကို frame ကို quantize။
-
-### ၅.၅ Playhead / Scrub / Playback
-- **အသံ = Web Audio schedule** (`AudioBufferSourceNode.start(when, offset=src.in+..., dur)`)၊ **`<audio>.currentTime` ကို play နေစဉ် ထပ်ထပ်မပြင်** (B5)။ Play/seek/edit-during-play မှာပဲ reschedule။ AudioContext clock = master။
-- **Audio scrubbing** (ruler ဆွဲတဲ့အခါ ၈၀–၁၅၀ ms အသံတိုထွက်) — ဖတ်သံအစရှာဖို့ အရေးကြီး။
-- Shortcut: `Space` play/pause၊ `J/K/L` shuttle (နောက်/ရပ်/ရှေ့၊ ထပ်နှိပ် = မြန်)၊ `←/→` frame၊ `↑/↓` ရှေ့/နောက် edit point၊ `Home/End`၊ `\` loop selection၊ "play around cursor"။
-- Follow-playhead: Auto (ညာစွန်းရောက်မှ) / Smooth / Off။
-
-### ၅.၆ Zoom / Scroll / Layout
-- Zoom: Ctrl+wheel (cursor ဗဟို)၊ `+/-`၊ **Fit (`Shift+Z`)၊ Zoom to selection**၊ slider။ **ပုံမှန် pps = ၆၀** (အခု ၁၀ — clip ကျဉ်းလွန်း)၊ ကဗျာ project ဖွင့်ချိန် Fit မဟုတ်ဘဲ ရွေးထားတဲ့အပိုင်းကို ပြ။
-- Minimap/overview bar (ကဗျာရှည်ရင် လွယ်)၊ ဒေါင်လိုက် scroll (track များရင်)၊ sticky track header။
-
-### ၅.၇ Performance (ရှာဖွေတွေ့ချက် — T5)
-- **Virtualize**: မျက်နှာပြင်ပေါ်က clip ကိုပဲ render (windowing)၊ clip ≥ ၃၀၀ ဆိုရင် **canvas timeline** သို့ ပြောင်းသုံးဖို့ ပြင်ဆင်။ Playhead ကို သီးသန့် component (ရှိပြီး) — transport tick တိုင်း အားလုံး re-render မလုပ်။
-- **Waveform LOD pyramid**: peaks ကို ၁×/၄×/၁၆×/၆၄× ဖြင့် တစ်ခါတည်းတွက် (Worker)၊ IndexedDB မှာ cache၊ zoom အလိုက် level ရွေး။
-- **Video thumbnails**: WebCodecs/`<video>` နဲ့ Worker ထဲ၊ viewport အတွက်ပဲ၊ LRU + IndexedDB cache။ **Frame ghosting** (scrub ချိန် မဲမဲ frame မပေါ်) ။
-- Preview: **adaptive resolution** (frame-budget ကျော်ရင် canvas scale လျော့)၊ Perf HUD (fps, render ms) ကို dev toggle။
-- **Budget**: clip ၁၀၀၀ မှာ pan/zoom ≥ ၆၀ fps၊ ကဗျာ ၅ မိနစ် (စာတန်း ~၆၀ + ဖတ်သံ + music) preview ≥ ၃၀ fps၊ project ဖွင့် ≤ ၃ s။
-
-### ၅.၈ ကဗျာအတွက် သီးသန့် Caption lane tools (T6)
-- **စာတန်းကို timeline ထဲမှာပဲ ပြင်** (double-click inline)၊ စာရင်းနဲ့ timeline နှစ်ဘက်ပြောင်း sync။
-- Bulk: **ရွေးထားတာကို ±frame/၁ s ရွှေ့**၊ "ဒီနေရာကနောက် အားလုံးရွှေ့ (ripple captions)"၊ **ဖတ်သံ phrase boundary သို့ ကပ် (snap-to-voice)**။
-- **Confidence အရောင်** (အနီ/ဝါ/စိမ်း)၊ Review next (`R`)၊ Lock (`L`)၊ Tap-sync (အရင် v1 အတိုင်း — live)၊ Auto-draft (ရှိပြီး)။
-- **Word/syllable အဆင့် timing** (Karaoke) ကို clip အတွင်း keyframe အဖြစ် (နောက်ပိုင်း)။
-- မြန်မာစာ မပျက်ရေး: caption ပြုပြင်ရေး tool တွေက **စာသားကို မပြောင်း** (B1 ပြင်ပြီးမှ)။
-
-### ၅.၉ Accessibility + Discoverability
-- Clip ကို keyboard focus (Tab)၊ nudge/trim/delete keyboard နဲ့၊ `aria-label` (track, clip, time)၊ `?` = shortcut စာရင်း (ရှိပြီး)၊ Tooltip မှာ shortcut ပါ။
-
----
-
-## ၆။ လမ်းပြမြေပုံ (ပြန်စီ — Stabilization အရင်)
-
-### Phase S — Stabilization (ယခု၊ **feature အသစ် မထည့်ခင်**)
-| # | လုပ်ရန် | ပိတ်ကွင်း (done when) |
+### ၂.၂ UI/UX audit (လက်ရှိ UI ကို headless Chromium မှာ တကယ်နှိပ်စမ်းပြီး တွေ့တာ — Nov 2026)
+**ရှိပြီး ✅**: VidPro layout (rail/panel/player/inspector/timeline/status)၊ dark/light၊ undo/redo၊ Text panel (Add text/presets/Poem)၊ Inspector (text: font/style/color/stroke/size/opacity/position/rotate…)၊ Player ပေါ်မှာ ရွေးထားတဲ့စာ ဆွဲ + handle ၈ ခု၊ Timeline ဆွဲ/trim/split/snap/zoom၊ Export dialog၊ shortcut ခလုတ်၊ ၁၁၀၀×၆၅၀ မှာ page scroll မရှိ။
+**CapCut နဲ့ ကွာတာ (GAP)**
+| # | GAP | သက်ရောက်မှု |
 |---|---|---|
-| S1 | **B1** `normalizeMyanmar` ဖယ် (စာမပြောင်း)၊ Zawgyi→Unicode = `rabbit-node` ကို ခလုတ်/ခန့်မှန်းပြီး confirm | `known-bugs.mjs` B1 PASS၊ browser UI မှာ Unicode စာ Add-lines လုပ်ပြီး မပြောင်း။ **ကုဒ်နှင့်စစ်ချက်အောင်; Rabbit live conversion/သင့် Chrome စစ်ချက် မလုပ်ရသေး၊ 🟡** |
-| S2 | **B2+B3+B8** Export: audio render → track နှစ်ခုလုံးထည့် → `start()`၊ `WebMOutputFormat`၊ AAC မရရင် Opus | **ပြီး** — browser export MP4 ffprobe H.264+Opus၊ 6.0135s၊ drift 0.0135s; WebM VP9+Opus၊ container 6.02s (`docs/VERIFY.md`)။ WebM stream-level duration/drift metadata မရှိတာကို validator မမှားယွင်းစေရ |
-| S3 | **B4** clip `src{in,out}` မော်ဒယ် + migration၊ split/trim ကို ပြင်၊ preview/export offset | known-bugs B4 PASS၊ split ပြီး Play → ညာတစ်ဝက် အဆက်ပြတ်မရှိ (ဖတ်သံ ၂ ပိုင်းခွဲ → ပေါင်းနားထောင်ရင် မူရင်းနဲ့ တူ) |
-| S4 | **B5** audio scheduling ကို `AudioBufferSourceNode` (သို့ seek-on-demand) | play ၂ s အတွင်း `currentTime` ပြင်ကြိမ် ≤ ၃၊ သင့်နားနဲ့ stutter မရှိ |
-| S5 | **B7** lane စည်းမျဉ်း (no overlap၊ auto lane) | known-bugs B7 PASS |
-| S6 | **B6** Preview/Export အသံ graph ကို `audio-graph.js` တစ်ခုတည်း | EQ/reverb ဖွင့်ထား project ကို export → preview နဲ့ spectrum ကွာခြားမှု ≤ ၃ dB (offline test) |
-| S7 | CI (`.github/workflows/test.yml`)၊ ကုဒ်ပုံစံ (လိုင်းအရှည်)၊ SRT BOM | CI စိမ်း |
-| S8 | **သင့် Chrome မှာ regression စစ်** (VERIFY §3 စာရင်း) | စာရင်းအားလုံး ✓ |
-
-> Phase S မပြီးမချင်း 🟢 မထည့်၊ အသစ်ထည့်တဲ့ feature မရှိ။
-
-### Phase T — Timeline v2 (§၅)
-T1 အချိန်/clip model + lane (S3/S5 နဲ့ ပေါင်း) → T2 edit tools (razor/ripple/roll/slip/range/magnetic) → T3 selection + link group + marker → T4 playhead/scrub/J-K-L + audio scrub → T5 performance (virtualize, waveform LOD, thumbnails) → T6 caption lane tools။
-**စစ်ဆေးချက်**: ☐ ကိရိယာတိုင်း Ctrl+Z ပြန်ရ ☐ clip မထပ် ☐ ၁၀၀၀ clip ≥ ၆၀ fps ☐ audio scrub ☐ ဖတ်သံ split/ripple/slip လုပ်ပြီး export → အသံ/စာတန်း ကိုက် ☐ keyboard-only နဲ့ editing ဖြစ်။
-
-### Phase E — Export hardening
-Preview=Export parity (golden frames + audio graph test)၊ ၁/၅/၁၀ မိနစ် export (ffprobe A/V drift ≤ ၄၀ ms)၊ VLC/ဖုန်း/YouTube၊ ရှည်တဲ့ export အတွက် File System Access streaming + memory ကန့်သတ်၊ VP9/WebM fallback၊ cancel/resume၊ 9:16/1:1/4:5။
-
-### Phase M — Myanmar quality
-Font matrix (R2 fonts အားလုံး × effect ၁၅ ခု × မြန်မာ သရ/သတ်/ပေါင်းစပ်)၊ wrap (`Intl.Segmenter`) စမ်း၊ syllable-aware Typewriter/Word reveal၊ Zawgyi ထောက်လှမ်း + ပြောင်း၊ ကိုယ်ပိုင် font ဖိုင်ခလုတ်၊ 9:16 safe-area guide။ **ဒီအဆင့်ကို user Chrome မှာပဲ စစ်ရ။**
-
-### Phase A — Auto caption (ဆုံးဖြတ်ချက်ဂိတ် — benchmark အရင်)
-1. **Benchmark protocol**: user ရဲ့ တကယ်ကဗျာဖတ်သံ ၁၀ ခု (၃၀–၉၀ s) + မှန်တဲ့စာသားနဲ့ **CER** တိုင်း။ ယှဉ်: (က) Workers AI Whisper (ပြီးပြီ — ညံ့)၊ (ခ) မြန်မာ fine-tune Whisper (`local-asr/`)၊ (ဂ) အခကြေးငွေ API (ဥပမာ ElevenLabs Scribe/Google)။
-2. **လက်ခံမယ့်စံ**: alignment mode (ကိုယ့်စာသားကို အချိန်ရှာ) အတွက် CER ≤ ၃၀% ၊ စာသားထုတ် mode အတွက် CER ≤ ၂၀% — မရရင် **VAD + Tap-sync (ရှိပြီး)** ကိုပဲ အဓိကထား။
-3. ရလဒ်တိုင်းကို confidence နဲ့ `draft|review` ပြ၊ **အသံကို ပို့တာ privacy သတိပေး**။
-
-### Phase R — Release
-Cloudflare Access ဖွင့် + `ACCESS_AUD`၊ CSP header (`script-src 'self' cdn.jsdelivr.net`)၊ accessibility audit၊ `/v2` → ပင်မလိပ်စာ၊ **Release gate (§၁) အားလုံး ✓ မှ `public/legacy/` ဖျက်**။
+| G1 | **Inspector tab တွေက clip အမျိုးအစားနဲ့ မကိုက်** — Audio clip ရွေးတာတောင် "Text / Animation / Timing" tab ပြ | selection-driven မဟုတ်၊ အသုံးပြုသူ ရှုပ် |
+| G2 | **Right-click context menu မရှိ** | CapCut သုံးသူ အကျင့်နဲ့ မကိုက် |
+| G3 | **Media tile ကို Timeline ပေါ်ဆွဲချလို့မရ** (`draggable` မရှိ၊ click ပဲ) | CapCut ရဲ့ အဓိကအလုပ်လုပ်ပုံ ပျက် |
+| G4 | **Rail tool ၈ ခုက panel အလွတ်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates, More) — Media/Text ပဲ အလုပ်လုပ် | ခလုတ်နှိပ်ရင် ဘာမှမရှိ |
+| G5 | **ညာဘက်အောက်က Effects/Transitions/Filters panel က demo** (tile နှိပ်လည်း clip မပြောင်း) | ထင်ရှားတဲ့ လှည့်စားမှု |
+| G6 | **Panel resize/collapse (splitter) မရှိ** | laptop မျက်နှာပြင်ငယ်မှာ ကျဉ်း |
+| G7 | **Track header** က hide/lock ပဲ — mute/solo/rename/height/reorder မရှိ | |
+| G8 | **Timeline toolbar** မှာ Razor၊ Magnet (main track)၊ Link၊ Marker၊ In/Out၊ Delete-left/right မရှိ | |
+| G9 | **Keyframe ◆** မရှိ၊ **Player handle** က scale/rotate/crop အပြည့်အစုံ မအလုပ်လုပ်ကြောင်း မသေချာ (စစ်ရန်) | |
+| G10 | **Snap guide/safe-area/grid/zoom-fit** controls မရှိ (Player) | |
+| G11 | **Toast/notification**၊ onboarding hint၊ empty-state CTA မညီညာ | |
+| G12 | **Top bar** ရဲ့ zoom select (50–200%) က ဘာကိုထိန်းလဲ မရှင်း | |
+| G13 | Burmese UI ကိစ္စ: label English၊ error/tooltip မြန်မာ — ရောပြန်ရင်းနေ | |
 
 ---
 
-## ၇။ v1 → v2 အင်္ဂါရပ် လွှဲပြောင်းမှု (အခြေအနေ)
+## ၃။ CapCut-like UX Specification (ဒီ Plan ရဲ့ ဗဟို)
 
-| v1 | v2 အခြေအနေ |
+> စံ: "CapCut သုံးဖူးသူ ဘာကိုမှ ပြန်သင်စရာမလိုဘဲ ကိုင်တတ်ရမယ်"။ အောက်ပါတစ်ခုချင်းစီက **တိုင်းတာလို့ရတဲ့ အပြုအမူ** (acceptance)။
+
+### ၃.၁ Workspace layout
+- **ဧရိယာ ၆ ခု**: Top bar · Tool rail · **Left panel (assets/tools)** · **Player** · **Inspector (Details)** · **Timeline** · Status bar။ (VidPro layout ကို ထိန်း)
+- **Resizable splitters**: Left panel ကျယ်/ကျဉ်း (၂၄၀–၄၈၀ px)၊ Inspector (၂၈၀–၄၂၀)၊ Timeline မြင့် (၂၀၀–၆၀% ရဲ့ viewport)၊ **ဒ္ဒဲ double-click = မူလအတိုင်း**၊ **collapse ခလုတ်** (panel ကို ပိတ်ပြီး Player ကို ကျယ်စေ)။ အရွယ်တွေ **မှတ်ထား** (localStorage)။
+- **အနိမ့်ဆုံး ၁၂၈၀×၇၂၀** (ငယ်ရင် ညင်သာစွာချုံ့၊ ၁၁၀၀×၆၄၀ အထိ scroll မဖြစ်)။ ဘာပဲဖြစ်ဖြစ် **Player ကို အနည်းဆုံး ၃၆၀ px အမြင့်** ရအောင်။
+- **Full-screen preview** (F)၊ **Player-only mode** (Tab = panel အားလုံး ဝှက်/ပြ)။
+
+### ၃.၂ Top bar
+- ဘယ်: Logo · Home · **Project name (inline rename)** · Auto-saved status ("Saved ✓ / Saving… / Unsaved")။
+- အလယ်: **Undo / Redo** (disabled state + tooltip ထဲ undo label "Undo: Split clip")။
+- ညာ: **Shortcuts (?)** · Theme · **Export** (အဓိက ခလုတ်၊ အပြာ)။ **Preview** ခလုတ်မရှိဘဲ (Player ရှိပြီးသား) — ရှိနေတာကို full-screen preview လုပ်ပေး။
+- Zoom select (50–200%) = **Player ရဲ့ canvas zoom** (Player ထဲရွှေ့ပြီး Fit/50/100/200 ပေး)၊ top bar မှာမထား။
+
+### ၃.၃ Tool rail + Left panel (CapCut ရဲ့ အဓိကခံစားမှု)
+Rail ကို နှိပ်တိုင်း **ဘယ် panel ပြောင်း** (အလွတ် မရှိရ)။ Panel တိုင်းမှာ **Search + Category chips + Grid/List** + **hover preview** + **click = Timeline ပေါ်ထည့်** (playhead မှာ၊ ရွေးထားတဲ့ track အပေါ်) + **drag = Timeline/Player ပေါ်ချ**။
+| Tool | Panel အကြောင်းအရာ | Milestone |
+|---|---|---|
+| **Media** | Tabs: Local · Library (R2) · Audio · Record။ Import (ခလုတ်+drag file ချ)၊ filter (All/Video/Photo/Audio)၊ **tile: thumbnail + duration + "ထည့်ထား" tick**၊ hover = scrub preview (video)၊ **drag→timeline**၊ right-click (Add/Replace/Reveal/Delete/Relink) | M1 (U3) |
+| **Audio** | Music (R2 + ကိုယ်ပိုင်) · Sound effects · **Record voiceover** · Extracted audio၊ preview ▶ ကိုနှိပ်ကြား၊ drag→audio track | M1/M5 |
+| **Text** | **Default text** · Presets/Templates (Title, Lower third, Quote, Credits…) · **Captions** (Paste poem၊ Auto-draft၊ SRT import) · Poem Mode · Font manager | M2 |
+| **Stickers** | Shapes · Logos/PNG · (နောက်မှ animated) | M3/M6 |
+| **Effects** | Category (Trending/Basic/Retro/B&W/Blur…)၊ tile နှိပ် → ရွေးထားတဲ့ clip ကို **effect ထည့်** (fx stack)၊ ရွေးထားတာမရှိရင် "adjustment layer" ထည့်ဖို့ ပေး | M4c |
+| **Transitions** | Category၊ clip နှစ်ခုကြား drop/နှိပ်၊ duration slider | M4b |
+| **Filters** | Category၊ intensity slider၊ ရွေးထားတဲ့ clip သို့ | M4a |
+| **Adjust** | Basic/Color/HSL (brightness/contrast/saturation/temp/tint/highlights/shadows/vignette/sharpen) — **slider များ (Inspector ထဲလည်း ပေါ်)** | M4a |
+| **Templates** | Project template / Text template ၊ preview + "Use" | M6 |
+| **More** | Settings၊ Shortcuts၊ About၊ Feedback | M1 |
+> **စည်းမျဉ်း**: panel မပြည့်စုံသေးတဲ့ tool ကို rail မှာ **မပြ** (သို့ "Coming soon" badge) — ဘာမှမရှိတဲ့ panel ဖွင့်ခိုင်းမလုပ်။ ညာဘက်အောက်က Effects/Transitions/Filters "demo panel" ကို **ဖယ်** (rail ရဲ့ panel နဲ့ ပေါင်း)၊ အစားထိုး = ညာဘက်အောက်နေရာကို **Inspector ကို ပိုမြင့်စေ** သို့ **Keyframe/Mixer panel** အဖြစ်သုံး။
+
+### ၃.၄ Player (Canvas)
+- ရွေးထားတဲ့ clip: **bounding box + handle ၈ ခု** (ထောင့် = scale (Shift = ratio ထိန်း/မထိန်း)၊ ကြား = crop/ဘေးဆွဲ၊ အပြင်ထောင့် = rotate)၊ **အလယ်ဆွဲ = ရွှေ့**၊ **center/edge snap guide (ပန်းရောင်မျဉ်း)**၊ rotate မှာ ၁၅° snap (Shift)။ **Double-click စာ = canvas ပေါ်မှာ တိုက်ရိုက်ပြင်** (inline edit)။ Arrow = ၁ px nudge (Shift=၁၀)။
+- **Floating toolbar** ရွေးထားတဲ့အရာပေါ် (Duplicate/Delete/Flip/Mask/…)။
+- **Player controls**: Play/Pause · ရှေ့/နောက် frame · Timecode · **Canvas zoom (Fit/50/100/200)** · **Ratio (16:9/9:16/1:1/4:5/Custom)** + **"Fit/Fill/Blur-fill" ကြား background ပုံစံ** · **Guides (safe-area ၉:၁၆၊ ပေါင်း၃×၃ grid၊ center)** · **Preview quality (Full/½/¼)** · Fullscreen။
+- **Preview quality auto** (frame budget ကျော်ရင် လျှော့)၊ audio ထွက်နေစဉ် A/V ကိုက်။
+- Frame ghosting (scrub ချိန် မဲမဲမပေါ်)။
+
+### ၃.၅ Inspector (Details) — **clip အမျိုးအစားအလိုက် tab (G1 ကိုဖြေ)**
+| ရွေးထားတာ | Tabs (CapCut-like) | အဓိက controls |
+|---|---|---|
+| Text | **Basic** · **Animation** · **Effects/Style** · **Captions** | Font/Style/Color(+Fill2/Gradient)/Stroke/Shadow/Glow/Size/Spacing/Align/Opacity/**Transform (X,Y,Scale,Rotate)**/**Timing**; Animation: In/Out/Loop preset + duration; **Apply to all** |
+| Video / Image | **Video** (Transform, Opacity, Blend, Crop, Fit) · **Mask** · **Animation** · **Adjust** · **Speed** · **Audio** | slider+number၊ **Keyframe ◆**၊ Reset ↺ |
+| Audio | **Basic** (Volume, Fade in/out, Pan, Mute) · **Effects** (EQ/Reverb/Echo/Comp/Noise) · **Speed** | meter၊ Ducking toggle (voice ကိုရွေးထားတဲ့ clip) |
+| Sticker/Shape | **Basic** · **Animation** | |
+| (မရွေး) | **Project settings** (Ratio, Resolution, FPS, Background, Captions defaults) | |
+- **Control စံ**: Slider + Number (drag scrub)၊ **ညာဘက် "↺ reset" + "◆ keyframe"**၊ Color = swatch + eyedropper + recent colors၊ section ကို collapse။ **Undo coalescing** (slider ဆွဲ = undo ၁ ဆင့်)။ **Multi-select** ဆိုရင် တူတဲ့ field ပဲပြ၊ ပြောင်းရင် အားလုံးသက်ရောက်။
+
+### ၃.၆ Timeline (CapCut ရဲ့ နှလုံးသား) — L3 နဲ့ Plan §၅(v4) ရဲ့ spec အားလုံးကို ဒီမှာ UX အဖြစ် အတည်ပြု
+- **Track header**: 👁 hide · 🔒 lock · 🔊 mute (audio) / **S solo** · **အမည် double-click rename** · ဆွဲပြန်စီ · **height S/M/L** (right-click) · **+ Add track**။ Video **Main track = magnet ခလုတ်**။
+- **Clip anatomy**: type အရောင် (Text ခရမ်း/Video thumbnail strip/Audio waveform/Sticker…)၊ အမည်၊ **အစွန်း handle** (trim)၊ **fade handle** (audio)၊ **keyframe အမှတ်** (အပေါ်မှာ ◆)၊ lock icon၊ selected = ဘောင်အဖြူ+အပြာ။ Zoom ချဲ့ရင် စာသားအပြည့်၊ ချုံ့ရင် icon ပဲ။
+- **Gestures**: click ရွေး · Shift/Ctrl+click multi · **box select** · drag ရွှေ့ (**ghost+snap guide**) · edge drag trim (Shift=ripple၊ Ctrl=roll) · Alt+drag = slip · Alt+drag clip = copy · ruler drag = scrub (**audio scrub**)။ **Cursor** ပြောင်း (↔ trim၊ ✋ move၊ ✂ razor)။
+- **Right-click menu** (clip): *Cut · Copy · Paste · Duplicate · Delete (Shift=Ripple) · Split · Freeze frame · Reverse · Speed… · Detach audio · Group/Link · Replace media · Properties*၊ (track): *Add track · Rename · Height · Delete track*၊ (ruler/blank): *Add marker · Paste · Zoom to fit*။
+- **Toolbar**: Undo/Redo · **Select / Razor (B)** · Split · Delete · Ripple · **Magnet (P)** · **Snap (N)** · **Link** · **Marker (M)** · **In/Out** · Zoom −/+ slider · **Fit (Shift+Z)** · Timeline ကို အမြင့် ပြောင်း။
+- **Drop indicator** (media ဆွဲချတဲ့အခါ lane/အချိန်နေရာ အပြာမျဉ်း)၊ track အသစ်ဖွဲ့ရမယ့်နေရာ "+ New track" ပြ။ **Playhead**: အပြာ/လိမ္မော်ရောင် မျဉ်း + ထိပ်တြိဂံ + timecode bubble။
+- **Minimap/overview** (ရှည်ရင်)၊ vertical scroll (track များရင်)၊ **auto-follow playhead**။
+- အသေးစိတ် edit semantics = `L3` §၃ (T1–T6)။
+
+### ၃.၇ Export flow
+- **Export** နှိပ် → **Dialog** (CapCut-like): Title · **Preset** (YouTube 1080p · Reels/TikTok 9:16 · Facebook · Draft 720p · Custom) · Resolution · FPS · Quality/Bitrate · Format (MP4 ပင်မ) · **Captions: burn-in / SRT ဖိုင်ပါထုတ်** · **Audio only** · Range (အားလုံး/In-Out)။ ဘာကြောင့် codec ဘာသုံးလဲ ပြ (AAC မရ → WebM အကြံပေး)။
+- Progress (phase: Audio → Frames → Finalize + ETA)၊ **Cancel**၊ ပြီးရင် **self-check** ရလဒ် (video+audio ပါ၊ duration) + "ဖိုင်ဖွင့်/folder ပြ"။ အမှားဆိုရင် **ဘာဖြစ်လဲ+ဘာလုပ်ရမလဲ** (မြန်မာ) + "Copy diagnostics"။
+
+### ၃.၈ Interaction စည်းမျဉ်း၊ Microcopy၊ Feedback
+1. **Selection-driven** (G1)၊ **Undo ၁၀၀%** (Undo label ပါ)၊ destructive ကို confirm မလို (undo ရလို့) — project/file ဖျက်မှ confirm။
+2. **အလုပ်ရှည် (> ၁ s) = progress+cancel**၊ ပုံမှန် feedback = **toast** (ထိပ်/အောက်ညာ ၃ s)၊ အမှား = banner+အကြောင်းပြ+လုပ်ရန်။
+3. **Empty state** တိုင်း **CTA တစ်ခု** ("ဖတ်သံ ထည့်ပါ"၊ "စာတန်း ထည့်ပါ")၊ **ပထမဆုံး ဖွင့်ချိန် coach marks** ၅ ခု (Media → Timeline ဆွဲ၊ Split၊ Text၊ Export…)။
+4. **Tooltip** တိုင်းမှာ shortcut ပါ၊ disabled ဖြစ်ရင် အကြောင်းရင်းပြ။
+5. **Burmese-first microcopy**: label = English (နမူနာကိုက်)၊ **tooltip/toast/error/empty-state/dialog = မြန်မာ** (G13)၊ UI အပြည့်မြန်မာ toggle = M8။
+6. **Motion** ၁၂၀–၁၈၀ ms၊ skeleton loading၊ Layout မရွေ့။ **A11y**: focus ring၊ keyboard-only editing၊ AA contrast၊ `aria-label`။
+
+### ၃.၉ Shortcut map (CapCut default နဲ့ ကိုက်အောင် — `docs/shortcuts.md`)
+Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / Ctrl+Shift+Z (Y)** · Ctrl+C/V/X/D · **Q / W** (ဘယ်/ညာ ဖျက်) · ←/→ frame (Shift=၁ s) · ↑/↓ edit point · Home/End · **+ / −** zoom · **Shift+Z** fit · **N** snap · **P** magnet · **M** marker · **I/O** in/out · **B** razor · **V** select · **F** fullscreen · **?** shortcuts dialog · Ctrl+S project save · Ctrl+E export · J/K/L shuttle · `\` loop။
+
+### ၃.၁၀ Visual design system
+- Tokens (ရှိပြီး: dark/light)၊ **clip အရောင်**: Text ခရမ်း `#6553ca`၊ Video အပြာ thumbnails၊ Audio စိမ်း waveform၊ Overlay/Sticker လိမ္မော်၊ Adjust/Effect ပန်းရောင်၊ Selected = ဖြူ+အပြာဘောင်၊ Playhead `#f76850`။
+- Component စာရင်း: Slider+Number ✅၊ Switch ✅၊ Segmented ✅၊ Select ✅၊ **Color+Eyedropper**၊ **Curve editor**၊ **Keyframe ◆**၊ **Context menu**၊ **Dialog/Modal**၊ **Toast**၊ **Splitter**၊ **Asset card (hover preview)**၊ **Coach mark**၊ **Tooltip(shortcut)**။ Icon = ကိုယ်ပိုင် (inline SVG)။
+
+---
+
+## ၄။ Feature Parity (အကျဉ်း — အသေးစိတ် L2a §၂ + D5 အစဉ် DECISIONS.md)
+
+**ဦးစားပေးအစဉ် (D5 — ရွေးပြီး)**: Text/Poem (M2) → **Transform+Keyframes** (M3) → **Adjust/Filters** (M4a) → **Transitions** (M4b) → **Audio polish: Noise reduction+Loudness+Ducking** (M5a) → Effects (M4c) → Speed/Reverse/Freeze (M5b) → Stickers/Templates (M6) → Mask (M4d) → **Auto captions** (benchmark အောင်မှ၊ M7) → AI/P3။
+**မလုပ်**: motion tracking · script-to-video · cloud/share · CapCut ရဲ့ copyright library။
+
+---
+
+## ၅။ Architecture (CapCut-like engine)
+
+- **Stack**: Preact+htm (CDN ပုံသေ) · Canvas2D→**WebGL2 compositor** · Web Audio · WebCodecs + **Mediabunny** · IndexedDB (project) + **OPFS** (media) · Workers (decode/peaks/thumbnail/export) · R2 (library/fonts) · Cloudflare Worker (API)။
+- **Project model v4**: `project → tracks → clips`၊ clip = `{start,dur, src{mediaId,in,out}, speed, reverse, transform(animatable), fx[], mask, trIn/trOut, link, …}`။ `prop = number | {keys:[{t,v,ease}]}`၊ **`srcTime(clip,t)`** တစ်ခုတည်း၊ အချိန် = စက္ကန့် + frame quantize၊ `migrate()` + `validate()`။
+- **Render**: `buildFrame(project,t)` (pure၊ test လုပ်လို့ရ) → Compositor → Preview/Export တူ။ **Effects/Transitions/Mask** = shader registry (data-driven)၊ Inspector က schema နဲ့ UI ပုံဖော်။
+- **Audio**: `planSchedule` + **audio-graph (Preview/Export တူ)**၊ AudioBufferSource schedule၊ ရှည်တဲ့ media = element path၊ AudioWorklet (noise reduction/beat) နောက်မှ။
+- **Command layer** (`timeline.js`): edit အားလုံး commands (undo label၊ validation)၊ UI က project ကို တိုက်ရိုက်မပြင်ရ။
+- **UI architecture**: `ui/` ကို feature folder ခွဲ (`panels/`, `inspector/`, `timeline/`, `player/`, `dialogs/`, `widgets/`)၊ **Inspector registry** (clip kind → tabs → controls schema)၊ **Panel registry** (tool → panel component)၊ **ContextMenu registry** (target → items)၊ **Shortcut registry** (key → command)။ ဒါတွေ data-driven ဖြစ်တော့ feature အသစ်ထည့်တာ core မပြင်ရ။
+- အသေးစိတ် contract: `L3` §၂–၄၊ L2a §၃။
+
+---
+
+## ၆။ လမ်းပြမြေပုံ — Milestone တိုင်းမှာ **Engine + UX** နှစ်ခုလုံး
+
+**UX Work Packages (U)** — Milestone တွေထဲ ပါဝင်:
+| U | အလုပ် | ဖြေတဲ့ GAP | မူတည် |
+|---|---|---|---|
+| U1 | **Inspector registry** (clip kind → tabs) + Project settings (မရွေးခဲ့ရင်) | G1 | S3 |
+| U2 | **Context menu** (clip/track/ruler) + registry | G2 | T1 |
+| U3 | **Drag & drop** (Media/Audio panel → Timeline/Player) + ghost + drop indicator + Import by drag file | G3 | S5, T1 |
+| U4 | **Splitters + collapse + layout persist + Player-only mode** | G6 | – |
+| U5 | **Track header** (mute/solo/rename/height/reorder/add) | G7 | S5 |
+| U6 | **Timeline toolbar** အပြည့် (Razor, Magnet, Link, Marker, In/Out, Delete L/R, Fit) | G8 | T2–T3 |
+| U7 | **Player** handles (scale/rotate/crop) + snap guides + guides/safe-area + canvas zoom/ratio + inline text edit + floating toolbar | G9, G10 | M3 |
+| U8 | **Left panels အပြည့်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates) + "demo panel" ဖယ် | G4, G5 | M2–M6 |
+| U9 | **Keyframes UI** (◆, curve editor, timeline keyframe row) | G9 | M3 |
+| U10 | **Export dialog** (preset/format/range/captions) | – | S2 |
+| U11 | **Shortcuts dialog + CapCut keymap + registry** | – | T-all |
+| U12 | **Toast/Coach marks/Empty-state CTA/Microcopy (မြန်မာ)** | G11, G13 | – |
+| U13 | **A11y + responsive (၁၂၈၀×၇၂၀)** | – | M8 |
+
+| Milestone | Engine | **UX (U)** | ထွက်ပေါက်စံ |
+|---|---|---|---|
+| **M1 Core NLE** | S1–S8 (မြန်မာစာ၊ export အသံ၊ `src` v4၊ audio schedule၊ lane၊ audio graph) + T1–T6 (command/tools/selection/scrub/perf/caption) + E1 | **U1 U2 U3 U4 U5 U6 U10 U11 U12(အစ)** | X1–X7 (L3 §၀) + **UX gate**: G1–G3, G6–G8 ပိတ်၊ CapCut-user test (§၇) |
+| **M2 Text & Captions** | text template/animation/SRT/Poem Mode/font manager/Zawgyi | **U8 (Text/Audio panel)**၊ U12 | မြန်မာ corpus ၁၀၀%၊ ကဗျာ ၃ ပုဒ် e2e |
+| **M3 Transform & Keyframes** | `buildFrame`+WebGL2 compositor၊ transform/crop/opacity/fit/canvas bg၊ keyframes | **U7 U9** (+ Stickers panel) | golden frame၊ keyframe preview=export |
+| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | shader registry၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/Mask tab | effect ≥၁၅၊ transition ≥၈၊ GPU fallback |
+| **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | noise reduction (WASM)၊ loudness၊ speed time-map | Inspector Audio/Speed tab၊ Mixer panel | A/V drift ≤၄၀ ms (speed ပါ) |
+| **M6 Templates & Assets** | project/text template၊ asset relink၊ stickers | U8 (Templates/Stickers) | template ၅ ခု |
+| **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |
+| **M8 Polish & Release** | proxy/OPFS/large project၊ perf၊ Access ဖွင့် | **U13**၊ onboarding အပြည့်၊ UI မြန်မာ toggle | Release gate (§၈) |
+**v1.0 = M1 + M2**။ M3+ ကို အစဉ်လိုက်။ M1 မပြီးမချင်း M2+ မစ။
+
+---
+
+## ၇။ အလုပ်လုပ်ပုံ၊ စစ်ဆေးမှု၊ Definition of Done
+
+1. **Writer တစ်ယောက်** · WP တစ်ခု = branch/PR တစ်ခု (≤ ~၄၀၀ လိုင်း) · CI စိမ်းမှ merge · ဖိုင် ≤ ၃၀၀ လိုင်း၊ လိုင်း ≤ ၁၆၀ လုံး။
+2. **စမ်းမှ တင်**: node syntax + unit + `known-bugs` + e2e (headless Chromium) + Export ဆိုရင် **ffprobe**။
+3. **UX စစ်ဆေးမှု 3 ဆင့်**: (က) **e2e gesture test** (mouse drag/right-click/keyboard)၊ (ခ) **screenshot နှိုင်း** (နမူနာ layout၊ dark/light)၊ (ဂ) **CapCut-user test** — CapCut သုံးဖူးသူ (သင်) က **task ၁၀ ခု** ကို ညွှန်ကြားချက်မပါဘဲ လုပ်ကြည့် (ဥပမာ: ဖတ်သံထည့်၊ ဖြတ်၊ စာထည့်၊ ရွှေ့၊ Music ထည့်+အသံချ၊ export) → မလုပ်နိုင်တာကို GAP အသစ်မှတ်။
+4. **Status ကို အထောက်အထားနဲ့ပဲ** (🟢 = ဘာနဲ့စစ်ကြောင်း ရေး)၊ **သင့် Chrome စစ်စာရင်း** (`VERIFY §3`) မပါရင် 🟡။
+5. **DoD**: unit+e2e (သို့ ffprobe) + လက်ဖြင့်စစ်စာရင်း ✓ + docs/Plan update + (UI ဆိုရင်) screenshot dark/light။
+6. **CapCut မကူး** — UI/icon/asset/စာသား ကိုယ်ပိုင်။ Binary (font/ပုံ) သင်ကိုယ်တိုင်တင် (R2/GitHub web)။
+
+---
+
+## ၈။ Release gate (v1.0 = M1 + M2) နဲ့ Metrics
+
+1. ကဗျာတစ်ပုဒ် (ဖတ်သံ+စာသား) → စာတန်းချိန်ကိုက် → စာပုံစံ → Music/နောက်ခံ → **အသံပါ MP4** (ffprobe: video+audio၊ drift ≤ ၄၀ ms)၊ **မြန်မာစာ ၁၀၀% မပျက်**။
+2. Reload လုပ်ရင် project+media မပျောက်။ ဖြတ်/ရွှေ့/trim/undo တိုင်း မကျိုး၊ **Preview=Export**။
+3. Chrome/Edge တည်ငြိမ်၊ ၅ မိနစ်ကဗျာ preview ≥ ၃၀ fps၊ ၁၀၀၀ clip pan/zoom ≥ ၆၀ fps၊ project ဖွင့် ≤ ၃ s။
+4. ကိုယ်ပိုင် font (R2) သုံးလို့ရ။
+5. **UX gate**: G1–G8 ပိတ် · **CapCut-user test** task ၁၀ ခုမှ ≥ ၉ ခု ညွှန်ကြားချက်မပါ အောင်မြင် · TTFV ≤ ၁၅ မိနစ် (၁ မိနစ်ကဗျာ၊ ပထမဆုံးသုံးသူ)။
+
+---
+
+## ၉။ အန္တရာယ်
+
+| အန္တရာယ် | ကာကွယ်ရေး |
 |---|---|
-| Tap-sync၊ Auto-draft (VAD)၊ Review/Lock | 🟡 (Auto-draft 🟢) |
-| စာ effect ၁၅ ခု၊ animation၊ preset၊ အရောင်နှစ်မျိုး၊ stroke | 🟡 (မြန်မာ rendering — Phase M) |
-| Zawgyi→Unicode | 🔴 B1 |
-| Font (R2 `Fonts/`၊ ကိုယ်ပိုင်ဖိုင်) | 🟡 |
-| R2 Music/BG/Logo/SE tiles၊ အသံသွင်း | 🟡 မစစ်ရ |
-| Audio Mixer + Ducking | 🟡 preview / 🔴 export parity (B6) |
-| Credits/Title card၊ SRT | 🟢 SRT / 🟡 Title |
-| MP4 export | 🔴 B2 |
-| ဖတ်သံ split/trim/ဖြတ်ထုတ်/undo | 🔴 B4 → T2 |
-| 9:16 safe-area guide | ⏸ Phase M |
+| "✅ ပြီး" လို့ပြောပြီး မစစ်ထား | status စကားလုံး၊ အထောက်အထား၊ VERIFY ပြန်တိုက် |
+| Writer နှစ်ယောက် ပြိုင်ရေး → ဖိုင်ထပ်ရေးခံရ (၂ ကြိမ်ကြုံ) | writer တစ်ယောက်၊ branch/PR၊ SHA update |
+| UX ကို CapCut လို မရအောင် (အပြုအမူ အသေးစိတ်လွဲ) | §၃ acceptance၊ CapCut-user test၊ gesture e2e |
+| Scope ကြီး | milestone gate၊ D5 ဦးစားပေး၊ M1+M2 မပြီးမချင်း M3+ မစ |
+| မြန်မာစာ ပျက် | policy + corpus test (B1) |
+| Preview≠Export | pure `buildFrame`+shared audio graph၊ golden test |
+| GPU/browser ကွဲ | Canvas2D fallback၊ feature ပိတ်+အသိပေး |
+| Performance (clip များ၊ ဗီဒီယိုကြီး) | virtualize၊ LOD peaks၊ worker၊ proxy (M8)၊ limit ၁၀၈၀p/၁၀ မိနစ် |
+| ကုဒ် ဖတ်မရ (one-liner ရှည်) | style စည်းမျဉ်း+CI၊ ပြင်သမျှ ပြန်ဖွဲ့ |
+| `/api/*` public၊ ASR privacy | Access (M8)၊ origin check၊ ခွင့်ပြုချက် |
+| Font/asset လိုင်စင်၊ CapCut IP | private R2 font၊ ကိုယ်ပိုင် asset/UI |
 
 ---
 
-## ၈။ စမ်းသပ်မှု ဗျူဟာ
+## ၁၀။ ဆုံးဖြတ်ချက် (အကျဉ်း — အပြည့်အစုံ `DECISIONS.md`)
 
-- **Unit** (`public/v2/tests/unit`): model/store/timeline ops (property-style: ကျပန်း ops ၁၀၀၀ ကြိမ်လုပ်ပြီး invariant — clip မထပ်၊ dur ≥ min၊ `src` range မကျော်၊ undo ပြန်လည်ကိုက်)၊ time quantize၊ myanmar.js (Unicode မပြောင်း)၊ alignment။
-- **Known-bugs** (`tests/verify/known-bugs.mjs`): ပြင်ပြီးသား bug တိုင်းအတွက် စစ်ချက် ထပ်ထည့် (regression)။
-- **E2E** (`tests/e2e`, headless Chromium + local bundle): UI flow၊ **import audio → split → export → ffprobe** အပါအဝင်။
-- **Export validation**: `scripts/validate-export.mjs` ကို **အသံပါ project** နဲ့ပါ run၊ A/V drift၊ stream count၊ duration။
-- **Golden**: frame (စာပါတဲ့ canvas) hash နှိုင်း၊ audio render spectrum နှိုင်း (preview vs export)။
-- **လက်ဖြင့် (သင့် Chrome)**: VERIFY §3 စာရင်း၊ မြန်မာ font၊ အသံကြား၊ mouse gesture။
+D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ CapCut · D0b Phase S အရင် · D1 WebGL2 compositor · D2 OPFS · D3 schema v4 ကြိုထား · D4 Preact+htm · D5 ဦးစားပေးအစဉ် (§၄) · D6 ၁၀၈၀p ≤ ၁၀ မိနစ် · D7 CapCut shortcut · D8 main-track magnet ON · D9 စက္ကန့်+quantize · D10 lane မထပ် · D11 label EN / microcopy မြန်မာ · D12 Transitions ထည့်၊ sticker pack မလုပ် · D13 Zawgyi = rabbit vendor+confirm · D14 `normalizeMyanmar` ဖျက် · D15 MP4=H.264+AAC၊ မရရင် WebM၊ self-check · D16 Web Audio schedule · D17 repo စည်းမျဉ်း · D18 ASR benchmark ဂိတ် · D19 persona · D20 font private R2။
+**အသစ် (v5)**: **D21** UI/UX ကို Plan ဗဟိုအပိုင်း (§၃) အဖြစ် သတ်မှတ်၊ UX GAP G1–G13 ကို milestone ထဲ ထည့်၊ **panel registry/inspector registry/context-menu registry/shortcut registry** ဖြင့် data-driven UI ဖွဲ့၊ "demo/အလွတ် panel" မပြရ။ **D22** UX လက်ခံစစ်ဆေးမှု = **CapCut-user test** (သင်က task ၁၀ ခု ညွှန်ကြားချက်မပါ)။
+
+**ဆုံးဖြတ်ရန်ကျန် (Open)**: O1 ကိုယ့်ကဗျာဖတ်သံ ၁–၂ မိနစ်+စာသား · O2 Access AUD tag · O3 သင့် Chrome စစ်ချိန် · O4 `/v2`→ပင်မလိပ်စာ (v1.0 ပြီးမှ)။
 
 ---
 
-## ၉။ အန္တရာယ်များ + ကာကွယ်ရေး
+## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ
 
-| အန္တရာယ် | ကာကွယ်ပုံ |
-|---|---|
-| "✅ ပြီး" လို့ ပြောပြီး အမှန်တကယ် မစစ်ထားတာ | §၂ status စကားလုံး၊ အထောက်အထားမပါရင် 🟡၊ VERIFY ကို တိုက်ဆိုင်စစ် |
-| Writer နှစ်ယောက် ပြိုင်ရေးလို့ ဖိုင်ထပ်ရေးခံရ | §၃(1) writer တစ်ယောက်၊ branch၊ SHA update |
-| မြန်မာစာ ပျက် (normalizer၊ font၊ shaping) | စာသားကို မပြောင်းတဲ့ policy၊ unit test (Unicode မပြောင်း)၊ Phase M |
-| Export ကို sandbox မှာပဲ စစ်ပြီး အစစ်မှာ ကွာ | ffprobe + သင့်စက် VLC/ဖုန်း၊ AAC/Opus fallback၊ H.264 မရတဲ့စက်အတွက် VP9 |
-| Preview ≠ Export | graph/renderer တစ်ခုတည်း၊ golden test |
-| Timeline မှာ clip များလာရင် နှေး | virtualize၊ LOD peaks၊ thumbnail worker/cache၊ budget |
-| Project ပျောက် / schema ပြောင်းလို့ ဖွင့်မရ | `migrate()`၊ autosave၊ JSON export/import၊ `storage.persist()` |
-| ကုဒ် ဖတ်မရအောင် one-liner ရှည် | ကုဒ်ပုံစံ စည်းမျဉ်း + CI |
-| `/api/*` public၊ ASR မှာ အသံပို့ | Access ဖွင့် (Phase R)၊ origin စစ်၊ privacy သတိပေး |
-| Font လိုင်စင် | Private R2 `Fonts/` ပဲ |
+1. **Plan ကို ဆက်မြှင့်**: **L2b — CapCut-like UI/UX Detailed Spec** (§၃ ကို screen/state/interaction table အဆင့်သို့ — panel တစ်ခုချင်း၊ context-menu item တစ်ခုချင်း၊ shortcut တစ်ခုချင်း၊ state (hover/active/disabled/error)၊ wireframe ASCII) → L4 test catalog (UX test ပါ) → L5 M2–M8 → L6 release/ops။
+2. (သင်ပြောမှ) **Phase S + U-items** ကို ကုဒ်စ — အစဉ် L3 §၁ + U1–U6။
+3. သင်ပြင်ဆင်ရန်: CapCut-user test အတွက် task ၁၀ ခုကို စစ်ကြည့်ရန် အချိန်၊ ကိုယ့်ကဗျာဖတ်သံ၊ Access AUD tag။
 
 ---
 
-## ၁၀။ ဆုံးဖြတ်ချက် မှတ်တမ်း
-
-- UI အသွင်အပြင် = VidPro နမူနာ၊ အလုပ်လုပ်ပုံ = CapCut။ Label **English**၊ tooltip **မြန်မာ** (`ui/strings.js`)။
-- Preact + htm (CDN ပုံသေ)၊ build tool မသုံး။ Project = Track → Clip၊ **v3.1 မှာ `src{in,out}` + frame-quantized time** (Nov 2026 ထည့်)။
-- Local media = IndexedDB Blob။ Font (AJ Kunheing, Aka02) = **private R2 ပဲ**။
-- **Auto caption**: Workers AI Whisper = မြန်မာအတွက် **မအောင်** (စမ်းပြီး)၊ HF Docker Space = PRO လို၊ ကျန်လမ်း = `local-asr/` / အခကြေးငွေ API → **Phase A benchmark မှာ ဆုံးဖြတ်**။
-- Cloudflare Access = Phase R မှာ။
-- **Phase S ကို feature အသစ်မတိုင်ခင် ပြီးရမယ် (Nov 2026 ဆုံးဖြတ်)**။
-
-### ဆုံးဖြတ်ရန် ကျန်သေး
-- Stickers / Transitions (ကဗျာဗီဒီယိုမှာ လိုမလား)။ UI အားလုံး မြန်မာလို ပြောင်းမလား။
-- Main-track magnet ကို မူလ ON ထားမလား (CapCut လို) သို့ OFF။
-- Frame ကို integer သိမ်း (v4) သို့ စက္ကန့် float + quantize ပဲ (လက်ရှိ)။
-
----
-
-## ၁၁။ နောက်ထပ် လုပ်ရမယ့်အရာ (ချက်ချင်း)
-
-1. **Push ပြီး:** `feat/stabilization-s1-s2` branch, code commit `54a692f` — S1/B1 code+regression+browser UI Unicode check; S2/B2/B3/B8 code+MP4/WebM ffprobe check; unit ၄၀/၄၀ နှင့် E2E ၁၄/၁၄ pass. S1 ကို 🟢 မတင်မီ Rabbit conversion ကို live စမ်းရန်။
-2. နောက်တစ်ဆင့် **S3 → S4 → S5 → S6 → S7 → S8** ကို အစဉ်လိုက်လုပ်ရန်။ ယခုထိ **B4, B7, B6** မပြီး၊ known-bugs စစ်ချက် ၃ ခု ကျနေဆဲ။ S3–S7 ပြီးမှ **S8 သင့် Chrome regression** ကို စစ်ရန်။
-3. S ပြီးမှ **T1→T6**။ ကိရိယာတစ်ခုချင်း branch → စစ် → merge။
-4. သင်ပြင်ဆင်ရန်: ကိုယ့်ကဗျာဖတ်သံ audio ၁–၂ မိနစ် (စမ်းဖို့)၊ ASR benchmark အတွက် ၁၀ ခု + မှန်တဲ့စာသား၊ R2 `Fonts/` ထဲ font၊ Cloudflare Access AUD tag၊ VERIFY §3 ရဲ့ သင့် Chrome စစ်စာရင်း။
+## နောက်ဆက်တွဲ — v1 → v2 အင်္ဂါရပ် လွှဲပြောင်း (အခြေအနေ)
+Tap-sync/Auto-draft/Review/Lock 🟡(Auto-draft 🟢) · စာ effect ၁၅/animation/preset/အရောင်နှစ်မျိုး/stroke 🟡 · Zawgyi 🟡 B1 ပြင်ပြီး (confirm UX ကျန်) · Font R2 🟡 · R2 tiles/Record 🟡 · Mixer preview 🟡/export 🔴 B6 · Title/Credits 🟡၊ SRT 🟢 · MP4 export 🟡 B2/B3/B8 ပြင်ပြီး (ffprobe ✅၊ နားနဲ့မစစ်) · ဖတ်သံ split/trim 🔴 B4 · 9:16 safe-area ⏸ (U7)။
