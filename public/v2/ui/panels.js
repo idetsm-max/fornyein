@@ -1,6 +1,8 @@
 import { html, useState, useEffect, useRef } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Tabs, Chips, Select, Slider, Field, cx } from './widgets.js';
+import { ToolsPanel } from './panels-tools.js';
+import { addKeyframe, clearKeyframes } from '../engine/keyframes.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
@@ -86,7 +88,7 @@ export function MediaPanel({ tool, store, transport, onMenu }) {
   const media = Object.values(project.media || {});
   useEffect(() => { if (tab !== 'library') return; fetch('/api/library/' + libraryKind).then((r) => r.ok ? r.json() : []).then(setLibrary).catch(() => setLibrary([])); }, [tab, libraryKind]);
   if (tool === 'text') return html`<${TextPanel} store=${store} transport=${transport} />`;
-  if (tool !== 'media') return html`<section class="panel media"><div class="phead"><b>${L(tool)}</b></div><div class="empty"><${Icon} name=${tool} size=${34} /><p>${H(tool)}</p><small>ဒီအပိုင်းကို နောက်အဆင့်မှာ ဆက်လုပ်ပါမယ်</small></div></section>`;
+  if (tool !== 'media') return html`<${ToolsPanel} tool=${tool} store=${store} transport=${transport} />`;
   const accept = kind === 'audios' ? 'audio/*' : kind === 'videos' ? 'video/*' : kind === 'photos' ? 'image/*' : 'audio/*,video/*,image/*';
   const onFiles = async (list) => { for (const file of [...list]) { try { const meta = await importFile(file); addMedia(store, transport, meta); } catch (e) { console.error(e); } } };
   const startRecord = async () => { if (recording) { recorder.current?.stop(); return; } const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks.current = []; const r = new MediaRecorder(stream); recorder.current = r; r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data); r.onstop = async () => { stream.getTracks().forEach((t) => t.stop()); setRecording(false); const file = new File([new Blob(chunks.current, { type: r.mimeType || 'audio/webm' })], `recording-${Date.now()}.webm`, { type: r.mimeType || 'audio/webm' }); const meta = await importFile(file); addMedia(store, transport, meta); }; r.start(); setRecording(true); };
@@ -97,7 +99,7 @@ export function MediaPanel({ tool, store, transport, onMenu }) {
   </div></section>`;
 }
 // ---------------- right panel (top): Inspector — edits the selected text clip ----------------
-export function Inspector({ store, fonts }) {
+export function Inspector({ store, fonts, transport }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const [tab, setTab] = useState('text');
   const found = sel ? findClip(project, sel) : null, c = found ? found.clip : null;
@@ -157,6 +159,7 @@ export function Inspector({ store, fonts }) {
     <div class="pbody scroll">
       ${tab === 'text' ? html`
         <div class="textbox"><textarea value=${c.text} maxlength="500" onInput=${(e) => upd('text', (k) => { k.text = e.target.value; })} placeholder="စာသား ရိုက်ပါ" /><span class="count">${c.text.length} / 500</span></div>
+        <div class="kfrow"><span>Keyframes: ${(c.keys || []).length}</span><button type="button" class="btn" onClick=${() => store.edit((d) => { const g = findClip(d, c.id); if (g) addKeyframe(g.clip, transport?.t ?? 0); }, { key: 'kf-' + c.id })}>◆ Add at playhead</button><button type="button" class="btn" onClick=${() => store.edit((d) => { const g = findClip(d, c.id); if (g) clearKeyframes(g.clip); }, { key: 'kf-clear-' + c.id })}>Clear</button></div>
         <div class="reviewrow"><span>Review</span><${IconBtn} name="edit" active=${c.review === 'draft'} title="Draft" onClick=${() => upd('review-draft', (k) => { k.review = 'draft'; })} /><${IconBtn} name="check" active=${c.review === 'review'} title="Review" onClick=${() => upd('review', (k) => { k.review = 'review'; })} /><${IconBtn} name="lock" active=${!!c.locked} title="Lock" onClick=${() => upd('lock', (k) => { k.locked = !k.locked; })} /></div>
         <${Field} label="Reveal" tip="Typewriter / Word reveal"><${Select} value=${c.reveal?.mode || 'none'} onChange=${(v) => upd('reveal', (k) => { k.reveal = { ...(k.reveal || {}), mode: v }; })} options=${[['none', 'None'], ['typewriter', 'Typewriter'], ['word', 'Word reveal']]}/><//>
         <${Field} label=${L('font')} tip=${H('font')}><${Select} value=${s.font} onChange=${(v) => upd('font', (k) => { k.style.font = v; })} options=${fontOpts} /><//>

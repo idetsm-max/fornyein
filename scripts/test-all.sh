@@ -10,7 +10,7 @@ node public/v2/tests/verify/known-bugs.mjs || exit 1
 ( cd public && python3 -m http.server "$PORT" >/tmp/fornyein-http.log 2>&1 & echo $! >/tmp/fornyein-http.pid )
 trap 'kill "$(cat /tmp/fornyein-http.pid 2>/dev/null)" 2>/dev/null' EXIT
 sleep 1
-for t in phase1 ux audio layout groups onboarding; do
+for t in phase1 ux audio layout groups onboarding tools; do
   echo "== e2e $t"
   BASE="http://localhost:$PORT" PUPPETEER="${PUPPETEER:-puppeteer-core}" CHROME="${CHROME:-/usr/bin/chromium}" node "public/v2/tests/e2e/$t.js" || exit 1
 done

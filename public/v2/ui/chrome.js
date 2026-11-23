@@ -71,7 +71,7 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
 const TOOLS = ['media', 'audio', 'text', 'stickers', 'effects', 'transitions', 'filters', 'adjust', 'templates', 'more'];
 export function Rail({ tool, setTool }) {
   return html`<nav class="rail" aria-label="Tools">${TOOLS.map((id) =>
-    html`<button type="button" class=${cx('railbtn', tool === id && 'on')} title=${H(id)} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
+    html`<button type="button" class=${cx('railbtn', tool === id && 'on')} title=${H(id)} aria-label=${L(id)} aria-pressed=${tool === id} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
 }
 
 export function StatusBar({ store, onSave }) {

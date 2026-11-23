@@ -17,6 +17,15 @@ const ok = (name, cond, extra = '') => {
   await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
   await sleep(300);
 
+  ok('first run shows the coach tour', await page.evaluate(() => !!document.querySelector('.tourcard')));
+  ok('coach tour has five steps', (await page.evaluate(() => document.querySelectorAll('.tourcard .tdot').length)) === 5);
+  await page.click('.tourfoot .btn.primary'); await sleep(120);
+  await page.click('.tourfoot .btn.primary'); await sleep(120);
+  ok('coach tour advances', (await page.evaluate(() => document.querySelector('.tourcount').textContent.trim())) === '3 / 5');
+  await page.keyboard.press('Escape'); await sleep(120);
+  ok('Esc closes the coach tour', await page.evaluate(() => !document.querySelector('.tourcard')));
+  ok('tour completion is remembered', await page.evaluate(() => localStorage.getItem('fornyein.tour.v1') === '1'));
+
   ok('empty project shows the start card', await page.evaluate(() => !!document.querySelector('.stageempty .emptycard')));
   const steps = await page.evaluate(() => document.querySelectorAll('.emptycard ol li').length);
   ok('start card lists the first steps', steps === 3, String(steps));

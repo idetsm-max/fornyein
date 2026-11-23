@@ -39,7 +39,9 @@ Implemented in `public/v2/main.js` and the Timeline/Player components. `Ctrl` al
 | Shift+I / Shift+O | Clear in / out | ✅ |
 | Loop button | Loop in–out playback | ✅ |
 | Shift+Z | Zoom to fit | ✅ |
-| F | Fullscreen preview | ⬜ planned (M1, U7) |
+| ◆ (floating bar) | Add a keyframe at the playhead | ✅ |
+| Shift+click keyframe diamond | Delete that keyframe | ✅ |
+| F | Fullscreen preview | ✅ |
 | ? | Shortcut dialog (Esc closes) | ✅ |
 | J / K / L | Pause + step back 1 s / pause / play | 🟡 shuttle speeds not yet |
 | ← / → | Nudge one frame (Shift = 1 s) | ✅ |

@@ -52,6 +52,7 @@ const I = {
   layers: '<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   frame: '<rect x="4" y="6" width="16" height="12" rx="1.5" stroke-dasharray="3 2.5"/>',
+  safe: '<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="6" y="7" width="12" height="10" rx="1" stroke-dasharray="2 2"/>',
   panelLeft: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
   panelRight: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>',
   panelBottom: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 14h18"/>',

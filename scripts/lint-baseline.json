@@ -28,7 +28,7 @@
     "long": 3
   },
   "public/v2/engine/render.js": {
-    "lines": 78,
+    "lines": 79,
     "long": 10
   },
   "public/v2/engine/storage.js": {
@@ -48,12 +48,12 @@
     "long": 2
   },
   "public/v2/index.html": {
-    "lines": 21,
-    "long": 1
+    "lines": 22,
+    "long": 2
   },
   "public/v2/main.js": {
-    "lines": 45,
-    "long": 7
+    "lines": 49,
+    "long": 8
   },
   "public/v2/styles.css": {
     "lines": 211,
@@ -108,11 +108,15 @@
     "long": 1
   },
   "public/v2/ui/icons.js": {
-    "lines": 73,
+    "lines": 74,
     "long": 1
   },
+  "public/v2/ui/panels-tools.js": {
+    "lines": 104,
+    "long": 11
+  },
   "public/v2/ui/panels.js": {
-    "lines": 212,
+    "lines": 215,
     "long": 86
   },
   "public/v2/ui/shortcuts-dialog.js": {
@@ -120,8 +124,8 @@
     "long": 1
   },
   "public/v2/ui/stage.js": {
-    "lines": 134,
-    "long": 24
+    "lines": 152,
+    "long": 28
   },
   "public/v2/ui/strings.js": {
     "lines": 18,
@@ -129,6 +133,10 @@
   },
   "public/v2/ui/toast.js": {
     "lines": 23,
+    "long": 1
+  },
+  "public/v2/ui/tour.js": {
+    "lines": 38,
     "long": 1
   },
   "public/v2/ui/widgets.js": {
