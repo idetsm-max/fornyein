@@ -1,5 +1,6 @@
 // Data for the tool panels; pure so it can be unit tested without a DOM.
 import { DEFAULT_ADJUST } from '../engine/visual.js';
+import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
 
 export const STICKERS = ['✨', '💖', '🌸', '🌙', '⭐', '🎵', '🕊️', '🍃', '☀️', '🌊', '🎀', '💫'];
 
@@ -13,11 +14,11 @@ export const FILTER_PRESETS = [
   { id: 'noir', name: 'Noir', adjust: { brightness: -6, contrast: 22, saturation: -100 } },
 ];
 
-export const TRANSITION_PRESETS = [
-  { id: 'none', name: 'မရှိ', transition: null },
-  { id: 'fade', name: 'Fade', transition: { in: 'fade', out: 'fade', dur: 0.4 } },
-  { id: 'slide', name: 'Slide', transition: { in: 'slide', out: 'slide', dur: 0.35 } },
-];
+export const TRANSITION_PRESETS = TRANSITION_TYPES.map((id) => ({
+  id,
+  name: TRANSITION_NAMES[id],
+  transition: id === 'none' ? null : { in: id, out: id, dur: id === 'fade' ? 0.4 : 0.35 },
+}));
 
 export const STICKER_STYLE = { size: 180, fill: '#ffffff', align: 'center' };
 

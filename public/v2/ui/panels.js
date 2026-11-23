@@ -5,6 +5,7 @@ import { ToolsPanel } from './panels-tools.js';
 import { addKeyframe, clearKeyframes } from '../engine/keyframes.js';
 import { CurveEditor } from './curve-editor.js';
 import { T } from './locale-core.js';
+import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
@@ -154,8 +155,8 @@ export function Inspector({ store, fonts, transport }) {
     <${Slider} label="Contrast" value=${a.contrast || 0} min=${-100} max=${100} onChange=${(v) => updMedia('contrast', (k) => { k.adjust = { ...(k.adjust || {}), contrast: v }; })} unit="%" />
     <${Slider} label="Saturation" value=${a.saturation || 0} min=${-100} max=${100} onChange=${(v) => updMedia('saturation', (k) => { k.adjust = { ...(k.adjust || {}), saturation: v }; })} unit="%" />
     <${Slider} label="Blur" value=${a.blur || 0} min=${0} max=${20} onChange=${(v) => updMedia('blur', (k) => { k.adjust = { ...(k.adjust || {}), blur: v }; })} unit="px" />`}
-    ${tab === 'video' && html`<${Field} label="Transition in"><${Select} value=${c.transition?.in || 'fade'} onChange=${(v) => upd('tin', (k) => { k.transition = { ...(k.transition || {}), in: v }; })} options=${[['none', 'None'], ['fade', 'Fade'], ['slide', 'Slide']]}/><//>
-    <${Field} label="Transition out"><${Select} value=${c.transition?.out || 'fade'} onChange=${(v) => upd('tout', (k) => { k.transition = { ...(k.transition || {}), out: v }; })} options=${[['none', 'None'], ['fade', 'Fade'], ['slide', 'Slide']]}/><//>`}
+    ${tab === 'video' && html`<${Field} label="Transition in"><${Select} value=${c.transition?.in || 'fade'} onChange=${(v) => upd('tin', (k) => { k.transition = { ...(k.transition || {}), in: v }; })} options=${TRANSITION_TYPES.map((id) => [id, TRANSITION_NAMES[id]])}/><//>
+    <${Field} label="Transition out"><${Select} value=${c.transition?.out || 'fade'} onChange=${(v) => upd('tout', (k) => { k.transition = { ...(k.transition || {}), out: v }; })} options=${TRANSITION_TYPES.map((id) => [id, TRANSITION_NAMES[id]])}/><//>`}
   </div></aside>`; }
   const s = c.style || {}, fontOpts = fonts.includes(s.font) ? fonts : [s.font, ...fonts];
   return html`<aside class="panel inspector">${tabs}
@@ -192,8 +193,8 @@ export function Inspector({ store, fonts, transport }) {
         <${Field} label="In" tip="ဝင်လာ animation"><${Select} value=${c.anim?.in || 'fade'} onChange=${(v) => upd('ain', (k) => { k.anim = { ...(k.anim || {}), in: v }; })} options=${[['none', 'None'], ['fade', 'Fade'], ['slideUp', 'Slide up'], ['zoom', 'Zoom']]}/><//>
         <${Field} label="Out" tip="ထွက်သွား animation"><${Select} value=${c.anim?.out || 'fade'} onChange=${(v) => upd('aout', (k) => { k.anim = { ...(k.anim || {}), out: v }; })} options=${[['none', 'None'], ['fade', 'Fade']]}/><//>
         <${Field} label="Loop" tip="ပြန်လည်လှုပ်ရှားမှု"><${Select} value=${c.anim?.loop || 'none'} onChange=${(v) => upd('aloop', (k) => { k.anim = { ...(k.anim || {}), loop: v }; })} options=${[['none', 'None'], ['pulse', 'Pulse'], ['float', 'Float']]}/><//>
-        <${Field} label="Transition in" tip="Clip ဝင်လာ transition"><${Select} value=${c.transition?.in || 'none'} onChange=${(v) => upd('tin', (k) => { k.transition = { ...(k.transition || {}), in: v }; })} options=${[['none', 'None'], ['fade', 'Fade'], ['slide', 'Slide']]}/><//>
-        <${Field} label="Transition out" tip="Clip ထွက်သွား transition"><${Select} value=${c.transition?.out || 'none'} onChange=${(v) => upd('tout', (k) => { k.transition = { ...(k.transition || {}), out: v }; })} options=${[['none', 'None'], ['fade', 'Fade'], ['slide', 'Slide']]}/><//>
+        <${Field} label="Transition in" tip="Clip ဝင်လာ transition"><${Select} value=${c.transition?.in || 'none'} onChange=${(v) => upd('tin', (k) => { k.transition = { ...(k.transition || {}), in: v }; })} options=${TRANSITION_TYPES.map((id) => [id, TRANSITION_NAMES[id]])}/><//>
+        <${Field} label="Transition out" tip="Clip ထွက်သွား transition"><${Select} value=${c.transition?.out || 'none'} onChange=${(v) => upd('tout', (k) => { k.transition = { ...(k.transition || {}), out: v }; })} options=${TRANSITION_TYPES.map((id) => [id, TRANSITION_NAMES[id]])}/><//>
         <${Slider} label="In duration" tip="ဝင်ချိန်" value=${Math.round((c.anim?.inDur || .35) * 100)} min=${0} max=${200} onChange=${(v) => upd('aid', (k) => { k.anim = { ...(k.anim || {}), inDur: v / 100 }; })} unit="%" />
       ` : html`<div class="empty"><${Icon} name="effects" size=${30} /><p>Text animation</p><small>In / Out / Loop animation</small></div>`}
     </div>

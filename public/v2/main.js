@@ -17,6 +17,7 @@ import { ContextMenu } from './ui/context-menu.js'; import { Splitters, mainProp
 import { copyClips, cutClips, pasteClips } from './engine/clipboard.js';
 
 const store = createStore(newProject());
+window.__store = store; // debug/e2e handle
 const transport = createTransport(() => projectDuration(store.get().project), () => Math.max(30, projectDuration(store.get().project)));
 const save = { status: 'idle', at: 0 };
 function setSave(status, at) { save.status = status; save.at = at || save.at; window.dispatchEvent(new Event('fn-save')); }

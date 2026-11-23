@@ -28,7 +28,7 @@
     "long": 3
   },
   "public/v2/engine/render.js": {
-    "lines": 79,
+    "lines": 95,
     "long": 10
   },
   "public/v2/engine/storage.js": {
@@ -44,7 +44,7 @@
     "long": 1
   },
   "public/v2/engine/visual.js": {
-    "lines": 5,
+    "lines": 6,
     "long": 2
   },
   "public/v2/index.html": {
@@ -52,7 +52,7 @@
     "long": 2
   },
   "public/v2/main.js": {
-    "lines": 51,
+    "lines": 52,
     "long": 8
   },
   "public/v2/styles.css": {
@@ -66,6 +66,10 @@
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
     "long": 5
+  },
+  "public/v2/tests/e2e/tools.js": {
+    "lines": 87,
+    "long": 1
   },
   "public/v2/tests/unit/engine.test.mjs": {
     "lines": 35,
@@ -120,7 +124,7 @@
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 219,
+    "lines": 220,
     "long": 87
   },
   "public/v2/ui/shortcuts-dialog.js": {

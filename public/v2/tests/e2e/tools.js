@@ -43,6 +43,12 @@ const ok = (name, cond, extra = '') => {
   await page.click('.panel.tools .fxtile'); await sleep(200);
   ok('effect tile toggles on', (await page.evaluate(() => document.querySelectorAll('.panel.tools .fxtile.on').length)) >= 1);
 
+  await page.click('.railbtn[aria-label="Transitions"]'); await sleep(150);
+  ok('transitions panel lists nine options', (await page.evaluate(() => document.querySelectorAll('.panel.tools .fxtile').length)) === 9);
+  await page.evaluate(() => [...document.querySelectorAll('.panel.tools .fxtile')].find((b) => b.textContent.includes('Wipe'))?.click());
+  await sleep(200);
+  ok('picking a transition stores it on the clip', (await page.evaluate(() => window.__store?.get()?.project?.tracks?.find((t) => t.kind === 'text')?.clips?.[0]?.transition?.in)) === 'wipe');
+
   await page.click('button[title="Safe area"]'); await sleep(150);
   ok('safe area overlay toggles', await page.evaluate(() => !!document.querySelector('.safearea')));
   await page.click('button[title="Safe area"]'); await sleep(120);
