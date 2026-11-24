@@ -12,6 +12,7 @@ import { RelinkBanner } from './relink-banner.js';
 import { loudnessReport } from '../engine/loudness.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
+import { myLabel } from './labels-my.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
 import { importSrt } from '../engine/captions.js';
 import { toast } from './toast.js';
@@ -231,7 +232,7 @@ export function EffectsPanel() {
     <${Tabs} value=${tab} onChange=${setTab} tabs=${[['effects', L('effects'), H('effects')], ['transitions', L('transitions'), H('transitions')], ['filters', L('filters'), H('filters')]]} />
     <div class="pbody scroll">
       <${Chips} value=${cat} onChange=${setCat} items=${[['trending', L('trending')], ['basic', L('basic')], ['retro', L('retro')], ['bw', L('bw')], ['blur', L('blur')]]} />
-      <div class="fxgrid">${FX[tab].map(([name, g]) => html`<button type="button" class="fxtile"><span class=${cx('fxthumb', g)}></span><em>${name}</em></button>`)}</div>
+      <div class="fxgrid">${FX[tab].map(([name, g]) => html`<button type="button" class="fxtile"><span class=${cx('fxthumb', g)}></span><em>${myLabel(name)}</em></button>`)}</div>
     </div>
   </aside>`;
 }

@@ -72,7 +72,7 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 215,
+    "lines": 223,
     "long": 10
   },
   "public/v2/tests/unit/engine.test.mjs": {
@@ -140,7 +140,7 @@
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 237,
+    "lines": 238,
     "long": 90
   },
   "public/v2/ui/relink-banner.js": {

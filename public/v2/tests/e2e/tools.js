@@ -177,6 +177,14 @@ const ok = (name, cond, extra = '') => {
   await page.click('.langbtn'); await sleep(250);
   ok('language toggle switches the rail to Burmese', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'မီဒီယာ');
   ok('language choice persists', (await page.evaluate(() => localStorage.getItem('fornyein.locale'))) === 'my');
+  const myTiles = await page.evaluate(() => [...document.querySelectorAll('.panel.fxpanel .fxtile em')].map((e) => e.textContent));
+  ok('effect tiles turn Burmese', myTiles.includes('အလင်းရောင်') && myTiles.every((t) => /[\u1000-\u109F]/.test(t)), myTiles.join('|'));
+  await page.evaluate(() => document.querySelectorAll('.panel.fxpanel .tabs .tab')[1]?.click());
+  await sleep(250);
+  const myTrans = await page.evaluate(() => [...document.querySelectorAll('.panel.fxpanel .fxtile em')].map((e) => e.textContent));
+  ok('transition tiles turn Burmese', myTrans.includes('ဖျော့'), myTrans.join('|'));
+  await page.evaluate(() => document.querySelectorAll('.panel.fxpanel .tabs .tab')[0]?.click());
+  await sleep(200);
   await page.click('.trow.video .clip'); await sleep(200);
   await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((t) => t.textContent === 'ဗီဒီယို')?.click());
   await sleep(200);

@@ -14,6 +14,9 @@ const MY = {
   'Position X': 'နေရာ X', 'Position Y': 'နေရာ Y', 'Invert mask': 'မတ်စ်ပြောင်းပြန်', Mask: 'မတ်စ်',
   Speed: 'အမြန်နှုန်း', 'Custom speed': 'အမြန်နှုန်း ရွေး', Reverse: 'ပြောင်းပြန်', Keys: 'ကီးများ',
   Text: 'စာသား', Animation: 'လှုပ်ရှားမှု', Timing: 'အချိန်', Video: 'ဗီဒီယို', Adjust: 'ချိန်ညှိ',
+  Glow: 'အလင်းရောင်', Shake: 'တုန်ခါ', 'Zoom In': 'ချဲ့ဝင်', Flash: 'အလင်းဖလက်', 'Film Grain': 'ဖလင်အစေ့',
+  Vignette: 'အနားမှောင်', Chromatic: 'အရောင်ကွဲ', Fade: 'ဖျော့', Slide: 'ရွှေ့', Zoom: 'ချဲ့', Wipe: 'သုတ်',
+  Warm: 'နွေး', Cool: 'အေး', Vivid: 'တောက်', Mono: 'အဖြူအမဲ', Dream: 'အိပ်မက်', Noir: 'နွားခဲ',
   Basic: 'အခြေခံ', Project: 'ပရောဂျက်', 'Select a clip': 'Clip ရွေးပါ', 'Untitled Project': 'အမည်မဲ့ ပရောဂျက်',
 };
 
