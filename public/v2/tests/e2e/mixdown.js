@@ -22,18 +22,20 @@ const ok = (name, cond, extra = '') => { if (!cond) failed++; console.log((cond 
 
   await page.evaluate(async () => {
     const mod = await import('/v2/engine/playback.js');
-    window.__mixdown = async (mutate) => {
+    const peakOf = (data, from = 0) => {
+      let p = 0;
+      for (let i = from; i < data.length; i++) p = Math.max(p, Math.abs(data[i]));
+      return +p.toFixed(4);
+    };
+    window.__mixdown = async (mutate, duration = 1.2) => {
       const project = structuredClone(window.__store.get().project);
       mutate?.(project);
-      const buf = await mod.renderOfflineAudio(project, { duration: 1.2 });
-      const peak = (ch) => {
-        const d = buf.getChannelData(ch);
-        let p = 0;
-        for (let i = 0; i < d.length; i++) p = Math.max(p, Math.abs(d[i]));
-        return +p.toFixed(4);
-      };
-      return { left: peak(0), right: peak(1) };
+      const buf = await mod.renderOfflineAudio(project, { duration });
+      const left = buf.getChannelData(0), right = buf.getChannelData(1);
+      const tailFrom = Math.max(0, Math.floor((duration - 0.35) * buf.sampleRate));
+      return { left: peakOf(left), right: peakOf(right), last: Math.max(peakOf(left, tailFrom), peakOf(right, tailFrom)) };
     };
+    window.__clip = (patch) => window.__mixdown((p) => Object.assign(p.tracks.find((t) => t.kind === 'audio').clips[0], patch));
   });
 
   const base = await page.evaluate(() => window.__mixdown());
@@ -64,6 +66,34 @@ const ok = (name, cond, extra = '') => { if (!cond) failed++; console.log((cond 
     p.tracks.find((t) => t.kind === 'audio').clips[0].gain = 0.5;
   }));
   ok('clip gain also works downwards', Math.abs(bypass.left / base.left - 0.5) < 0.06, (bypass.left / base.left).toFixed(3));
+
+  const hp = await page.evaluate(() => window.__clip({ highpass: 1200 }));
+  ok('clip high-pass removes the low tone', hp.left < base.left * 0.5, `${base.left} → ${hp.left}`);
+
+  const eq = await page.evaluate(() => window.__clip({ eq: { low: 12 } }));
+  ok('clip EQ low shelf lifts the tone', eq.left > base.left * 1.4, `${base.left} → ${eq.left}`);
+
+  const bypassed = await page.evaluate(() => window.__clip({ eq: { low: 12 }, bypass: true }));
+  ok('bypass ignores the clip EQ', Math.abs(bypassed.left - base.left) < 0.02, JSON.stringify(bypassed));
+
+  const gated = await page.evaluate(() => window.__clip({ noiseGate: { enabled: true, threshold: 0.5 } }));
+  ok('the noise gate closes on quiet material', gated.left < 0.01, JSON.stringify(gated));
+
+  // Chromium's compressor adds makeup gain, so the check is that it changes
+  // the level rather than that it lowers it.
+  const compressed = await page.evaluate(() => window.__clip({ compressor: { enabled: true, threshold: -34, ratio: 20 } }));
+  ok('the compressor changes the output level',
+    Math.abs(compressed.left / base.left - 1) > 0.2, `${base.left} → ${compressed.left}`);
+
+  const dry = await page.evaluate(() => window.__mixdown(undefined, 2.6));
+  ok('nothing rings after the clip by default', dry.last < 0.01, JSON.stringify(dry));
+
+  const echo = await page.evaluate(() => window.__clip({ echo: 1 }) || null);
+  ok('clip echo writes a tail after the clip', !!echo);
+  const echoTail = await page.evaluate(() => window.__mixdown((p) => {
+    p.tracks.find((t) => t.kind === 'audio').clips[0].echo = 1;
+  }, 2.6));
+  ok('echo and reverb ring past the clip end', echoTail.last > 0.01, JSON.stringify(echoTail));
 
   ok('no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
   await browser.close();

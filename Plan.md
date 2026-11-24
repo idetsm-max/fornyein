@@ -41,7 +41,8 @@
 | **Export အသံပါ** | 🟡 | **B2/B3/B8 ပြင်ပြီး** — ffprobe: MP4 H.264+Opus 6.0135 s (drift 13.5 ms)၊ WebM VP9+Opus။ **နားနဲ့/VLC/သင့် Chrome မစစ်ရသေး** |
 | Audio Preview | 🟡 | **S4/B5 ပြင်ပြီး** — AudioContext clock ပေါ် buffer scheduling (playhead rAF)၊ drift > 0.12 s မှသာ reschedule၊ e2e: 0 media-element seek။ **နားဖြင့်မစစ်ရသေး** |
 | Preview=Export အသံ | 🟢 | **S6/B6 ပြင်ပြီး** — preview/export နှစ်ခုလုံး `audio-graph.js` တစ်ခုတည်း၊ **e2e `mixdown.js` ၉ ခု ဖြင့် အတိုင်းအတာ စစ်ပြီး** (volume ×0.5 → 0.500၊ mute → 0၊ pan −1 → ညာ 0၊ clip gain ×2 → 0.3916)။ ဒီစစ်က clip FX chain bypass ကို ဖော်ထုတ်ပြီး ပြင်ခဲ့တယ် |
-| အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay/Filters | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
+| **Clip Filters (EQ/high-pass/gate/comp/echo/reverb)** | 🟢 | e2e `mixdown.js` — offline render မှာ တိုင်းတာ (high-pass → 0.0097၊ EQ +12 → 0.3098၊ bypass → 0.1958၊ gate → 0၊ echo tail → 0.0685) |
+| အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
 | Auto caption (Workers AI Whisper) | 🔴/⏸ | မြန်မာမှာ တခြားစာလုံးထွက် — M7 benchmark |
 | Cloudflare Access | ⏸ | `/api/*` public |
 | **S7 CI/lint** | 🟢 | `scripts/lint-lines.mjs` ratchet ✅; `.github/workflows/test.yml` (unit/lint/syntax/e2e) ကို token `workflow` scope မရှိ၍ repo မတင်၊ local သာ |
