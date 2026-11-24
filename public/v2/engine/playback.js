@@ -1,4 +1,5 @@
 // Audio clock for preview and export. planSchedule() is pure: it turns a project
+import { setMeterSource } from './meters.js';
 // and a time into the list of buffer plays that must happen, which keeps the
 // maths testable and makes preview and export share the same decisions.
 import { findClip } from './model.js';
@@ -98,7 +99,7 @@ export function createPlaybackEngine(transport, getProject, store) {
     if (!ctx) {
       const Ctor = window.AudioContext || window.webkitAudioContext;
       ctx = new Ctor();
-      mixer = createMixer(ctx, getProject());
+      mixer = createMixer(ctx, getProject()); setMeterSource(mixer);
     }
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     return ctx;
@@ -111,8 +112,7 @@ export function createPlaybackEngine(transport, getProject, store) {
 
   async function scheduleFrom(t, { window: win = Infinity } = {}) {
     const mine = ++token, ac = ensure();
-    stopAll();
-    refreshBuses();
+    stopAll(); refreshBuses();
     const project = getProject(), events = planSchedule(project, t, { lookahead: win });
     let scheduled = 0;
     for (const event of events) {
@@ -204,7 +204,7 @@ export function createPlaybackEngine(transport, getProject, store) {
       cache.clear();
       ctx?.close?.().catch(() => {});
       ctx = null;
-      mixer = null;
+      mixer = null; setMeterSource(null);
     },
   };
 }

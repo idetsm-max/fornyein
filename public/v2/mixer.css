@@ -1,0 +1,23 @@
+.mixerbox{width:min(760px,calc(100vw - 32px))}
+.mixsub{margin-left:8px;color:var(--mut);font-size:11px}
+.mixbody{padding:10px 16px 16px;display:flex;flex-direction:column;gap:8px}
+.mixhead,.mixrow{display:grid;gap:10px;align-items:center;
+  grid-template-columns:132px minmax(60px,1fr) minmax(150px,1.3fr) minmax(140px,1.1fr) 96px}
+.mixhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:0 2px 4px}
+.mixrow{padding:8px 2px;border-top:1px solid var(--line)}
+.mixname{display:flex;flex-direction:column;min-width:0}
+.mixname b{font-size:12px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mixname em{font-style:normal;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.mixmeter{height:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.mixmeter .lvl{display:block;height:100%;background:#3ec28f;transition:width .08s linear}
+.mixmeter .lvl.hot{background:#ff6b7a}
+.mixvol,.mixpan{display:flex;align-items:center;gap:8px}
+.mixvol .range,.mixpan .range{flex:1;min-width:0}
+.mixdb,.mixpanout{font-size:11px;color:var(--mut);min-width:52px;text-align:right;
+  font-variant-numeric:tabular-nums}
+.mixtoggles{display:flex;gap:4px;justify-content:flex-end}
+.mixtoggles .ibtn{width:26px;height:26px;font-size:11px}
+.mixtoggles .ibtn.on{background:var(--accent);color:#fff}
+.mixfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-top:10px;border-top:1px solid var(--line)}
+.mixfoot small{color:var(--dim);font-size:11px}

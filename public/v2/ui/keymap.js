@@ -37,6 +37,7 @@ export const SHORTCUT_GROUPS = [
     { keys: 'N', en: 'Snap on / off', done: true },
     { keys: 'Ctrl/Cmd + S', en: 'Save project', done: true },
     { keys: 'Ctrl/Cmd + E', en: 'Open the export dialog', done: true },
+    { keys: 'Ctrl/Cmd + Shift + M', en: 'Mixer (volume, pan, mute, solo)', done: true },
     { keys: '?', en: 'Show this shortcut list', done: true },
     { keys: 'Esc', en: 'Close menus', done: true },
     { keys: 'F / Esc', en: 'Fullscreen preview (Esc leaves)', done: true },

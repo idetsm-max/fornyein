@@ -50,7 +50,7 @@
 | **U4–U6** | 🟢 | Splitters/collapse (localStorage)၊ track mute/solo/rename/height၊ razor/fit/Q/W — e2e `tests/e2e/layout.js` ✅ |
 | **T1 command layer** | 🟢 | `engine/timeline.js` + undo labels (`history.js`)၊ unit ၁၃ + property checks |
 | **T3 groups/markers** | 🟢 | link/unlink + group move/delete၊ markers (M / ↑↓ / right-click)၊ marquee select၊ Alt+→ — e2e `groups.js` |
-| **T2 gestures** | 🟡 | Shift = ripple trim၊ Alt = roll (edge) / slip (body)၊ Ctrl = slide၊ N = snap — box select ကျန် |
+| **T2 gestures** | 🟡 | Shift = ripple trim၊ Alt = roll (edge) / slip (body)၊ Ctrl = slide၊ N = snap၊ box select ✅ (`ui/marquee.js`၊ e2e groups) — သင့် Chrome mouse စစ်ရန် ကျန် |
 | **E1 export** | 🟢 | dialog: range (I/O) + captions burn-in/SRT sidecar (`engine/export-range.js`) |
 | **T6 captions** | 🟢 | SRT import → caption clips (`engine/captions.js`)၊ timeline မှာ dashed outline၊ SRT export ရှိပြီး |
 | **T5 perf** | 🟢 | viewport virtualization (`engine/virtual.js`) + waveform LOD (bars by width) + horizontal scroll |
@@ -204,7 +204,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | **M2 Text & Captions** | text template/animation/SRT/Poem Mode/font manager/Zawgyi | **U8 (Text/Audio panel)**၊ U12 | မြန်မာ corpus ၁၀၀%၊ ကဗျာ ၃ ပုဒ် e2e |
 | **M3 Transform & Keyframes** | `buildFrame`+WebGL2 compositor၊ transform/crop/opacity/fit/canvas bg၊ keyframes | **U7 U9** (+ Stickers panel) | golden frame၊ keyframe preview=export |
 | **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | shader registry၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ GPU fallback |
-| **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | speed time-map 🟢 (`setClipSpeed`၊ `srcTime` reverse)၊ noise reduction/loudness ကျန် | Inspector **Speed tab** 🟢 (0.25×–4×၊ reverse)၊ Mixer panel ကျန် | A/V drift ≤၄၀ ms (speed ပါ) |
+| **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | speed time-map 🟢 (`setClipSpeed`၊ `srcTime` reverse)၊ noise reduction/loudness ကျန် | Inspector **Speed tab** 🟢 (0.25×–4×၊ reverse)၊ **Mixer panel 🟢** (`ui/mixer-dialog.js` — volume/pan/mute/solo/ducking + live meter၊ e2e `mixer.js`) | A/V drift ≤၄၀ ms (speed ပါ) |
 | **M6 Templates & Assets** | project/text template၊ asset relink၊ stickers | U8 (Templates/Stickers) | template ၅ ခု |
 | **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |
 | **M8 Polish & Release** | proxy/OPFS/large project၊ perf၊ Access ဖွင့် | **U13** 🟢၊ onboarding 🟢၊ UI မြန်မာ toggle 🟢 | Release gate (§၈) |
