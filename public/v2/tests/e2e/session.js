@@ -41,6 +41,17 @@ const closeTour = async (p) => { await p.evaluate(() => localStorage.setItem('fn
   ok('the dot clears once autosave finishes', savedTitle === 'Title probe — For Nyein', savedTitle);
   ok('a finished save clears the recovery flag', await page.evaluate(() => localStorage.getItem('fn.recovery.v1') === null));
 
+  // ---- failed save offers a retry
+  await page.evaluate(() => { window.__put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function () { throw new Error('quota'); }; window.__store.edit((d) => { d.name = 'Fail probe'; }); });
+  await sleep(1300);
+  const failState = await page.evaluate(() => ({ text: document.querySelector('.savedpill b')?.textContent, err: document.querySelector('.savedpill')?.classList.contains('error') }));
+  ok('a failing save shows Save failed', failState.err && failState.text === 'Save failed', JSON.stringify(failState));
+  await page.evaluate(() => { IDBObjectStore.prototype.put = window.__put; });
+  await page.click('.savedpill');
+  await sleep(800);
+  const retried = await page.evaluate(() => ({ text: document.querySelector('.savedpill b')?.textContent, err: document.querySelector('.savedpill')?.classList.contains('error') }));
+  ok('clicking the failed pill retries the save', !retried.err && /Saved|သိမ်း/.test(retried.text), JSON.stringify(retried));
+
   // ---- force save when the tab is hidden
   await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); window.__store.edit((d) => { d.name = 'Hidden save'; }); document.dispatchEvent(new Event('visibilitychange')); });
   await sleep(600);

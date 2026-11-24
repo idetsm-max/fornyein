@@ -162,6 +162,8 @@ const box = (p, sel) => p.evaluate((s) => { const r = document.querySelector(s)?
   await sleep(400);
   ok('Escape leaves the fullscreen preview', await page.evaluate(() => !document.fullscreenElement && !document.querySelector('.frame.fsfallback') && !document.querySelector('.fsctl')));
 
+  const noFx = await page.evaluate(() => ({ fx: !!document.querySelector('.fxpanel'), insp: Math.round(document.querySelector('.inspector').getBoundingClientRect().bottom), tl: Math.round(document.querySelector('.timeline').getBoundingClientRect().top) }));
+  ok('the demo fx panel is gone and the inspector runs full height', !noFx.fx && noFx.insp > noFx.tl, JSON.stringify(noFx));
   await page.click('header.topbar [title="Settings"]');
   await sleep(300);
   const dlg = await page.evaluate(() => ({ open: !!document.querySelector('.settingsbox'), groups: [...document.querySelectorAll('.setgroup h3')].map((h) => h.textContent) }));

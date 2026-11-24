@@ -66,6 +66,7 @@ const I = {
   zoomOut: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/>',
   zoomIn: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/>',
   check: '<path d="M5 12l5 5 9-10"/>',
+  alert: '<path d="M12 3l9 17H3z"/><path d="M12 9v5M12 17h.01"/>',
 };
 const FILLED = new Set(['play', 'prev', 'next', 'more']);
 

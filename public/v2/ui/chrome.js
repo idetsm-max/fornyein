@@ -70,7 +70,9 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
     <button type="button" class="navbtn" title=${H('home')} onClick=${onNew}><${Icon} name="home" size=${17} /><span>${L('home')}</span></button>
     <${ProjectsMenu} onNew=${onNew} onOpen=${onOpen} onExportJson=${onExportJson} onImportJson=${onImportJson} />
     <${ProjectName} project=${project} store=${store} />
-    <div class=${cx('savedpill', save.status)} title=${H('saved')}><${Icon} name="cloud" size=${18} /><span><b>${label}</b> ${save.at && save.status === 'saved' ? html`<em>${ago(save.at)}</em>` : ''}</span></div>
+    <button type="button" class=${cx('savedpill', save.status)} title=${save.status === 'error' ? 'Save failed — click to retry' : H('saved')} onClick=${save.status === 'error' ? () => window.dispatchEvent(new Event('fornyein:retry-save')) : undefined}>
+      <${Icon} name=${save.status === 'error' ? 'alert' : 'cloud'} size=${18} /><span><b>${label}</b> ${save.at && save.status === 'saved' ? html`<em>${ago(save.at)}</em>` : ''}</span>
+    </button>
     <div class="spacer"></div>
     <div class="topctl">
       <${IconBtn} name="undo" title=${L('undo') + (undoLabel ? ': ' + undoLabel : '') + ' · Ctrl+Z'} disabled=${!canUndo} onClick=${() => store.undo()} />
@@ -94,7 +96,7 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
 const TOOLS = ['media', 'audio', 'text', 'stickers', 'effects', 'transitions', 'filters', 'adjust', 'templates', 'more'];
 export function Rail({ tool, setTool }) {
   return html`<nav class="rail" aria-label="Tools">${TOOLS.map((id) =>
-    html`<button type="button" class=${cx('railbtn', tool === id && 'on')} title=${H(id)} aria-label=${L(id)} aria-pressed=${tool === id} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
+    html`<button type="button" data-tool=${id} class=${cx('railbtn', tool === id && 'on')} title=${H(id)} aria-label=${L(id)} aria-pressed=${tool === id} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
 }
 
 const fmtSecs = (t) => { const s = Math.max(0, Math.floor(t || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };

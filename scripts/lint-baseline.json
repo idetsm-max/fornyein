@@ -60,11 +60,11 @@
     "long": 5
   },
   "public/v2/main.js": {
-    "lines": 84,
-    "long": 8
+    "lines": 85,
+    "long": 9
   },
   "public/v2/styles.css": {
-    "lines": 233,
+    "lines": 236,
     "long": 30
   },
   "public/v2/tests/e2e/groups.js": {
@@ -72,19 +72,19 @@
     "long": 1
   },
   "public/v2/tests/e2e/layout.js": {
-    "lines": 208,
-    "long": 18
+    "lines": 210,
+    "long": 19
   },
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
     "long": 5
   },
   "public/v2/tests/e2e/session.js": {
-    "lines": 81,
-    "long": 6
+    "lines": 92,
+    "long": 9
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 252,
+    "lines": 251,
     "long": 11
   },
   "public/v2/tests/unit/engine.test.mjs": {
@@ -128,8 +128,8 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 127,
-    "long": 21
+    "lines": 129,
+    "long": 22
   },
   "public/v2/ui/curve-editor.js": {
     "lines": 31,
@@ -144,7 +144,7 @@
     "long": 1
   },
   "public/v2/ui/icons.js": {
-    "lines": 76,
+    "lines": 77,
     "long": 2
   },
   "public/v2/ui/inspector-registry.js": {
@@ -156,12 +156,12 @@
     "long": 4
   },
   "public/v2/ui/panels-tools.js": {
-    "lines": 104,
+    "lines": 105,
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 250,
-    "long": 91
+    "lines": 232,
+    "long": 88
   },
   "public/v2/ui/relink-banner.js": {
     "lines": 34,

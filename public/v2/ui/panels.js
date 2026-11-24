@@ -230,21 +230,3 @@ export function Inspector({ store, fonts, transport }) {
     </div>
   </aside>`;
 }
-
-// ---------------- right panel (bottom): Effects / Transitions / Filters (design only for now) ----------------
-const FX = {
-  effects: [['Glow', 'g1'], ['Shake', 'g2'], ['Zoom In', 'g3'], ['Blur', 'g4'], ['Flash', 'g5'], ['Film Grain', 'g6'], ['Vignette', 'g7'], ['Chromatic', 'g8']],
-  transitions: [['Fade', 'g2'], ['Slide', 'g4'], ['Zoom', 'g6'], ['Wipe', 'g8']],
-  filters: [['Warm', 'g1'], ['Cool', 'g4'], ['Vivid', 'g5'], ['Mono', 'g7'], ['Dream', 'g3'], ['Noir', 'g8']],
-};
-export function EffectsPanel() {
-  const [tab, setTab] = useState('effects');
-  const [cat, setCat] = useState('trending');
-  return html`<aside class="panel fxpanel">
-    <${Tabs} value=${tab} onChange=${setTab} tabs=${[['effects', L('effects'), H('effects')], ['transitions', L('transitions'), H('transitions')], ['filters', L('filters'), H('filters')]]} />
-    <div class="pbody scroll">
-      <${Chips} value=${cat} onChange=${setCat} items=${[['trending', L('trending')], ['basic', L('basic')], ['retro', L('retro')], ['bw', L('bw')], ['blur', L('blur')]]} />
-      <div class="fxgrid">${FX[tab].map(([name, g]) => html`<button type="button" class="fxtile"><span class=${cx('fxthumb', g)}></span><em>${myLabel(name)}</em></button>`)}</div>
-    </div>
-  </aside>`;
-}

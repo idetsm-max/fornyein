@@ -2,11 +2,11 @@
 .main{display:grid;min-height:0;gap:8px;padding:8px;position:relative;
   grid-template-columns:78px var(--left-w,330px) minmax(0,1fr) var(--insp-w,330px);
   grid-template-rows:minmax(0,1fr) var(--tl-h,300px);
-  grid-template-areas:"rail media player inspector" "rail timeline timeline fx"}
+  grid-template-areas:"rail media player inspector" "rail timeline timeline inspector"}
 .main.no-left{grid-template-columns:78px 0 minmax(0,1fr) var(--insp-w,330px)}
 .main.no-insp{grid-template-columns:78px var(--left-w,330px) minmax(0,1fr) 0}
 .main.no-tl{grid-template-rows:minmax(0,1fr) 0}
-.main.no-left .media,.main.no-insp .inspector,.main.no-insp .fxpanel,.main.no-tl .timeline{display:none}
+.main.no-left .media,.main.no-insp .inspector,.main.no-tl .timeline{display:none}
 .splitter{position:absolute;z-index:25;background:transparent;transition:background .12s}
 .splitter:hover,.splitter:focus-visible{background:var(--accent)}
 .splitter.v{width:6px;top:8px;bottom:8px;cursor:col-resize}
@@ -35,7 +35,7 @@
 /* Focus mode (Shift+Tab): player alone, everything else out of the way. */
 .app.focusmode .main{grid-template-columns:0 0 minmax(0,1fr) 0;grid-template-rows:minmax(0,1fr) 0;grid-template-areas:"player player player player" "player player player player"}
 .app.focusmode .rail,.app.focusmode .media,.app.focusmode .inspector,
-.app.focusmode .timeline,.app.focusmode .fxpanel,.app.focusmode .splitter{display:none}
+.app.focusmode .timeline,.app.focusmode .splitter{display:none}
 .app.focusmode .player{border:0;background:var(--bg)}
 .focuspill{position:fixed;top:64px;right:14px;z-index:60;display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--mut);font-size:11px}
 .readonlybar{position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:10px;max-width:min(760px,calc(100vw - 32px));padding:8px 12px;border:1px solid #f7b955;border-radius:10px;background:#3a2c12;color:#ffe1ac;font-size:12px;box-shadow:0 8px 24px #0006}

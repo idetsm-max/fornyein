@@ -17,6 +17,8 @@ const MY = {
   Glow: 'အလင်းရောင်', Shake: 'တုန်ခါ', 'Zoom In': 'ချဲ့ဝင်', Flash: 'အလင်းဖလက်', 'Film Grain': 'ဖလင်အစေ့',
   Vignette: 'အနားမှောင်', Chromatic: 'အရောင်ကွဲ', Fade: 'ဖျော့', Slide: 'ရွှေ့', Zoom: 'ချဲ့', Wipe: 'သုတ်',
   Warm: 'နွေး', Cool: 'အေး', Vivid: 'တောက်', Mono: 'အဖြူအမဲ', Dream: 'အိပ်မက်', Noir: 'နွားခဲ',
+  Sepia: 'အညိုရောင်', Invert: 'အရောင်ပြန်', Bright: 'တောက်ပ', Hue: 'အရောင်စက်ဝိုင်း', Soft: 'နူးညံ့',
+  Outline: 'အနားသတ်', Neon: 'နီယွန်', Rise: 'ပေါ်ထွက်', Spin: 'လှည့်', Dip: 'နစ်မြုပ်', None: 'မရှိ',
   Basic: 'အခြေခံ', Project: 'ပရောဂျက်', 'Select a clip': 'Clip ရွေးပါ', 'Untitled Project': 'အမည်မဲ့ ပရောဂျက်',
 };
 

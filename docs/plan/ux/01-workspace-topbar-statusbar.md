@@ -159,9 +159,9 @@ Items (အပေါ်ကနေ): `＋ New project` (Ctrl+Alt+N) · `📂 Open�
 | UX-LAY-03 | ၁၁၀၀×၆၄၀ / ၁၂၈၀×၇၂၀ / ၁၄၄၀×၉၀၀ တွင် page scroll မရှိ၊ screenshot dark+light |
 | UX-LAY-04 | Capability gate: WebCodecs မရှိတဲ့ browser (mock) မှာ gate စာမျက်နှာ၊ ရှိရင် မပေါ် |
 | UX-LAY-05 | `Tab` player-only၊ `F` fullscreen overlay ၂.၅ s auto-hide၊ Esc ထွက် |
-| UX-LAY-06 | ညာဘက်အောက် demo panel မရှိ၊ Inspector အမြင့်အပြည့် |
+| UX-LAY-06 | ညာဘက်အောက် demo panel မရှိ၊ Inspector အမြင့်အပြည့် — ✅ (`.fxpanel` ဖျက်ပြီး grid က inspector ကို row ၂ ခုလုံး ပေး၊ e2e စစ်) |
 | UX-TOP-01 | Project name inline rename (Enter/Esc/blur)၊ မြန်မာစာ၊ အလွတ်=Untitled — ✅ click/F2 (e2e) |
-| UX-TOP-02 | Save status ၅ မျိုး (Saved/Saving/Unsaved/Failed/New) ပြောင်း (storage error ကို mock) |
+| UX-TOP-02 | Save status ၅ မျိုး (Saved/Saving/Unsaved/Failed/New) ပြောင်း (storage error ကို mock) — ✅ + Failed ကို နှိပ်ရင် retry (e2e) |
 | UX-TOP-03 | Undo/Redo tooltip မှာ command label၊ disabled မှာ အကြောင်းရင်း |
 | UX-TOP-04 | Export disabled (empty) + tooltip၊ running မှာ ring |
 | UX-TOP-05 | Tab order မှန် (§၁.၅)၊ focus ring မြင်ရ |
