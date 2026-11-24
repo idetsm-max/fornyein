@@ -175,6 +175,11 @@ const box = (p, sel) => p.evaluate((s) => { const r = document.querySelector(s)?
   ok('the performance HUD shows a frame rate', await page.evaluate(() => /\d+ fps/.test(document.querySelector('.sb-fps')?.textContent || '')));
   const prefs = await page.evaluate(() => JSON.parse(localStorage.getItem('fn.settings.v1')));
   ok('settings persist in fn.settings.v1', prefs.timecode === 'sec' && prefs.perfHud === true, JSON.stringify(prefs));
+  await page.evaluate(() => [...document.querySelectorAll('.setactions .btn')].find((b) => b.textContent.includes('Reset to defaults')).click());
+  await sleep(350);
+  const reset = await page.evaluate(() => JSON.parse(localStorage.getItem('fn.settings.v1')));
+  ok('Reset to defaults restores the stored preferences', reset.timecode === 'tc' && reset.perfHud === false, JSON.stringify(reset));
+  ok('Reset to defaults also restores the status bar clock', await page.evaluate(() => /\d\d:\d\d:\d\d:\d\d$/.test(document.querySelector('.sb-meta').textContent)));
   await page.keyboard.press('Escape');
   await sleep(250);
   ok('Escape closes the settings dialog', await page.evaluate(() => !document.querySelector('.settingsbox')));

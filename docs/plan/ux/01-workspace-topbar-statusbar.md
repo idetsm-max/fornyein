@@ -145,7 +145,8 @@ Items (အပေါ်ကနေ): `＋ New project` (Ctrl+Alt+N) · `📂 Open�
 | Playback | **Preview quality** (Auto/Full/½/¼) · GPU compositor (M3+) · Audio output latency compensation (ms) | Auto |
 | Autosave | Interval (၀.၇–၅ s) · Persist storage | 0.7 s |
 | Advanced | Show perf HUD · Reset layout · Clear caches (peaks/thumbnails) · Copy diagnostics | off |
-- ပြောင်းတာ **ချက်ချင်းသက်ရောက်**၊ Reset to defaults ခလုတ်။
+- ပြောင်းတာ **ချက်ချင်း သက်ရောက်**၊ Reset to defaults ခလုတ်။
+- **အကောင်အထည် (2026-11-23)**: `engine/settings.js` (`fn.settings.v1`) + `ui/settings-dialog.js` — group ၅ ခုလုံး၊ theme/timecode/snap+threshold/magnet/follow/text+image duration/preview quality cap/autosave delay/perf HUD/Reset defaults/Reset layout/Clear caches/Copy diagnostics။ e2e: dialog group စစ်၊ timecode `0:00`၊ HUD fps၊ persist၊ Reset defaults။
 
 ---
 
@@ -159,7 +160,7 @@ Items (အပေါ်ကနေ): `＋ New project` (Ctrl+Alt+N) · `📂 Open�
 | UX-LAY-04 | Capability gate: WebCodecs မရှိတဲ့ browser (mock) မှာ gate စာမျက်နှာ၊ ရှိရင် မပေါ် |
 | UX-LAY-05 | `Tab` player-only၊ `F` fullscreen overlay ၂.၅ s auto-hide၊ Esc ထွက် |
 | UX-LAY-06 | ညာဘက်အောက် demo panel မရှိ၊ Inspector အမြင့်အပြည့် |
-| UX-TOP-01 | Project name inline rename (Enter/Esc/blur)၊ မြန်မာစာ၊ အလွတ်=Untitled |
+| UX-TOP-01 | Project name inline rename (Enter/Esc/blur)၊ မြန်မာစာ၊ အလွတ်=Untitled — ✅ click/F2 (e2e) |
 | UX-TOP-02 | Save status ၅ မျိုး (Saved/Saving/Unsaved/Failed/New) ပြောင်း (storage error ကို mock) |
 | UX-TOP-03 | Undo/Redo tooltip မှာ command label၊ disabled မှာ အကြောင်းရင်း |
 | UX-TOP-04 | Export disabled (empty) + tooltip၊ running မှာ ring |

@@ -1,6 +1,6 @@
 {
   "public/v2/editor.css": {
-    "lines": 71,
+    "lines": 74,
     "long": 6
   },
   "public/v2/engine/actions.js": {
@@ -72,8 +72,8 @@
     "long": 1
   },
   "public/v2/tests/e2e/layout.js": {
-    "lines": 203,
-    "long": 17
+    "lines": 208,
+    "long": 18
   },
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
@@ -120,8 +120,8 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 126,
-    "long": 20
+    "lines": 127,
+    "long": 21
   },
   "public/v2/ui/curve-editor.js": {
     "lines": 31,
@@ -160,7 +160,7 @@
     "long": 1
   },
   "public/v2/ui/settings-dialog.js": {
-    "lines": 47,
+    "lines": 48,
     "long": 10
   },
   "public/v2/ui/shortcuts-dialog.js": {

@@ -69,3 +69,6 @@
 .setcheck{width:16px;height:16px;accent-color:var(--accent)}
 .setactions{display:flex;flex-wrap:wrap;gap:8px}
 .sb-fps b{color:var(--accent2)}
+.sbtn{border:0;background:none;font:inherit;color:inherit;padding:0;cursor:pointer}
+.sbtn:hover b{color:var(--accent2)}
+@media (max-width:1240px){.sb-sel{display:none}}

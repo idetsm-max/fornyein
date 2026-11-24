@@ -12,6 +12,7 @@ import { ShortcutsDialog } from './shortcuts-dialog.js';
 import { SettingsDialog } from './settings-dialog.js';
 import { toast } from './toast.js';
 import { resetLayout } from './layout.js';
+import { DEFAULTS } from '../engine/settings.js';
 
 const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? T('just now', 'ယခုလေးတင်') : s < 60 ? `${s}${T(' s ago', ' စက္ကန့်က')}` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
@@ -86,7 +87,7 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
       <button type="button" class=${cx(theme === 'light' && 'on')} title="Light" onClick=${() => setTheme('light')}><${Icon} name="sun" size=${16} /></button>
       <button type="button" class=${cx(theme === 'dark' && 'on')} title="Dark" onClick=${() => setTheme('dark')}><${Icon} name="moon" size=${16} /></button>
     </div>
-    <${IconBtn} name="gear" title="Settings" onClick=${() => setSettingsOpen(true)} />${exporting && html`<${ExportDialog} project=${project} transport=${transport} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}${settingsOpen && html`<${SettingsDialog} settings=${settings} onChange=${onSettingsChange} onClose=${() => setSettingsOpen(false)} onResetLayout=${() => { resetLayout(setLayout); toast('Layout ပြန်လည်သတ်မှတ်ပြီး', 'ok'); }} onClearCaches=${() => { try { for (const k of Object.keys(localStorage)) if (/^fn\.(peaks|thumbs|wave)/.test(k)) localStorage.removeItem(k); } catch { /* private mode */ } toast('Cache ရှင်းပြီးပါပြီ', 'ok'); }} />`}
+    <${IconBtn} name="gear" title="Settings" onClick=${() => setSettingsOpen(true)} />${exporting && html`<${ExportDialog} project=${project} transport=${transport} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}${settingsOpen && html`<${SettingsDialog} settings=${settings} onChange=${onSettingsChange} onClose=${() => setSettingsOpen(false)} onResetLayout=${() => { resetLayout(setLayout); toast('Layout ပြန်လည်သတ်မှတ်ပြီး', 'ok'); }} onReset=${() => { onSettingsChange({ ...DEFAULTS }); toast('Default ပြန်ထားပြီး', 'ok'); }} onClearCaches=${() => { try { for (const k of Object.keys(localStorage)) if (/^fn\.(peaks|thumbs|wave)/.test(k)) localStorage.removeItem(k); } catch { /* private mode */ } toast('Cache ရှင်းပြီးပါပြီ', 'ok'); }} />`}
   </header>`;
 }
 
@@ -115,7 +116,7 @@ export function StatusBar({ store, onSave, settings }) {
   const [w, h] = RATIOS[p.size], sec = settings?.timecode === 'sec';
   return html`<footer class="statusbar">
     <span class="sitem">${L('project')}: <input class="pname" value=${p.name} spellcheck="false" onInput=${(e) => store.edit((d) => { d.name = e.target.value || 'Untitled Project'; }, { key: 'pname' })} /></span><span class="vsep"></span>
-    <span class="sitem">${L('resolution')}: <b>${w} × ${h}</b> (${p.size})</span>
+    <button type="button" class="sitem sbtn" title="Project settings" onClick=${() => store.select(null)}>${L('resolution')}: <b>${w} × ${h}</b> (${p.size})</button>
     <span class="sitem sb-meta">${p.fps || 30} fps · ${sec ? fmtSecs(projectDuration(p)) : fmtClock(projectDuration(p))}</span>
     <${Fps} on=${!!settings?.perfHud} />
     ${selection && html`<span class="sitem sb-sel">${T('1 clip selected', 'clip ၁ ခု ရွေးထားသည်')}</span>`}

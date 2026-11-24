@@ -7,7 +7,7 @@ import { toast } from './toast.js';
 const Row = ({ label, hint, children }) => html`<label class="setrow"><span class="setlabel"><b>${label}</b>${hint && html`<em>${hint}</em>`}</span>${children}</label>`;
 const Check = ({ on, onChange }) => html`<input type="checkbox" class="setcheck" checked=${on} onChange=${(e) => onChange(e.target.checked)} />`;
 
-export function SettingsDialog({ settings, onChange, onClose, onResetLayout, onClearCaches }) {
+export function SettingsDialog({ settings, onChange, onClose, onResetLayout, onClearCaches, onReset }) {
   const set = (key, value) => onChange({ ...settings, [key]: value });
   const copy = async () => { try { await navigator.clipboard.writeText(diagnostics()); toast('Diagnostics ကူးပြီးပါပြီ', 'ok'); } catch { toast('ကူးလို့ မရပါ', 'error'); } };
   return html`<div class="exportshade" onClick=${(e) => e.target === e.currentTarget && onClose()}>
@@ -36,6 +36,7 @@ export function SettingsDialog({ settings, onChange, onClose, onResetLayout, onC
         </section>
         <section class="setgroup"><h3>Advanced</h3>
           <div class="setactions">
+            <button type="button" class="btn ghost" onClick=${onReset}>Reset to defaults</button>
             <button type="button" class="btn ghost" onClick=${onResetLayout}>Reset layout</button>
             <button type="button" class="btn ghost" onClick=${onClearCaches}>Clear caches</button>
             <button type="button" class="btn ghost" onClick=${copy}>Copy diagnostics</button>
