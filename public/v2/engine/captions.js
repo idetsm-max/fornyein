@@ -46,3 +46,50 @@ export function importSrt(store, transport, src) {
   transport.seek(cues[0].start);
   return ids;
 }
+
+export const CAPTION_MAX_CHARS = 28;
+
+function splitText(text, maxChars) {
+  if (text.length <= maxChars) return [text];
+  if (text.includes(' ')) {
+    const words = text.split(/\s+/).filter(Boolean), out = [];
+    let line = '';
+    for (const word of words) {
+      if (line && line.length + 1 + word.length > maxChars) { out.push(line); line = word; }
+      else line = line ? `${line} ${word}` : word;
+    }
+    if (line) out.push(line);
+    return out;
+  }
+  const parts = Math.ceil(text.length / maxChars), size = Math.ceil(text.length / parts), out = [];
+  for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size));
+  return out;
+}
+
+// Turn ASR/VAD rows into readable caption cues: split long lines on the
+// character budget, share the segment time by text length, drop fragments
+// too short to read and never let two cues overlap.
+export function reflowCues(rows, { maxChars = CAPTION_MAX_CHARS, maxDur = 6, minDur = 0.7 } = {}) {
+  const out = [];
+  for (const row of rows || []) {
+    const text = String(row.text ?? '').trim();
+    const start = Number(row.start), end = Number(row.end);
+    if (!text || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+    const parts = splitText(text, maxChars);
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    let at = Math.max(0, start), from = Math.max(0, start), to = Math.max(0, end);
+    if (to - from > maxDur) to = from + maxDur;
+    parts.forEach((part, i) => {
+      const share = (to - from) * (part.length / total);
+      const cueStart = at;
+      let cueEnd = i === parts.length - 1 ? to : at + share;
+      if (cueEnd - cueStart < minDur) cueEnd = cueStart + minDur;
+      if (cueEnd > to) cueEnd = to;
+      const prev = out.at(-1);
+      if (prev && cueStart < prev.end) { prev.end = Math.max(prev.end, cueStart); prev.dur = +(prev.end - prev.start).toFixed(3); }
+      if (cueEnd > cueStart) out.push({ ...row, text: part, start: +cueStart.toFixed(3), end: +cueEnd.toFixed(3) });
+      at = cueEnd;
+    });
+  }
+  return out;
+}

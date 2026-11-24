@@ -4,6 +4,7 @@ import {
   textTrack, findClip, uid, freeSlot, clipEnd, projectDuration,
 } from './model.js';
 import { PRESETS } from './text.js';
+import { reflowCues } from './captions.js';
 import { clipMediaId, clipSpeed, sourceRange, trimSourceLeft, trimSourceRight, slipSource } from './clip.js';
 import { laneFor, nearestFreeStart } from './lanes.js';
 import { quantize } from './time.js';
@@ -78,8 +79,8 @@ export function addTimedLines(store, transport, lines, segments) {
   });
   store.edit((d) => { textTrack(d).clips.push(...clips); }); store.select(clips[0].id); transport.seek(clips[0].start); return clips;
 }
-export function addAsrLines(store, transport, rows) {
-  const list = (rows || []).map((r) => ({ ...r, text: String(r.text ?? '').trim() })).filter((r) => r.text && Number.isFinite(r.start) && Number.isFinite(r.end) && r.end > r.start);
+export function addAsrLines(store, transport, rows, opts) {
+  const list = reflowCues(rows, opts);
   if (!list.length) return [];
   const clips = list.map((r) => {
     const c = newTextClip(quantize(Math.max(0, r.start)), r.text, Math.max(MIN_DUR, quantize(r.end) - quantize(r.start)));

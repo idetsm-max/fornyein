@@ -133,6 +133,18 @@ const box = (p, sel) => p.evaluate((s) => {
   await sleep(250);
   const caps = await page.evaluate(() => document.querySelectorAll('.clip.caption').length);
   ok('SRT import adds caption clips', caps === 2, String(caps));
+  const reflow = await page.evaluate(async () => {
+    const { addAsrLines } = await import('/v2/engine/actions.js');
+    const tr = { t: 0, seek(v) { this.t = v; } };
+    const text = 'မြန်မာကဗျာတစ်ပုဒ်ကိုရေးပါမည်မြန်မာကဗျာတစ်ပုဒ်ကိုရေးပါမည်';
+    const made = addAsrLines(window.__store, tr, [{ text, start: 10, end: 18 }]);
+    return made.map((c) => ({ text: c.text, start: c.start, dur: c.dur }));
+  });
+  ok('ASR rows reflow into short caption cues', reflow.length >= 2 && reflow.every((c) => c.text.length <= 28), JSON.stringify(reflow));
+  const reflowTotal = reflow.reduce((n, c) => n + c.dur, 0);
+  ok('reflowed cues stay inside the 6s cue cap', reflowTotal > 5.9 && reflowTotal <= 6.01, String(reflowTotal));
+  ok('reflowed cues run back to back from the segment start', reflow[0].start === 10 && reflow.every((c, i) => i === 0 || Math.abs(c.start - (reflow[i - 1].start + reflow[i - 1].dur)) < 0.01), JSON.stringify(reflow));
+
 
   const clipsBeforeSave = await page.evaluate(() => document.querySelectorAll('.clip').length);
   await page.keyboard.down('Control'); await page.keyboard.press('KeyS'); await page.keyboard.up('Control'); await sleep(300);
