@@ -164,7 +164,7 @@ Items (အပေါ်ကနေ): `＋ New project` (Ctrl+Alt+N) · `📂 Open�
 | UX-TOP-02 | Save status ၅ မျိုး (Saved/Saving/Unsaved/Failed/New) ပြောင်း (storage error ကို mock) — ✅ + Failed ကို နှိပ်ရင် retry (e2e) |
 | UX-TOP-03 | Undo/Redo tooltip မှာ command label၊ disabled မှာ အကြောင်းရင်း |
 | UX-TOP-04 | Export disabled (empty) + tooltip၊ running မှာ ring |
-| UX-TOP-05 | Tab order မှန် (§၁.၅)၊ focus ring မြင်ရ |
+| UX-TOP-05 | Tab order မှန် (§၁.၅)၊ focus ring မြင်ရ — ✅ skip link၊ stage/timeline `tabIndex`၊ Tab ကို workspace အတွင်းမှာသာ ဖမ်း (e2e ၄ ခု) |
 | UX-TOP-06 | Settings → Snap/Magnet/Preview quality ပြောင်းရင် ချက်ချင်း သက်ရောက်၊ reload မှာ မှတ်ထား |
 | UX-STB-01 | Status bar fields (Project/Resolution/FPS/Duration/Selection)၊ Resolution နှိပ် → Project settings |
 | UX-STB-02 | Save Project (Ctrl+S) toast "သိမ်းပြီး ✓"၊ ကျဉ်းရင် fields ဖျောက် |

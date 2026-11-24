@@ -22,6 +22,8 @@ const closeTour = async (p) => { await p.evaluate(() => localStorage.setItem('fn
   await sleep(200);
 
   // ---- focus mode
+  await page.evaluate(() => document.querySelector('.player').focus());
+  await sleep(150);
   await page.keyboard.down('Shift'); await page.keyboard.press('Tab'); await page.keyboard.up('Shift');
   await sleep(300);
   const focus = await page.evaluate(() => ({ cls: document.querySelector('.app').className, rail: getComputedStyle(document.querySelector('.rail')).display, tl: getComputedStyle(document.querySelector('.timeline')).display, pill: !!document.querySelector('.focuspill'), player: document.querySelector('.player').getBoundingClientRect().width, vw: innerWidth }));
@@ -74,6 +76,25 @@ const closeTour = async (p) => { await p.evaluate(() => localStorage.setItem('fn
   const swapped = { second: await page2.evaluate(() => window.__store.get().readOnly), first: await page.evaluate(() => window.__store.get().readOnly) };
   ok('takeover moves the lock to the other tab', swapped.second === false && swapped.first === true, JSON.stringify(swapped));
   await page2.close();
+
+  // ---- a11y skip link and the offline banner
+  await page.reload({ waitUntil: 'networkidle0' });
+  await sleep(300);
+  await page.keyboard.press('Tab');
+  const first = await page.evaluate(() => ({ cls: document.activeElement?.className, text: document.activeElement?.textContent }));
+  ok('the first Tab stop is the skip link', /skiplink/.test(first.cls || '') && /Skip to timeline/.test(first.text || ''), JSON.stringify(first));
+  await sleep(250);
+  const ring = await page.evaluate(() => { const el = document.activeElement; const st = getComputedStyle(el); return { top: Math.round(el.getBoundingClientRect().top), outline: st.outlineStyle }; });
+  ok('the skip link is revealed while focused', ring.top >= 0 && ring.top < 40, JSON.stringify(ring));
+  await page.keyboard.press('Enter');
+  await sleep(250);
+  ok('Enter moves focus to the timeline', await page.evaluate(() => document.activeElement?.id === 'timeline'));
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await sleep(250);
+  ok('going offline shows the banner', await page.evaluate(() => !!document.querySelector('.offlinebar')));
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await sleep(250);
+  ok('coming back online hides the banner', await page.evaluate(() => !document.querySelector('.offlinebar')));
 
   // ---- crash recovery
   await page.evaluate(() => localStorage.setItem('fn.recovery.v1', String(Date.now() - 180000)));

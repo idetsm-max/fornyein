@@ -140,6 +140,8 @@ const box = (p, sel) => p.evaluate((s) => { const r = document.querySelector(s)?
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('fn.layout.v1') || '{}'));
   ok('layout survives a reload (fn.layout.v1)', Math.abs(afterReload - beforeReload) < 3 && typeof stored.left === 'number', `${beforeReload} -> ${afterReload} ${JSON.stringify(stored)}`);
 
+  await page.evaluate(() => document.querySelector('.player').focus());
+  await sleep(150);
   await page.keyboard.press('Tab');
   await sleep(250);
   const only = await page.evaluate(() => ({ left: getComputedStyle(document.querySelector('.media')).display, insp: getComputedStyle(document.querySelector('.inspector')).display, tl: getComputedStyle(document.querySelector('.timeline')).display }));
