@@ -40,7 +40,7 @@
 | **မြန်မာ Unicode စာ** | 🟢 | **B1 ပြင်ပြီး** (`feat/stabilization-s1-s2`) — `normalizeMyanmar` ဖျက်၊ Zawgyi = confirm ပဲ။ Evidence: known-bugs B1 (၇ check) + unit + e2e |
 | **Export အသံပါ** | 🟡 | **B2/B3/B8 ပြင်ပြီး** — ffprobe: MP4 H.264+Opus 6.0135 s (drift 13.5 ms)၊ WebM VP9+Opus။ **နားနဲ့/VLC/သင့် Chrome မစစ်ရသေး** |
 | Audio Preview | 🟡 | **S4/B5 ပြင်ပြီး** — AudioContext clock ပေါ် buffer scheduling (playhead rAF)၊ drift > 0.12 s မှသာ reschedule၊ e2e: 0 media-element seek။ **နားဖြင့်မစစ်ရသေး** |
-| Preview=Export အသံ | 🟡 | **S6/B6 ပြင်ပြီး** — preview/export နှစ်ခုလုံး `audio-graph.js` တစ်ခုတည်း (EQ/comp/echo/reverb/loop/duck)၊ deterministic render diff 0။ spectrum A/B capture မလုပ်ရသေး |
+| Preview=Export အသံ | 🟢 | **S6/B6 ပြင်ပြီး** — preview/export နှစ်ခုလုံး `audio-graph.js` တစ်ခုတည်း၊ **e2e `mixdown.js` ၉ ခု ဖြင့် အတိုင်းအတာ စစ်ပြီး** (volume ×0.5 → 0.500၊ mute → 0၊ pan −1 → ညာ 0၊ clip gain ×2 → 0.3916)။ ဒီစစ်က clip FX chain bypass ကို ဖော်ထုတ်ပြီး ပြင်ခဲ့တယ် |
 | အသံ အစစ်ကြားရ၊ mouse gesture၊ mic record၊ R2 Library/Fonts၊ Video/Overlay/Filters | ⬜ မစစ်ရသေး | သင့် Chrome မှာ |
 | Auto caption (Workers AI Whisper) | 🔴/⏸ | မြန်မာမှာ တခြားစာလုံးထွက် — M7 benchmark |
 | Cloudflare Access | ⏸ | `/api/*` public |
@@ -271,4 +271,4 @@ D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ C
 ---
 
 ## နောက်ဆက်တွဲ — v1 → v2 အင်္ဂါရပ် လွှဲပြောင်း (အခြေအနေ)
-Tap-sync/Auto-draft/Review/Lock 🟡(Auto-draft 🟢) · စာ effect ၁၅/animation/preset/အရောင်နှစ်မျိုး/stroke 🟡 · Zawgyi 🟡 B1 ပြင်ပြီး (confirm UX ကျန်) · Font R2 🟡 · R2 tiles/Record 🟡 · Mixer preview 🟡/export 🔴 B6 · Title/Credits 🟡၊ SRT 🟢 · MP4 export 🟡 B2/B3/B8 ပြင်ပြီး (ffprobe ✅၊ နားနဲ့မစစ်) · ဖတ်သံ split/trim 🔴 B4 · 9:16 safe-area ⏸ (U7)။
+Tap-sync/Auto-draft/Review/Lock 🟡(Auto-draft 🟢) · စာ effect ၁၅/animation/preset/အရောင်နှစ်မျိုး/stroke 🟡 · Zawgyi 🟡 B1 ပြင်ပြီး (confirm UX ကျန်) · Font R2 🟡 · R2 tiles/Record 🟡 · Mixer preview 🟢/export 🟢 B6 (e2e `mixdown.js` ၉ ခု၊ clip FX chain bypass ပြင်ပြီး) · Title/Credits 🟡၊ SRT 🟢 · MP4 export 🟡 B2/B3/B8 ပြင်ပြီး (ffprobe ✅၊ နားနဲ့မစစ်) · ဖတ်သံ split/trim 🔴 B4 · 9:16 safe-area ⏸ (U7)။

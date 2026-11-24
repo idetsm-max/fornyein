@@ -156,8 +156,10 @@ export function createMixer(ctx, project, { reverbSeed = 0x5eed } = {}) {
   return { master, limiter, buses, reverbSeed, media: project.media || {} };
 }
 
+// Track volume lives on the bus (createTrackBus), so it must not be applied
+// again here or the export comes out squared.
 export function clipGain(clip, track, duck = 1) {
-  return clamp((clip.gain ?? 1) * (clip.volume ?? 1) * (track?.mixer?.volume ?? 1) * duck, 0, 2);
+  return clamp((clip.gain ?? 1) * (clip.volume ?? 1) * duck, 0, 2);
 }
 
 export function clipPan(clip, track) {
@@ -171,7 +173,7 @@ export function startBufferClip(ctx, mixer, clip, event, buffer, when) {
   const chain = createClipChain(ctx, { reverbSeed: mixer.reverbSeed });
   const meta = mixer.media?.[clip.src?.mediaId] || {};
   applyClipFx(chain, clip, { now: when, peaks: meta.peaks || [], mediaDur: meta.dur || 0, offset: event.offset || 0, dur: event.srcDur });
-  chain.input.connect(bus.input);
+  chain.output.connect(bus.input);
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   source.playbackRate.value = clipSpeed(clip);
