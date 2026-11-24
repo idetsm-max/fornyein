@@ -219,5 +219,4 @@ button:disabled,.ibtn:disabled{cursor:not-allowed}
 html[lang="my"] body{line-height:1.6}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;animation-iteration-count:1!important}
-}
-
+}.relinkbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 12px 0;padding:8px 10px;border:1px solid var(--warn);border-radius:8px;background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--tx);font-size:12px}.relinkbar .btn.small{padding:4px 10px;font-size:12px;cursor:pointer}

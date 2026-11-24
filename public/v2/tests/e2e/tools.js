@@ -1,6 +1,9 @@
 // E2E for U7/U8/U9/U13: tool panels, keyframes, safe area, a11y.
 const puppeteer = require(process.env.PUPPETEER || 'puppeteer');
 const BASE = process.env.BASE || 'http://localhost:8765';
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;
 const ok = (name, cond, extra = '') => {
@@ -95,6 +98,27 @@ const ok = (name, cond, extra = '') => {
   const dotsAfter = await page.evaluate(() => document.querySelectorAll('.cpt').length);
   ok('clicking the curve adds a keyframe', dotsAfter > dotsBefore, `${dotsBefore}->${dotsAfter}`);
   ok('curve keys reach the timeline', (await page.evaluate(() => document.querySelectorAll('.kfdot').length)) === dotsAfter);
+
+  await page.evaluate(() => { window.__store.edit((d) => { d.media = { ...(d.media || {}), ghost1: { id: 'ghost1', name: 'ghost.png', kind: 'image', dur: 5, size: 10, type: 'image/png' } }; }); });
+  await page.click('.railbtn[aria-label="Media"]'); await sleep(700);
+  ok('missing media shows the relink banner', !!(await page.$('.relinkbar')), await page.evaluate(() => document.querySelector('.panel.media')?.textContent?.slice(0, 60) || 'no panel'));
+  const missingCount = await page.evaluate(async () => {
+    const { listMediaIds } = await import('/v2/engine/storage.js');
+    const ids = await listMediaIds();
+    return Object.keys(window.__store.get().project.media).filter((id) => !ids.has(id)).length;
+  });
+  const probe = path.join(os.tmpdir(), 'relink-probe.png');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const probes = Array.from({ length: Math.max(1, missingCount) }, (_, i) => { const f = path.join(os.tmpdir(), `relink-probe-${i}.png`); fs.writeFileSync(f, png); return f; });
+  const picker = await page.$('.relinkbar input[type=file]');
+  await picker.uploadFile(...probes);
+  await sleep(1200);
+  ok('relinking clears the banner', !(await page.$('.relinkbar')), `missing=${missingCount}`);
+  ok('relinked blob is stored', await page.evaluate(async () => {
+    const { loadMedia } = await import('/v2/engine/storage.js');
+    return !!(await loadMedia('ghost1'));
+  }));
+  for (const f of probes) fs.unlinkSync(f);
 
   await page.click('.langbtn'); await sleep(250);
   ok('language toggle switches the rail to Burmese', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'မီဒီယာ');
