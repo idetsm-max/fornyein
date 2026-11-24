@@ -253,6 +253,8 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 ## ၁၀။ ဆုံးဖြတ်ချက် (အကျဉ်း — အပြည့်အစုံ `DECISIONS.md`)
 
 D0 CapCut-class · D0a UI ကိုယ်ပိုင်/အပြုအမူ CapCut · D0b Phase S အရင် · D1 WebGL2 compositor · D2 OPFS · D3 schema v4 ကြိုထား · D4 Preact+htm · D5 ဦးစားပေးအစဉ် (§၄) · D6 ၁၀၈၀p ≤ ၁၀ မိနစ် · D7 CapCut shortcut · D8 main-track magnet ON · D9 စက္ကန့်+quantize · D10 lane မထပ် · D11 label EN / microcopy မြန်မာ · D12 Transitions ထည့်၊ sticker pack မလုပ် · D13 Zawgyi = rabbit vendor+confirm · D14 `normalizeMyanmar` ဖျက် · D15 MP4=H.264+AAC၊ မရရင် WebM၊ self-check · D16 Web Audio schedule · D17 repo စည်းမျဉ်း · D18 ASR benchmark ဂိတ် · D19 persona · D20 font private R2။
+**UX spec Part 0** (`docs/plan/ux/00-principles-states-tokens.md`) ကို လိုက်နာ: colour tokens `--success/--warn/--danger/--info/--selection-outline/--snap-guide` 🟢၊ focus-visible ring 🟢၊ disabled cursor 🟢၊ reduced motion 🟢၊ မြန်မာ line-height 1.6 🟢၊ toast 3s (error 6s, hover pause) 🟢။
+
 **အသစ် (v5)**: **D21** UI/UX ကို Plan ဗဟိုအပိုင်း (§၃) အဖြစ် သတ်မှတ်၊ UX GAP G1–G13 ကို milestone ထဲ ထည့်၊ **panel registry/inspector registry/context-menu registry/shortcut registry** ဖြင့် data-driven UI ဖွဲ့၊ "demo/အလွတ် panel" မပြရ။ **D22** UX လက်ခံစစ်ဆေးမှု = **CapCut-user test** (သင်က task ၁၀ ခု ညွှန်ကြားချက်မပါ)။
 
 **ဆုံးဖြတ်ရန်ကျန် (Open)**: O1 ကိုယ့်ကဗျာဖတ်သံ ၁–၂ မိနစ်+စာသား · O2 Access AUD tag · O3 သင့် Chrome စစ်ချိန် · O4 `/v2`→ပင်မလိပ်စာ (v1.0 ပြီးမှ)။

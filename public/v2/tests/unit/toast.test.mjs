@@ -36,3 +36,14 @@ test('dismiss and clear update the list', () => {
   queue.clear();
   assert.equal(queue.get().length, 0);
 });
+
+test('toast lifetime follows the tone (UX Part 0)', () => {
+  const queue = createToastQueue();
+  queue.push('info one');
+  queue.push('bad thing', 'error');
+  queue.push('careful', 'warn');
+  const [info, error, warn] = queue.get();
+  assert.equal(info.ms, 3000);
+  assert.equal(error.ms, 6000);
+  assert.equal(warn.ms, 4500);
+});

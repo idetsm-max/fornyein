@@ -56,7 +56,7 @@
     "long": 8
   },
   "public/v2/styles.css": {
-    "lines": 211,
+    "lines": 223,
     "long": 27
   },
   "public/v2/tests/e2e/layout.js": {
@@ -156,8 +156,8 @@
     "long": 5
   },
   "public/v2/ui/toast.js": {
-    "lines": 23,
-    "long": 1
+    "lines": 36,
+    "long": 2
   },
   "public/v2/ui/tour.js": {
     "lines": 38,
