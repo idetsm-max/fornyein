@@ -205,7 +205,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | **M3 Transform & Keyframes** | `buildFrame`+WebGL2 compositor၊ transform/crop/opacity/fit/canvas bg၊ keyframes | **U7 U9** (+ Stickers panel) | golden frame၊ keyframe preview=export |
 | **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | shader registry၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ GPU fallback |
 | **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | speed time-map 🟢 (`setClipSpeed`၊ `srcTime` reverse)၊ noise reduction/loudness ကျန် | Inspector **Speed tab** 🟢 (0.25×–4×၊ reverse)၊ **Mixer panel 🟢** (`ui/mixer-dialog.js` — volume/pan/mute/solo/ducking + live meter၊ e2e `mixer.js`) | A/V drift ≤၄၀ ms (speed ပါ) |
-| **M6 Templates & Assets** | project/text template၊ asset relink၊ stickers | U8 (Templates/Stickers) | template ၅ ခု |
+| **M6 Templates & Assets** | **project template 🟢 ၅ ခု** (`engine/templates.js` + `ui/panels-templates.js`၊ e2e `templates.js` ၈)၊ text preset၊ asset relink 🟢၊ stickers 🟢 | U8 (Templates/Stickers) | template ၅ ခု ✅ |
 | **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |
 | **M8 Polish & Release** | proxy/OPFS/large project၊ perf၊ Access ဖွင့် | **U13** 🟢၊ onboarding 🟢၊ UI မြန်မာ toggle 🟢 | Release gate (§၈) |
 **v1.0 = M1 + M2**။ M3+ ကို အစဉ်လိုက်။ M1 မပြီးမချင်း M2+ မစ။

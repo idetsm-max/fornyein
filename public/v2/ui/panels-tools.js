@@ -9,6 +9,7 @@ import { FILTER_PRESETS, STICKERS, STICKER_STYLE, TRANSITION_PRESETS, toggleEffe
 import { toast } from './toast.js';
 import { L, H } from './strings.js';
 import { myLabel } from './labels-my.js';
+import { TemplatesTool } from './panels-templates.js';
 
 const panel = (title, tip, body) => html`<section class="panel tools"><div class="phead"><b>${title}</b><small class="panelhint inline">${tip}</small></div><div class="pbody scroll">${body}</div></section>`;
 const hint = (text) => html`<p class="panelhint">${text}</p>`;
@@ -78,11 +79,6 @@ function AudioTool({ store, transport }) {
 function StickersTool({ store, transport }) {
   const add = (emoji) => { const clip = addText(store, transport, emoji); patch(store, clip.id, (c) => { c.style = { ...c.style, ...STICKER_STYLE }; c.sticker = true; }, 'sticker-' + clip.id); toast('Sticker ထည့်ပြီး', 'ok'); };
   return panel(L('stickers'), H('stickers'), html`<div class="stickergrid">${STICKERS.map((emoji) => html`<button type="button" class="stickerbtn" onClick=${() => add(emoji)}>${emoji}</button>`)}</div>`);
-}
-
-function TemplatesTool({ store, transport }) {
-  const add = (key) => { insertPreset(store, transport, key); toast(PRESETS[key].name + ' ထည့်ပြီး', 'ok'); };
-  return panel(L('templates'), H('templates'), html`<div class="fxgrid">${Object.entries(PRESETS).map(([key, preset]) => html`<button type="button" class="fxtile" onClick=${() => add(key)}><span class="fxthumb g3"></span><em>${preset.name}</em></button>`)}</div>`);
 }
 
 function MoreTool({ store, transport }) {
