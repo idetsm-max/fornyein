@@ -23,8 +23,8 @@ node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
 | **B7 lane overlap (S5)** | ✅ ပြင်ပြီး | `engine/lanes.js` — move/add/paste/duplicate အားလုံး free slot ရှာပြီး lane မထပ်စေ။ known-bugs PASS + unit property test ၃၀၀ move |
 | **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
 | **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
-| Unit tests | ✅ ၁၂၈ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ range 4၊ virtual 4၊ captions 4၊ export-range 4၊ keymap 4၊ toast 4၊ tool-presets 4၊ keyframes 5၊ locale 3၊ curve 4၊ transitions 5၊ mask 3၊ timeline 9 |
-| E2E browser tests | ✅ ၁၂၃ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၃၈ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
+| Unit tests | ✅ ၁၃၂ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ range 4၊ virtual 4၊ captions 4၊ export-range 4၊ keymap 4၊ toast 4၊ tool-presets 4၊ keyframes 5၊ locale 3၊ curve 4၊ transitions 5၊ mask 3၊ timeline 9 |
+| E2E browser tests | ✅ ၁၂၅ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၄၀ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
 | **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
 `node scripts/validate-export.mjs` ရလဒ်:
@@ -82,6 +82,7 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **T4**: ←/→ (Shift = ၁ စက္ကန့်)၊ Home/End၊ J/K/L (J = pause + ၁ စက္ကန့် နောက်ဆုတ်)။ e2e စစ်ပြီး။
 - **T2**: Shift-drag = ripple trim၊ Alt-drag edge = roll၊ Alt-drag body = slip၊ Ctrl-drag body = slide၊ N = snap။ e2e roll စစ်ပြီး။
 - **T3 select**: marquee drag on empty timeline area (`ui/marquee.js`)၊ Alt+→ = clips right of playhead။ e2e စစ်ပြီး။
+- **M5a loudness**: `engine/loudness.js` (`peaksRms`, `rmsToDb`, `loudnessGain` 0.25–4 clamp၊ `loudnessReport`)၊ audio inspector Basic tab တွင် `Loudness −29 dB` + `Normalize` (clip.gain ကို ချက်ချင်း သတ်မှတ်၊ toast သတင်း၊ silent ဆိုရင် disabled)။ e2e: dB ဖတ် + Normalize နှိပ် → gain မြင့်တက်။ row overflow မရှိ (clientWidth = scrollWidth = 228)။
 - **M6 relink**: `engine/media-status.js` (`missingMediaIds`, `relinkMedia`, `relinkLabel` + မြန်မာဂဏန်း)၊ `ui/relink-banner.js` — Media panel ထိပ်တွင် ⚠ banner + Relink picker၊ ရွေးလိုက်တဲ့ဖိုင်ကို mediaId အတိုင်း ပြန်သိမ်း၊ clip များ ချက်ချင်း ပြန်ကိုင်။ e2e: banner ပေါ် → ဖိုင် upload → banner ပျောက် + blob သိမ်းပြီး (screenshot စစ်ပြီး)။
 - **UX Part 0**: tokens ၆ မျိုး dark/light နှစ်ဖက်လုံး (unit: `design-tokens` ၂ ခု)၊ `:focus-visible` ring 2px offset 2၊ `button:disabled` cursor၊ `prefers-reduced-motion` ပိတ်၊ `html[lang=my]` line-height 1.6၊ toast lifespan tone အလိုက် (info 3s / warn 4.5s / error 6s) + hover pause။ light theme screenshot စစ်ပြီး။
 - **G13 localization**: `ui/labels-my.js` (inspector terms ~50)၊ `widgets.js` က Slider/Field/Tabs/Chips label ကို `myLabel()` ဖြင့် ဘာသာပြန်၊ track header က default နာမည်ကို localized label ဖြင့် အစားထိုး၊ save status (`just now`/`s ago`) နှင့် top-bar nowrap။ e2e: rail/tab/inspector label မြန်မာ စစ်ပြီး။

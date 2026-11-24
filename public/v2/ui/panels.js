@@ -9,6 +9,7 @@ import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
 import { SpeedPanel } from './speed-panel.js';
 import { MaskPanel } from './mask-panel.js';
 import { RelinkBanner } from './relink-banner.js';
+import { loudnessReport } from '../engine/loudness.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { RATIOS, findClip, textTrack } from '../engine/model.js';
@@ -124,6 +125,7 @@ export function Inspector({ store, fonts, transport }) {
     <${Field} label="Background" tip="နောက်ခံအရောင်"><label class="swatch"><input type="color" value=${project.background || '#0b0e14'} onInput=${(e) => updProject('bg', (d) => { d.background = e.target.value; })} /><span style=${{ background: project.background || '#0b0e14' }}></span></label><//>
     <div class="empty"><${Icon} name="text" size=${30} /><p>${T('Select a clip', 'Clip တစ်ခု ရွေးပါ')}</p><small>Clip တစ်ခု ရွေးရင် ဒီနေရာမှာ သူ့ဆက်တင်တွေ ပြပါမယ်</small></div>
   </div></aside>`;
+  const loud = loudnessReport(project.media?.[clipMediaId(c)]?.peaks || []);
   if (c.kind === 'audio') return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
     <div class="audioins"><b>${c.name || project.media?.[clipMediaId(c)]?.name || 'Audio clip'}</b><small>Audio clip settings</small></div>
     ${tab === 'speed' && html`<${SpeedPanel} store=${store} clipId=${c.id} clip=${c} />`}
@@ -133,6 +135,13 @@ export function Inspector({ store, fonts, transport }) {
     <${Slider} label="Gain" tip="အသံအတိုးအကျယ်" value=${Math.round((c.gain ?? 1) * 100)} min=${0} max=${200} onChange=${(v) => upd('gain', (k) => { k.gain = v / 100; })} unit="%" />
     <${Slider} label="Volume" tip="Clip volume" value=${Math.round((c.volume ?? 1) * 100)} min=${0} max=${150} onChange=${(v) => upd('volume', (k) => { k.volume = v / 100; })} unit="%" />
     <${Slider} label="Pan" tip="ဘယ်/ညာ stereo pan" value=${Math.round((c.pan ?? 0) * 100)} min=${-100} max=${100} onChange=${(v) => upd('pan', (k) => { k.pan = v / 100; })} unit="%" />
+    <${Field} label=${T('Loudness', 'အသံပမာဏ')} tip=${T('Measured peak loudness; Normalize sets the gain to about -14 dBFS', 'တိုင်းတာထားသော အသံပမာဏ၊ Normalize ကို နှိပ်ရင် -14 dBFS လောက် ညှိပေးမည်')}>
+      <b class="loudval">${Math.round(loud.db)} dB</b>
+      <button type="button" class="chipbtn tiny" disabled=${loud.silent} onClick=${() => {
+        upd('loud', (k) => { k.gain = Math.round(loud.gain * 100) / 100; });
+        toast(T('Loudness normalised', 'အသံပမာဏ ညှိပြီး'), 'ok');
+      }}>${T('Normalize', 'ညှိ')}</button>
+    </${Field}>
     `}
     ${tab === 'effects' && html`<${Slider} label="EQ Low" tip="Bass" value=${Math.round(c.eq?.low || 0)} min=${-12} max=${12} onChange=${(v) => upd('eql', (k) => { k.eq = { ...(k.eq || {}), low: v }; })} unit="dB" />
     <${Slider} label="EQ Mid" tip="Mid" value=${Math.round(c.eq?.mid || 0)} min=${-12} max=${12} onChange=${(v) => upd('eqm', (k) => { k.eq = { ...(k.eq || {}), mid: v }; })} unit="dB" />

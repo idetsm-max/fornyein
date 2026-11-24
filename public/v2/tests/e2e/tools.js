@@ -99,6 +99,21 @@ const ok = (name, cond, extra = '') => {
   ok('clicking the curve adds a keyframe', dotsAfter > dotsBefore, `${dotsBefore}->${dotsAfter}`);
   ok('curve keys reach the timeline', (await page.evaluate(() => document.querySelectorAll('.kfdot').length)) === dotsAfter);
 
+  await page.evaluate(() => {
+    window.__store.edit((d) => {
+      d.media = { ...(d.media || {}), aud1: { id: 'aud1', name: 'voice.m4a', kind: 'audio', dur: 8, size: 100, type: 'audio/mp4', peaks: [0.02, 0.03, 0.02] } };
+      d.tracks.find((t) => t.kind === 'audio').clips.push({ id: 'ac1', kind: 'audio', start: 0, dur: 4, src: { mediaId: 'aud1', in: 0, out: 4 }, gain: 1 });
+    });
+  });
+  await sleep(500);
+  await page.click('.trow.audio .clip'); await sleep(300);
+  const dbText = await page.evaluate(() => document.querySelector('.inspector .loudval')?.textContent?.trim() || '');
+  ok('audio inspector shows the loudness reading', /^-\d/.test(dbText), dbText);
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .chipbtn')].find((b) => b.textContent.trim() === 'Normalize')?.click());
+  await sleep(400);
+  const normGain = await page.evaluate(() => window.__store.get().project.tracks.find((t) => t.kind === 'audio').clips.find((c) => c.id === 'ac1')?.gain);
+  ok('normalize raises the clip gain', normGain > 2, String(normGain));
+
   await page.evaluate(() => { window.__store.edit((d) => { d.media = { ...(d.media || {}), ghost1: { id: 'ghost1', name: 'ghost.png', kind: 'image', dur: 5, size: 10, type: 'image/png' } }; }); });
   await page.click('.railbtn[aria-label="Media"]'); await sleep(700);
   ok('missing media shows the relink banner', !!(await page.$('.relinkbar')), await page.evaluate(() => document.querySelector('.panel.media')?.textContent?.slice(0, 60) || 'no panel'));
