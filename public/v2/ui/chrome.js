@@ -1,4 +1,4 @@
-import { html, useState, useEffect } from './deps.js';
+import { html, useState, useEffect, useRef } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
 import { useStore } from './hooks.js';
@@ -9,6 +9,9 @@ import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS, projectDuration, fmtClock } from '../engine/model.js';
 import { ExportDialog } from './export-dialog.js';
 import { ShortcutsDialog } from './shortcuts-dialog.js';
+import { SettingsDialog } from './settings-dialog.js';
+import { toast } from './toast.js';
+import { resetLayout } from './layout.js';
 
 const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? T('just now', 'ယခုလေးတင်') : s < 60 ? `${s}${T(' s ago', ' စက္ကန့်က')}` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
@@ -28,15 +31,29 @@ function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
   </div>`;
 }
 
-export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout, transport }) {
+function ProjectName({ project, store }) {
+  const [editing, setEditing] = useState(false), [draft, setDraft] = useState(''), inputRef = useRef(null);
+  useEffect(() => { const el = inputRef.current; if (editing && el) { el.focus(); el.select(); } }, [editing]);
+  useEffect(() => {
+    const start = () => { setDraft(project.name); setEditing(true); };
+    window.addEventListener('fornyein:rename', start);
+    return () => window.removeEventListener('fornyein:rename', start);
+  }, [project.name]);
+  const commit = () => { const name = draft.trim() || 'Untitled Project'; if (name !== project.name) store.edit((d) => { d.name = name; }, { key: 'name', label: 'Rename project' }); setEditing(false); };
+  if (editing) return html`<input class="projname-input" ref=${inputRef} aria-label="Project name" value=${draft} onInput=${(e) => setDraft(e.target.value)}
+    onKeyDown=${(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }} onBlur=${commit} />`;
+  return html`<button type="button" class="projname" title="Rename · F2" onClick=${() => { setDraft(project.name); setEditing(true); }}><span>${project.name || 'Untitled Project'}</span><${Icon} name="pen" size=${13} /></button>`;
+}
+
+export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onOpen, onExportJson, onImportJson, layout, setLayout, transport, settings, onSettingsChange }) {
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
   const undoLabel = useStore(store, (s) => s.undoLabel), redoLabel = useStore(store, (s) => s.redoLabel);
   const locale = useLocale();
-  const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false);
+  const project = useStore(store, (s) => s.project), [exporting, setExporting] = useState(false), [shortcuts, setShortcuts] = useState(false), [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
     const toggleShortcuts = () => setShortcuts((v) => !v);
     const openExport = () => setExporting(true);
-    const closeShortcuts = () => setShortcuts(false);
+    const closeShortcuts = () => { setShortcuts(false); setSettingsOpen(false); };
     window.addEventListener('fornyein:shortcuts', toggleShortcuts);
     window.addEventListener('fornyein:export', openExport);
     window.addEventListener('fornyein:escape', closeShortcuts);
@@ -51,6 +68,7 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
     <div class="brand" title="For Nyein"><span class="logo"><${Icon} name="play" size=${15} /></span><span class="brandname">For Nyein</span></div>
     <button type="button" class="navbtn" title=${H('home')} onClick=${onNew}><${Icon} name="home" size=${17} /><span>${L('home')}</span></button>
     <${ProjectsMenu} onNew=${onNew} onOpen=${onOpen} onExportJson=${onExportJson} onImportJson=${onImportJson} />
+    <${ProjectName} project=${project} store=${store} />
     <div class=${cx('savedpill', save.status)} title=${H('saved')}><${Icon} name="cloud" size=${18} /><span><b>${label}</b> ${save.at && save.status === 'saved' ? html`<em>${ago(save.at)}</em>` : ''}</span></div>
     <div class="spacer"></div>
     <div class="topctl">
@@ -68,7 +86,7 @@ export function TopBar({ theme, setTheme, zoom, setZoom, store, save, onNew, onO
       <button type="button" class=${cx(theme === 'light' && 'on')} title="Light" onClick=${() => setTheme('light')}><${Icon} name="sun" size=${16} /></button>
       <button type="button" class=${cx(theme === 'dark' && 'on')} title="Dark" onClick=${() => setTheme('dark')}><${Icon} name="moon" size=${16} /></button>
     </div>
-    <div class="avatar" title="Account">N</div>${exporting && html`<${ExportDialog} project=${project} transport=${transport} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}
+    <${IconBtn} name="gear" title="Settings" onClick=${() => setSettingsOpen(true)} />${exporting && html`<${ExportDialog} project=${project} transport=${transport} onClose=${() => setExporting(false)} />`}${shortcuts && html`<${ShortcutsDialog} onClose=${() => setShortcuts(false)} />`}${settingsOpen && html`<${SettingsDialog} settings=${settings} onChange=${onSettingsChange} onClose=${() => setSettingsOpen(false)} onResetLayout=${() => { resetLayout(setLayout); toast('Layout ပြန်လည်သတ်မှတ်ပြီး', 'ok'); }} onClearCaches=${() => { try { for (const k of Object.keys(localStorage)) if (/^fn\.(peaks|thumbs|wave)/.test(k)) localStorage.removeItem(k); } catch { /* private mode */ } toast('Cache ရှင်းပြီးပါပြီ', 'ok'); }} />`}
   </header>`;
 }
 
@@ -78,13 +96,28 @@ export function Rail({ tool, setTool }) {
     html`<button type="button" class=${cx('railbtn', tool === id && 'on')} title=${H(id)} aria-label=${L(id)} aria-pressed=${tool === id} onClick=${() => setTool(id)}><${Icon} name=${id} size=${22} /><span>${L(id)}</span></button>`)}</nav>`;
 }
 
-export function StatusBar({ store, onSave }) {
+const fmtSecs = (t) => { const s = Math.max(0, Math.floor(t || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+
+function Fps({ on }) {
+  const [fps, setFps] = useState(0);
+  useEffect(() => {
+    if (!on) return;
+    let raf = 0, frames = 0, last = performance.now();
+    const tick = () => { frames += 1; const now = performance.now(); if (now - last >= 500) { setFps(Math.round(frames * 1000 / (now - last))); frames = 0; last = now; } raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [on]);
+  return on ? html`<span class="sitem sb-fps" title="Preview frame rate"><b>${fps}</b> fps</span>` : null;
+}
+
+export function StatusBar({ store, onSave, settings }) {
   const p = useStore(store, (s) => s.project), selection = useStore(store, (s) => s.selection);
-  const [w, h] = RATIOS[p.size];
+  const [w, h] = RATIOS[p.size], sec = settings?.timecode === 'sec';
   return html`<footer class="statusbar">
     <span class="sitem">${L('project')}: <input class="pname" value=${p.name} spellcheck="false" onInput=${(e) => store.edit((d) => { d.name = e.target.value || 'Untitled Project'; }, { key: 'pname' })} /></span><span class="vsep"></span>
     <span class="sitem">${L('resolution')}: <b>${w} × ${h}</b> (${p.size})</span>
-    <span class="sitem sb-meta">${p.fps || 30} fps · ${fmtClock(projectDuration(p))}</span>
+    <span class="sitem sb-meta">${p.fps || 30} fps · ${sec ? fmtSecs(projectDuration(p)) : fmtClock(projectDuration(p))}</span>
+    <${Fps} on=${!!settings?.perfHud} />
     ${selection && html`<span class="sitem sb-sel">${T('1 clip selected', 'clip ၁ ခု ရွေးထားသည်')}</span>`}
     <div class="spacer"></div>
     <button type="button" class="btn ghost" title=${H('save')} onClick=${onSave}><${Icon} name="save" size=${16} /><span>${L('save')}</span></button>

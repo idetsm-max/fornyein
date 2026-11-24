@@ -162,6 +162,31 @@ const box = (p, sel) => p.evaluate((s) => { const r = document.querySelector(s)?
   await sleep(400);
   ok('Escape leaves the fullscreen preview', await page.evaluate(() => !document.fullscreenElement && !document.querySelector('.frame.fsfallback') && !document.querySelector('.fsctl')));
 
+  await page.click('header.topbar [title="Settings"]');
+  await sleep(300);
+  const dlg = await page.evaluate(() => ({ open: !!document.querySelector('.settingsbox'), groups: [...document.querySelectorAll('.setgroup h3')].map((h) => h.textContent) }));
+  ok('the gear opens Settings with its five groups', dlg.open && dlg.groups.join(',') === 'General,Editing,Playback,Autosave,Advanced', JSON.stringify(dlg));
+  await page.evaluate(() => { const sel = document.querySelectorAll('.setrow select')[1]; sel.value = 'sec'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
+  await sleep(300);
+  const meta = await page.evaluate(() => document.querySelector('.sb-meta').textContent);
+  ok('timecode=sec shortens the status bar clock', /^\d+ fps · \d+:\d\d$/.test(meta), meta);
+  await page.evaluate(() => { [...document.querySelectorAll('.setrow')].find((r) => r.textContent.includes('Performance HUD')).querySelector('input').click(); });
+  await sleep(800);
+  ok('the performance HUD shows a frame rate', await page.evaluate(() => /\d+ fps/.test(document.querySelector('.sb-fps')?.textContent || '')));
+  const prefs = await page.evaluate(() => JSON.parse(localStorage.getItem('fn.settings.v1')));
+  ok('settings persist in fn.settings.v1', prefs.timecode === 'sec' && prefs.perfHud === true, JSON.stringify(prefs));
+  await page.keyboard.press('Escape');
+  await sleep(250);
+  ok('Escape closes the settings dialog', await page.evaluate(() => !document.querySelector('.settingsbox')));
+  await page.keyboard.press('F2');
+  await sleep(250);
+  await page.keyboard.type('ကဗျာ အမည်');
+  await page.keyboard.press('Enter');
+  await sleep(350);
+  const renamed = await page.evaluate(() => ({ bar: document.querySelector('.projname')?.textContent, name: window.__store.get().project.name }));
+  ok('F2 renames the project from the top bar', renamed.bar === 'ကဗျာ အမည်' && renamed.name === 'ကဗျာ အမည်', JSON.stringify(renamed));
+  await page.evaluate(() => localStorage.removeItem('fn.settings.v1'));
+
   const gate = await browser.newPage();
   await gate.setViewport({ width: 1440, height: 900 });
   await gate.evaluateOnNewDocument(() => { delete window.VideoEncoder; delete window.VideoDecoder; });

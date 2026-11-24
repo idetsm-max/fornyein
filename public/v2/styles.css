@@ -33,15 +33,18 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 
 /* ---- top bar ---- */
-.topbar{display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.topbar{display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:nowrap;overflow:hidden}
+.topbar>*{flex:none}.topbar .spacer{flex:1 1 auto;min-width:0}
 .brand{display:flex;align-items:center;gap:9px;margin-right:6px}
 .logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#3b8bff,#7d4dff);box-shadow:0 2px 10px rgba(59,139,255,.45)}
-.brandname{font-weight:700;font-size:17px;letter-spacing:.2px}
-.navbtn{display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;color:var(--tx);font-weight:500}
+.brandname{font-weight:700;font-size:17px;letter-spacing:.2px;white-space:nowrap}
+.navbtn{display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;color:var(--tx);font-weight:500;white-space:nowrap}
 .navbtn:hover{background:var(--field)}
-.savedpill{display:flex;align-items:center;gap:8px;margin-left:10px;color:var(--mut);padding:0 10px;height:34px;border-left:1px solid var(--line)}
+.savedpill{display:flex;align-items:center;gap:8px;margin-left:10px;color:var(--mut);padding:0 10px;height:34px;border-left:1px solid var(--line);white-space:nowrap}
 .savedpill .icon{color:#3ec28f}.savedpill b{color:var(--tx);font-weight:500}.savedpill em{font-style:normal}
 .topctl{display:flex;align-items:center;gap:4px}
+@media (max-width:1500px){.brandname{display:none}.savedpill em{display:none}}
+@media (max-width:1340px){.topbar .btn.ghost span{display:none}.navbtn span{display:none}}
 .btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:9px;font-weight:600}
 .btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{background:var(--accent2)}
 .btn.ghost{background:var(--field);border:1px solid var(--line)}.btn.ghost:hover{background:var(--field2)}

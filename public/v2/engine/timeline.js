@@ -104,11 +104,11 @@ export function moveClips(store, ids, dt, { snap = true, copy = false, toTrack =
 
 // Absolute move used by pointer drags: snaps the primary clip, then shifts the
 // whole link group by the same delta in one (coalesced) undo step.
-export function moveGroup(store, id, targetStart, { snap = true } = {}) {
+export function moveGroup(store, id, targetStart, { snap = true, snapSec } = {}) {
   const project = store.get().project;
   const primary = findClip(project, id);
   if (!editable(primary)) return;
-  const target = snap ? snapTime(targetStart, project, id, true) : Math.max(0, targetStart);
+  const target = snap ? snapTime(targetStart, project, id, true, snapSec) : Math.max(0, targetStart);
   const delta = target - primary.clip.start;
   if (Math.abs(delta) < 1e-6) return;
   moveClips(store, [id], delta, { snap: false });

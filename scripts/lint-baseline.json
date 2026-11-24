@@ -1,7 +1,7 @@
 {
   "public/v2/editor.css": {
-    "lines": 53,
-    "long": 4
+    "lines": 71,
+    "long": 6
   },
   "public/v2/engine/actions.js": {
     "lines": 208,
@@ -60,20 +60,20 @@
     "long": 2
   },
   "public/v2/main.js": {
-    "lines": 54,
+    "lines": 59,
     "long": 8
   },
   "public/v2/styles.css": {
-    "lines": 230,
-    "long": 29
+    "lines": 233,
+    "long": 30
   },
   "public/v2/tests/e2e/groups.js": {
     "lines": 172,
     "long": 1
   },
   "public/v2/tests/e2e/layout.js": {
-    "lines": 178,
-    "long": 14
+    "lines": 203,
+    "long": 17
   },
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
@@ -107,6 +107,10 @@
     "lines": 7,
     "long": 3
   },
+  "public/v2/tests/unit/settings.test.mjs": {
+    "lines": 49,
+    "long": 1
+  },
   "public/v2/tests/unit/timeline.test.mjs": {
     "lines": 34,
     "long": 9
@@ -116,8 +120,8 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 93,
-    "long": 15
+    "lines": 126,
+    "long": 20
   },
   "public/v2/ui/curve-editor.js": {
     "lines": 31,
@@ -132,8 +136,8 @@
     "long": 1
   },
   "public/v2/ui/icons.js": {
-    "lines": 74,
-    "long": 1
+    "lines": 76,
+    "long": 2
   },
   "public/v2/ui/inspector-registry.js": {
     "lines": 14,
@@ -155,6 +159,10 @@
     "lines": 34,
     "long": 1
   },
+  "public/v2/ui/settings-dialog.js": {
+    "lines": 47,
+    "long": 10
+  },
   "public/v2/ui/shortcuts-dialog.js": {
     "lines": 9,
     "long": 1
@@ -164,8 +172,8 @@
     "long": 4
   },
   "public/v2/ui/stage.js": {
-    "lines": 196,
-    "long": 30
+    "lines": 199,
+    "long": 31
   },
   "public/v2/ui/strings.js": {
     "lines": 29,

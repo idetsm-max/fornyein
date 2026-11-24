@@ -51,3 +51,21 @@
 .gatelogo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#3b8bff,#7d4dff)}
 .gatemiss{margin:0;padding-left:18px;color:var(--tx);display:flex;flex-direction:column;gap:6px}
 .gatecard .btn{align-self:flex-start;margin-top:6px}
+.projname{display:flex;align-items:center;gap:6px;max-width:220px;padding:4px 8px;border:1px solid transparent;border-radius:7px;background:none;color:var(--tx);font-size:12px;cursor:text}
+.projname:hover{border-color:var(--line);background:var(--field)}
+.projname span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.projname svg{opacity:.5;flex:none}
+.projname-input{max-width:220px;padding:4px 8px;border:1px solid var(--accent);border-radius:7px;background:var(--field);color:var(--tx);font-size:12px;outline:none}
+.settingsbox{width:min(620px,calc(100vw - 32px));max-height:min(760px,calc(100vh - 48px))}
+.setbody{overflow:auto;padding:4px 18px 18px;display:flex;flex-direction:column;gap:18px}
+.setgroup{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px}
+.setgroup:first-child{border-top:0;padding-top:0}
+.setgroup h3{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:7px 0;cursor:default}
+.setlabel{display:flex;flex-direction:column;gap:2px}
+.setlabel b{font-weight:500;font-size:13px}
+.setlabel em{font-style:normal;font-size:11px;color:var(--mut)}
+.setrow input[type=range]{width:170px;accent-color:var(--accent)}
+.setcheck{width:16px;height:16px;accent-color:var(--accent)}
+.setactions{display:flex;flex-wrap:wrap;gap:8px}
+.sb-fps b{color:var(--accent2)}

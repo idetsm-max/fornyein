@@ -17,13 +17,14 @@ import { clipMediaId } from '../engine/clip.js';
 import { clipMenu, trackMenu, rulerMenu } from './menus.js';
 import { toast } from './toast.js';
 import { addKeyframe, removeKeyframeAt, resolvedTransform } from '../engine/keyframes.js';
+import { qualityCap, snapSeconds } from '../engine/settings.js';
 
 export { RATIOS };
 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
 // ---------------- centre: Player (real canvas) ----------------
-export function Player({ store, transport, fonts, onMenu }) {
+export function Player({ store, transport, fonts, onMenu, settings }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const { t, playing } = useTransport(transport);
   const empty = !project.tracks.some((track) => track.clips.length);
@@ -31,7 +32,7 @@ export function Player({ store, transport, fonts, onMenu }) {
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
   const [fsFallback, setFsFallback] = useState(false), [fsNative, setFsNative] = useState(false), [ctl, setCtl] = useState(true);
   const fs = fsNative || fsFallback;
-  const [quality, setQuality] = useState(1);
+  const cap = qualityCap(settings), [quality, setQuality] = useState(cap);
   const govRef = useRef(null);
   if (!govRef.current) govRef.current = createQualityGovernor();
   const toggleFs = () => {
@@ -74,14 +75,15 @@ export function Player({ store, transport, fonts, onMenu }) {
     const drawStart = performance.now();
     drawFrame(ctx, bw, bh, project, t);
     const nextQuality = govRef.current.sample({ ms: performance.now() - drawStart });
-    if (nextQuality !== quality) setQuality(nextQuality);
+    const capped = Math.min(nextQuality, cap);
+    if (capped !== quality) setQuality(capped);
     let b = null; const f = sel ? findClip(project, sel) : null;
     const kf = f ? resolvedTransform(f.clip, t) : null, view = f ? { ...f.clip, pos: { ...f.clip.pos, x: kf.x, y: kf.y, scale: kf.scale }, opacity: kf.opacity } : null;
     if (f && f.clip.kind === 'text') b = bboxes.get(sel) || measureText(ctx, dim.cw, dim.ch, view);
     else if (f) { const sc = Math.min(1, kf.scale); b = { cx: kf.x / 100 * dim.cw, cy: kf.y / 100 * dim.ch, w: dim.cw * sc, h: dim.ch * sc, rot: f.clip.pos?.rot || 0 }; }
     const key = b ? [b.cx / b.cw, b.cy / b.ch, b.w / b.cw, b.h / b.ch, b.rot].map((x) => x.toFixed(4)).join(',') : '';
     if (key !== ovKey.current) { ovKey.current = key; setOv(b ? { x: b.cx / b.cw * 100, y: b.cy / b.ch * 100, w: b.w / b.cw * 100, h: b.h / b.ch * 100, rot: b.rot } : null); }
-  }, [project, t, dim, sel, fonts]);
+  }, [project, t, dim, sel, fonts, cap]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -157,10 +159,11 @@ export function Player({ store, transport, fonts, onMenu }) {
 // ---------------- bottom: Timeline (Phase 2 clip operations) ----------------
 function Wave({ peaks = [], bars }) { const n = Math.max(4, bars || peaks.length || 48), src = peaks.length || 48; const d = Array.from({ length: n }, (_, i) => { const v = peaks[Math.floor(i / n * src)] ?? (0.2 + Math.abs(Math.sin(i * .73)) * .6); const x = i / n * 100; return `M${x.toFixed(2)} ${(50 - v * 44).toFixed(1)}V${(50 + v * 44).toFixed(1)}`; }).join(''); return html`<svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none"><path d=${d} /></svg>`; }
 function Playhead({ transport, pps }) { const { t } = useTransport(transport); return html`<div class="playhead" style=${{ left: (t * pps) + 'px' }}><i></i></div>`; }
-export function Timeline({ store, transport, pps, setPps, onMenu, audio }) {
+export function Timeline({ store, transport, pps, setPps, onMenu, audio, settings }) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const canUndo = useStore(store, (s) => s.canUndo), canRedo = useStore(store, (s) => s.canRedo);
-  const [selectedIds, setSelectedIds] = useState(() => sel ? [sel] : []), [snap, setSnap] = useState(true), [drop, setDrop] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => sel ? [sel] : []), [snap, setSnap] = useState(() => settings?.snap !== false), [drop, setDrop] = useState(null);
+  const snapSec = snapSeconds(settings, pps);
   const [razor, setRazor] = useState(false), [renaming, setRenaming] = useState(null); useTransport(transport);
   const scrollRef = useRef(), gesture = useRef(null), scrubbing = useRef(false), scrubAt = useRef(0), view = useTimelineScroll(scrollRef, pps);
   useEffect(() => { if (sel && !selectedIds.includes(sel)) setSelectedIds([sel]); }, [sel]);
@@ -171,9 +174,9 @@ export function Timeline({ store, transport, pps, setPps, onMenu, audio }) {
   const seekFromEvent = (e) => scrubSeek({ transport, project, pps, snap, scrollEl: scrollRef.current, clientX: e.clientX, audio, last: scrubAt });
   const pick = (e, c) => { e.stopPropagation(); const multi = e.shiftKey || e.ctrlKey || e.metaKey; const ids = multi ? (selectedIds.includes(c.id) ? selectedIds.filter((x) => x !== c.id) : [...selectedIds, c.id]) : [c.id]; setSelectedIds(ids); store.select(c.id); transport.seek(c.start + .01); };
   const downClip = (e, c) => { pick(e, c); const r = e.currentTarget.getBoundingClientRect(); if (razor) { splitClips(store, [c.id], c.start + (e.clientX - r.left) / pps, { snap }); return; } const edge = e.clientX - r.left < 9 ? 'left' : r.right - e.clientX < 9 ? 'right' : 'move'; gesture.current = { id: c.id, edge, x: e.clientX, start: c.start, end: c.start + c.dur, pps, shift: e.shiftKey, alt: e.altKey, ctrl: e.ctrlKey, applied: 0 }; e.currentTarget.setPointerCapture?.(e.pointerId); };
-  const moveClipEvent = (e) => { const g = gesture.current; if (g) applyClipDrag(store, g, e.clientX, snap); };
+  const moveClipEvent = (e) => { const g = gesture.current; if (g) applyClipDrag(store, g, e.clientX, snap, snapSec); };
   const upClip = () => { gesture.current = null; };
-  const split = () => { const id = selectedIds[0] || sel; if (id) splitClip(store, id, transport.t, { snap }); };
+  const split = () => { const id = selectedIds[0] || sel; if (id) splitClip(store, id, transport.t, { snap, snapSec }); };
   const timeAt = (e) => { const el = scrollRef.current, r = el.getBoundingClientRect(); return Math.max(0, (e.clientX - r.left + el.scrollLeft) / pps); };
   const dropOnTrack = (e, trackId) => { e.preventDefault(); const meta = project.media?.[e.dataTransfer.getData('text/x-fornyein-media')]; if (meta) addMediaAt(store, transport, meta, timeAt(e), { trackId }); setDrop(null); };
   const remove = (ripple = false) => { deleteClips(store, selectedIds.length ? selectedIds : [sel], { ripple }); setSelectedIds([]); };

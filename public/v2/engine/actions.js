@@ -10,11 +10,11 @@ import { laneFor, nearestFreeStart } from './lanes.js';
 import { quantize } from './time.js';
 
 const MIN_DUR = 0.1;
-export const snapTime = (value, project, ignoreId, enabled = true) => {
+export const snapTime = (value, project, ignoreId, enabled = true, threshold = 0.12) => {
   if (!enabled) return Math.max(0, value);
   const points = [0, ...(project.markers || []).map((m) => m.t)];
   for (const t of project.tracks) for (const c of t.clips) if (c.id !== ignoreId) points.push(c.start, clipEnd(c));
-  let best = value, dist = 0.12;
+  let best = value, dist = threshold;
   for (const p of points) if (Math.abs(p - value) < dist) { best = p; dist = Math.abs(p - value); }
   return Math.max(0, +best.toFixed(3));
 };
@@ -128,7 +128,7 @@ export function addOverlayLogo(store, transport, meta) {
   });
   store.select(c.id); transport.seek(start); return c;
 }
-export function moveClip(store, id, start, { snap = true, key = 'move', toTrack = null } = {}) {
+export function moveClip(store, id, start, { snap = true, snapSec, key = 'move', toTrack = null } = {}) {
   store.edit((d) => {
     const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return;
     let track = f.track;
@@ -136,31 +136,31 @@ export function moveClip(store, id, start, { snap = true, key = 'move', toTrack 
       const target = d.tracks.find((t) => t.id === toTrack);
       if (target && !target.locked && target.kind === track.kind) { track.clips.splice(f.ci, 1); track = target; }
     }
-    const wanted = snapTime(start, d, id, snap);
+    const wanted = snapTime(start, d, id, snap, snapSec);
     f.clip.start = nearestFreeStart(track, wanted, f.clip.dur, id);
     if (!track.clips.includes(f.clip)) track.clips.push(f.clip);
   }, { key: `${key}:${id}`, label: 'Move clip' });
 }
-export function trimClip(store, id, edge, value, { snap = true } = {}) {
+export function trimClip(store, id, edge, value, { snap = true, snapSec } = {}) {
   store.edit((d) => {
     const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return;
     const c = f.clip, end = clipEnd(c);
     if (edge === 'left') {
-      const start = Math.max(0, Math.min(end - MIN_DUR, snapTime(value, d, id, snap)));
+      const start = Math.max(0, Math.min(end - MIN_DUR, snapTime(value, d, id, snap, snapSec)));
       if (c.kind === 'text') { c.start = start; c.dur = +Math.max(MIN_DUR, end - start).toFixed(6); }
       else trimSourceLeft(c, start);
     } else {
-      const nextEnd = Math.max(c.start + MIN_DUR, snapTime(value, d, id, snap));
+      const nextEnd = Math.max(c.start + MIN_DUR, snapTime(value, d, id, snap, snapSec));
       if (c.kind === 'text') c.dur = +Math.max(MIN_DUR, nextEnd - c.start).toFixed(6);
       else trimSourceRight(c, nextEnd);
     }
   }, { key: `trim:${id}:${edge}`, label: 'Trim clip' });
 }
-export function splitClip(store, id, at, { snap = true } = {}) {
+export function splitClip(store, id, at, { snap = true, snapSec } = {}) {
   let rightId = null;
   store.edit((d) => {
     const f = findClip(d, id); if (!f || f.track.locked || f.clip.locked) return;
-    const c = f.clip, cut = snapTime(at, d, id, snap);
+    const c = f.clip, cut = snapTime(at, d, id, snap, snapSec);
     if (cut <= c.start + MIN_DUR || cut >= clipEnd(c) - MIN_DUR) return;
     const right = JSON.parse(JSON.stringify(c));
     right.id = uid(); right.start = cut; right.dur = clipEnd(c) - cut;
