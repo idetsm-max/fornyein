@@ -227,3 +227,4 @@ html[lang="my"] body{line-height:1.6}
 .loudacts{min-height:26px;margin-top:-4px}
 .loudacts .chipbtn.tiny{flex:1}
 .loudread .loudval{font-variant-numeric:tabular-nums;margin-right:auto}
+@media (max-width:1279px){.statusbar .sb-meta,.statusbar .sb-sel{display:none}}

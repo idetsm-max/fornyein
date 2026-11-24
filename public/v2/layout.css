@@ -21,3 +21,14 @@
   border-left:1px solid var(--accent2);border-right:1px solid var(--accent2)}
 .marker{position:absolute;top:0;transform:translateX(-6px);width:0;height:0;cursor:pointer;z-index:3;
   border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid var(--accent2)}
+.splitter .chev{position:absolute;opacity:0;pointer-events:none;transition:opacity .12s,color .12s;border:0;background:var(--panel2);color:var(--mut);font-size:11px;line-height:1;padding:0;display:grid;place-items:center;border-radius:5px}
+.splitter:hover .chev,.splitter:focus-visible .chev{opacity:1;pointer-events:auto;cursor:pointer}
+.splitter.v .chev{width:14px;height:30px;top:calc(50% - 15px)}
+.splitter.v.left .chev{left:calc(50% - 7px)}
+.splitter.v.right .chev{left:calc(50% - 7px)}
+.splitter.h .chev{width:30px;height:14px;left:calc(50% - 15px);bottom:calc(50% - 7px)}
+.splitter .chev:hover{color:var(--tx);background:var(--field2)}
+.edgehandle{position:absolute;top:50%;transform:translateY(-50%);width:14px;height:64px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);display:grid;place-items:center;z-index:26;font-size:13px;line-height:1}
+.edgehandle:hover{color:var(--tx);border-color:var(--accent);background:var(--field)}
+.edgehandle.left{left:90px}
+.edgehandle.right{right:9px}

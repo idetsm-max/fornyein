@@ -6,7 +6,7 @@ import { L, H } from './strings.js';
 import { toggleLocale, useLocale } from './locale.js';
 import { T } from './locale-core.js'; import { LayoutToggles } from './layout.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
-import { RATIOS } from '../engine/model.js';
+import { RATIOS, projectDuration, fmtClock } from '../engine/model.js';
 import { ExportDialog } from './export-dialog.js';
 import { ShortcutsDialog } from './shortcuts-dialog.js';
 
@@ -79,13 +79,15 @@ export function Rail({ tool, setTool }) {
 }
 
 export function StatusBar({ store, onSave }) {
-  const p = useStore(store, (s) => s.project);
+  const p = useStore(store, (s) => s.project), selection = useStore(store, (s) => s.selection);
   const [w, h] = RATIOS[p.size];
   return html`<footer class="statusbar">
     <span class="sitem">${L('project')}: <input class="pname" value=${p.name} spellcheck="false" onInput=${(e) => store.edit((d) => { d.name = e.target.value || 'Untitled Project'; }, { key: 'pname' })} /></span><span class="vsep"></span>
     <span class="sitem">${L('resolution')}: <b>${w} × ${h}</b> (${p.size})</span>
+    <span class="sitem sb-meta">${p.fps || 30} fps · ${fmtClock(projectDuration(p))}</span>
+    ${selection && html`<span class="sitem sb-sel">${T('1 clip selected', 'clip ၁ ခု ရွေးထားသည်')}</span>`}
     <div class="spacer"></div>
     <button type="button" class="btn ghost" title=${H('save')} onClick=${onSave}><${Icon} name="save" size=${16} /><span>${L('save')}</span></button>
-    <button type="button" class="btn primary" title=${H('exportVideo')}><${Icon} name="export" size=${16} /><span>${L('exportVideo')}</span></button>
+    <button type="button" class="btn primary" title=${H('exportVideo')} onClick=${() => window.dispatchEvent(new Event('fornyein:export'))}><${Icon} name="export" size=${16} /><span>${L('exportVideo')}</span></button>
   </footer>`;
 }

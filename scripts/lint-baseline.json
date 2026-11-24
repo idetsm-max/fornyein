@@ -55,12 +55,16 @@
     "lines": 22,
     "long": 2
   },
+  "public/v2/layout.css": {
+    "lines": 34,
+    "long": 2
+  },
   "public/v2/main.js": {
     "lines": 52,
     "long": 8
   },
   "public/v2/styles.css": {
-    "lines": 229,
+    "lines": 230,
     "long": 29
   },
   "public/v2/tests/e2e/groups.js": {
@@ -68,8 +72,8 @@
     "long": 1
   },
   "public/v2/tests/e2e/layout.js": {
-    "lines": 85,
-    "long": 3
+    "lines": 147,
+    "long": 7
   },
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
@@ -112,8 +116,8 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 91,
-    "long": 14
+    "lines": 93,
+    "long": 15
   },
   "public/v2/ui/curve-editor.js": {
     "lines": 31,

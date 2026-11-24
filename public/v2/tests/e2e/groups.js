@@ -22,7 +22,7 @@ const box = (p, sel) => p.evaluate((s) => {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error' && !/404|Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await page.goto(BASE + '/index.html', { waitUntil: 'networkidle0' });
-  await page.evaluate(() => localStorage.removeItem('fn.layout'));
+  await page.evaluate(() => localStorage.removeItem('fn.layout.v1'));
   await page.reload({ waitUntil: 'networkidle0' });
 
   const clipBoxes = () => page.evaluate(() => [...document.querySelectorAll('.trow.text .clip')].map((c) => {
