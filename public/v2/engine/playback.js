@@ -68,7 +68,8 @@ async function startElementClip(ctx, mixer, clip, event, blob) {
   element.crossOrigin = 'anonymous';
   element.preload = 'auto';
   const chain = createClipChain(ctx, { reverbSeed: mixer.reverbSeed });
-  applyClipFx(chain, clip, { now: ctx.currentTime });
+  const meta = mixer.media?.[clip.src?.mediaId] || {};
+  applyClipFx(chain, clip, { now: ctx.currentTime + event.when + 0.03, peaks: meta.peaks || [], mediaDur: meta.dur || 0, offset: event.offset || 0, dur: event.srcDur });
   chain.input.connect(bus.input);
   chain.pan.pan.value = event.pan;
   const source = ctx.createMediaElementSource(element);

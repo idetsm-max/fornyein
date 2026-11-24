@@ -27,6 +27,10 @@
     "lines": 3,
     "long": 3
   },
+  "public/v2/engine/playback.js": {
+    "lines": 241,
+    "long": 1
+  },
   "public/v2/engine/render.js": {
     "lines": 97,
     "long": 10
@@ -68,8 +72,8 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 176,
-    "long": 8
+    "lines": 197,
+    "long": 10
   },
   "public/v2/tests/unit/engine.test.mjs": {
     "lines": 35,
@@ -136,8 +140,8 @@
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 235,
-    "long": 88
+    "lines": 237,
+    "long": 90
   },
   "public/v2/ui/relink-banner.js": {
     "lines": 34,

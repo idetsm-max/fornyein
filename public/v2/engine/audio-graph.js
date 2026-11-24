@@ -40,7 +40,7 @@ export function createClipChain(ctx, { reverbSeed = 0x5eed } = {}) {
   const comp = ctx.createDynamicsCompressor();
   const delay = ctx.createDelay(2), echo = ctx.createGain();
   const convolver = ctx.createConvolver(), reverb = ctx.createGain();
-  const gain = ctx.createGain(), pan = ctx.createStereoPanner();
+  const gate = ctx.createGain(), gain = ctx.createGain(), pan = ctx.createStereoPanner();
   convolver.buffer = buildImpulse(ctx, 1.8, 2.4, reverbSeed);
   delay.delayTime.value = .18;
   echo.gain.value = 0;
@@ -48,12 +48,12 @@ export function createClipChain(ctx, { reverbSeed = 0x5eed } = {}) {
   comp.threshold.value = 0;
   comp.ratio.value = 1;
   input.connect(eq[0]);
-  eq[0].connect(eq[1]).connect(eq[2]).connect(comp);
+  eq[0].connect(eq[1]).connect(eq[2]).connect(gate).connect(comp);
   comp.connect(gain);
   comp.connect(delay); delay.connect(echo).connect(gain);
   comp.connect(convolver); convolver.connect(reverb).connect(gain);
   gain.connect(pan);
-  return { input, output: pan, eq, comp, delay, echo, convolver, reverb, gain, pan };
+  return { input, output: pan, eq, gate, comp, delay, echo, convolver, reverb, gain, pan };
 }
 
 const setParam = (param, value, now, smooth) => {
@@ -61,8 +61,16 @@ const setParam = (param, value, now, smooth) => {
   else param.value = value;
 };
 
-export function applyClipFx(chain, clip, { now = 0, smooth = .02 } = {}) {
-  const bypass = !!clip.bypass, eq = clip.eq || {}, comp = clip.compressor || {};
+export function applyClipFx(chain, clip, { now = 0, smooth = .02, peaks = [], mediaDur = 0, offset = 0, dur = 0 } = {}) {
+  const bypass = !!clip.bypass, eq = clip.eq || {}, comp = clip.compressor || {}, gate = clip.noiseGate || {};
+  const gatePoints = !bypass && gate.enabled && peaks.length
+    ? gateEnvelope({ peaks, dur: dur || mediaDur, mediaDur, offset, threshold: gate.threshold ?? .05, when: now })
+    : [];
+  if (chain.gate) {
+    chain.gate.gain.cancelScheduledValues?.(now);
+    if (gatePoints.length) applyEnvelope(chain.gate.gain, gatePoints);
+    else setParam(chain.gate.gain, 1, now, smooth);
+  }
   setParam(chain.eq[0].gain, bypass ? 0 : (eq.low || 0), now, smooth);
   setParam(chain.eq[1].gain, bypass ? 0 : (eq.mid || 0), now, smooth);
   setParam(chain.eq[2].gain, bypass ? 0 : (eq.high || 0), now, smooth);
@@ -71,6 +79,20 @@ export function applyClipFx(chain, clip, { now = 0, smooth = .02 } = {}) {
   setParam(chain.delay.delayTime, .12 + (clip.echo || 0) * .35, now, smooth);
   setParam(chain.echo.gain, bypass ? 0 : (clip.echo || 0) * .35, now, smooth);
   setParam(chain.reverb.gain, bypass ? 0 : (clip.reverb || 0) * .45, now, smooth);
+}
+
+// Gate steps derived from the media peaks: a bucket at or above the threshold
+// opens the gate, anything quieter closes it. Pure data so it can be tested
+// without Web Audio.
+export function gateEnvelope({ peaks = [], dur = 0, mediaDur = 0, offset = 0, threshold = 0.05, when = 0 } = {}) {
+  if (!peaks.length || !(dur > 0) || !(mediaDur > 0)) return [];
+  const step = mediaDur / peaks.length;
+  const points = [];
+  for (let t = 0; t < dur - 1e-9; t += step) {
+    const idx = Math.min(peaks.length - 1, Math.max(0, Math.floor((offset + t) / step)));
+    points.push({ time: when + t, value: (peaks[idx] || 0) >= threshold ? 1 : 0, ramp: points.length > 0 });
+  }
+  return points;
 }
 
 // Envelope points in plain data so the maths can be unit-tested without Web Audio.
@@ -120,7 +142,7 @@ export function createMixer(ctx, project, { reverbSeed = 0x5eed } = {}) {
     bus.output.connect(master);
     buses.set(track.id, bus);
   }
-  return { master, limiter, buses, reverbSeed };
+  return { master, limiter, buses, reverbSeed, media: project.media || {} };
 }
 
 export function clipGain(clip, track, duck = 1) {
@@ -136,7 +158,8 @@ export function startBufferClip(ctx, mixer, clip, event, buffer, when) {
   const bus = mixer.buses.get(event.trackId);
   if (!bus) return null;
   const chain = createClipChain(ctx, { reverbSeed: mixer.reverbSeed });
-  applyClipFx(chain, clip, { now: ctx.currentTime });
+  const meta = mixer.media?.[clip.src?.mediaId] || {};
+  applyClipFx(chain, clip, { now: when, peaks: meta.peaks || [], mediaDur: meta.dur || 0, offset: event.offset || 0, dur: event.srcDur });
   chain.input.connect(bus.input);
   const source = ctx.createBufferSource();
   source.buffer = buffer;

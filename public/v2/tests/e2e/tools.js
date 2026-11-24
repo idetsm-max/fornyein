@@ -114,6 +114,27 @@ const ok = (name, cond, extra = '') => {
   const normGain = await page.evaluate(() => window.__store.get().project.tracks.find((t) => t.kind === 'audio').clips.find((c) => c.id === 'ac1')?.gain);
   ok('normalize raises the clip gain', normGain > 2, String(normGain));
 
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((b) => /Effects/i.test(b.textContent))?.click());
+  await sleep(350);
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .frow')].find((r) => /Noise gate/i.test(r.textContent))?.querySelector('input[type=checkbox]')?.click());
+  await sleep(400);
+  const gateOn = await page.evaluate(() => window.__store.get().project.tracks.find((t) => t.kind === 'audio').clips.find((c) => c.id === 'ac1')?.noiseGate);
+  ok('noise gate toggles on the clip', !!gateOn?.enabled, JSON.stringify(gateOn));
+  ok('gate threshold slider appears', await page.evaluate(() => [...document.querySelectorAll('.inspector .frow')].some((r) => /Gate threshold/i.test(r.textContent))));
+  const gateDsp = await page.evaluate(async () => {
+    const { createClipChain, applyClipFx } = await import('/v2/engine/audio-graph.js');
+    const ctx = new OfflineAudioContext(1, 48000, 48000);
+    const chain = createClipChain(ctx);
+    applyClipFx(chain, { noiseGate: { enabled: true, threshold: 0.5 } }, { now: 0, peaks: [1, 0], mediaDur: 1, offset: 0, dur: 1 });
+    const src = ctx.createConstantSource();
+    src.offset.value = 0.5;
+    src.connect(chain.input); chain.output.connect(ctx.destination); src.start(0);
+    const data = (await ctx.startRendering()).getChannelData(0);
+    return { head: Math.abs(data[9600]), tail: Math.abs(data[43200]) };
+  });
+  ok('gate lets loud audio through', gateDsp.head > 0.05, JSON.stringify(gateDsp));
+  ok('gate silences the quiet half', gateDsp.tail < 0.01, JSON.stringify(gateDsp));
+
   await page.evaluate(() => { window.__store.edit((d) => { d.media = { ...(d.media || {}), ghost1: { id: 'ghost1', name: 'ghost.png', kind: 'image', dur: 5, size: 10, type: 'image/png' } }; }); });
   await page.click('.railbtn[aria-label="Media"]'); await sleep(700);
   ok('missing media shows the relink banner', !!(await page.$('.relinkbar')), await page.evaluate(() => document.querySelector('.panel.media')?.textContent?.slice(0, 60) || 'no panel'));
