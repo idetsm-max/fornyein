@@ -10,6 +10,7 @@ import { SpeedPanel } from './speed-panel.js';
 import { MaskPanel } from './mask-panel.js';
 import { RelinkBanner } from './relink-banner.js';
 import { loudnessReport } from '../engine/loudness.js';
+import { voiceCleanupPatch } from '../engine/audio-graph.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
 import { myLabel } from './labels-my.js';
@@ -136,18 +137,29 @@ export function Inspector({ store, fonts, transport }) {
     <${Slider} label="Gain" tip="အသံအတိုးအကျယ်" value=${Math.round((c.gain ?? 1) * 100)} min=${0} max=${200} onChange=${(v) => upd('gain', (k) => { k.gain = v / 100; })} unit="%" />
     <${Slider} label="Volume" tip="Clip volume" value=${Math.round((c.volume ?? 1) * 100)} min=${0} max=${150} onChange=${(v) => upd('volume', (k) => { k.volume = v / 100; })} unit="%" />
     <${Slider} label="Pan" tip="ဘယ်/ညာ stereo pan" value=${Math.round((c.pan ?? 0) * 100)} min=${-100} max=${100} onChange=${(v) => upd('pan', (k) => { k.pan = v / 100; })} unit="%" />
-    <${Field} label=${T('Loudness', 'အသံပမာဏ')} tip=${T('Measured peak loudness; Normalize sets the gain to about -14 dBFS', 'တိုင်းတာထားသော အသံပမာဏ၊ Normalize ကို နှိပ်ရင် -14 dBFS လောက် ညှိပေးမည်')}>
+    <${Field} cls="loudread" label=${T('Loudness', 'အသံပမာဏ')} tip=${T('Measured peak loudness; Normalize sets the gain to about -14 dBFS', 'တိုင်းတာထားသော အသံပမာဏ၊ Normalize ကို နှိပ်ရင် -14 dBFS လောက် ညှိပေးမည်')}>
       <b class="loudval">${Math.round(loud.db)} dB</b>
-      <button type="button" class="chipbtn tiny" disabled=${loud.silent} onClick=${() => {
-        upd('loud', (k) => { k.gain = Math.round(loud.gain * 100) / 100; });
-        toast(T('Loudness normalised', 'အသံပမာဏ ညှိပြီး'), 'ok');
-      }}>${T('Normalize', 'ညှိ')}</button>
     </${Field}>
+    <div class="frow loudacts">
+      <span class="flabel"></span>
+      <div class="fctl">
+        <button type="button" class="chipbtn tiny" disabled=${loud.silent} onClick=${() => {
+          upd('loud', (k) => { k.gain = Math.round(loud.gain * 100) / 100; });
+          toast(T('Loudness normalised', 'အသံပမာဏ ညှိပြီး'), 'ok');
+        }}>${T('Normalize', 'ညှိ')}</button>
+        <button type="button" class="chipbtn tiny" onClick=${() => {
+          const patch = voiceCleanupPatch();
+          upd('clean', (k) => { Object.assign(k, patch); });
+          toast(T('Voice cleanup applied', 'အသံ သန့်ရှင်းရေး လုပ်ပြီး'), 'ok');
+        }}>${T('Clean voice', 'အသံသန့်')}</button>
+      </div>
+    </div>
     `}
     ${tab === 'effects' && html`<${Slider} label="EQ Low" tip="Bass" value=${Math.round(c.eq?.low || 0)} min=${-12} max=${12} onChange=${(v) => upd('eql', (k) => { k.eq = { ...(k.eq || {}), low: v }; })} unit="dB" />
     <${Slider} label="EQ Mid" tip="Mid" value=${Math.round(c.eq?.mid || 0)} min=${-12} max=${12} onChange=${(v) => upd('eqm', (k) => { k.eq = { ...(k.eq || {}), mid: v }; })} unit="dB" />
     <${Slider} label="EQ High" tip="Treble" value=${Math.round(c.eq?.high || 0)} min=${-12} max=${12} onChange=${(v) => upd('eqh', (k) => { k.eq = { ...(k.eq || {}), high: v }; })} unit="dB" />
     <${Field} label="Compressor" tip="Dynamic range control"><label class="switch"><input type="checkbox" checked=${!!c.compressor?.enabled} onChange=${() => upd('comp', (k) => { k.compressor = { ...(k.compressor || {}), enabled: !k.compressor?.enabled }; })} /><i></i></label><//>
+    <${Slider} label=${T('Rumble cut', 'တုန်ချိုးသံ ဖြတ်')} tip=${T('High-pass filter: remove handling noise below this frequency', 'ဤအသံအောက် လျှောစီးသံများကို ဖြတ်သည်')} value=${c.highpass || 0} min=${0} max=${200} step=${5} onChange=${(v) => upd('hp', (k) => { k.highpass = v; })} unit="Hz" />
     <${Field} label=${T('Noise gate', 'ဆူညံသံ ဖြတ်')} tip=${T('Mute the quiet parts below the threshold', 'သတ်မှတ်အဆင့်အောက် ငြိမ်သံများကို ဖြတ်ပစ်')}><label class="switch"><input type="checkbox" checked=${!!c.noiseGate?.enabled} onChange=${() => upd('gate', (k) => { k.noiseGate = { ...(k.noiseGate || {}), enabled: !k.noiseGate?.enabled }; })} /><i></i></label><//>
     ${c.noiseGate?.enabled && html`<${Slider} label=${T('Gate threshold', 'ဖြတ်သည့်အဆင့်')} tip=${T('Peaks under this level are muted', 'ဤအဆင့်အောက် အသံများ ငြိမ်သွားမည်')} value=${Math.round((c.noiseGate?.threshold ?? 0.05) * 100)} min=${1} max=${50} onChange=${(v) => upd('gateT', (k) => { k.noiseGate = { ...(k.noiseGate || {}), threshold: v / 100 }; })} unit="%" />`}
     <${Slider} label="Echo" tip="Delay echo" value=${Math.round((c.echo || 0) * 100)} min=${0} max=${100} onChange=${(v) => upd('echo', (k) => { k.echo = v / 100; })} unit="%" />

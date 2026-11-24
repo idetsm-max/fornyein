@@ -24,3 +24,9 @@ test('gateEnvelope is empty without peaks or a duration', () => {
   assert.deepEqual(gateEnvelope({ peaks, dur: 0, mediaDur: 6 }), []);
   assert.deepEqual(gateEnvelope({ peaks, dur: 4, mediaDur: 0 }), []);
 });
+
+test('voiceCleanupPatch pairs a rumble cut with the gate', async () => {
+  const { voiceCleanupPatch } = await import('../../engine/audio-graph.js');
+  assert.deepEqual(voiceCleanupPatch(), { highpass: 80, noiseGate: { enabled: true, threshold: 0.06 } });
+  assert.deepEqual(voiceCleanupPatch({ highpass: 120, gateThreshold: 0.12 }), { highpass: 120, noiseGate: { enabled: true, threshold: 0.12 } });
+});

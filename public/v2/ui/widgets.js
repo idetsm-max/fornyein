@@ -28,6 +28,6 @@ export function Slider({ label, tip, value, min = 0, max = 100, step = 1, onChan
     <span class="numbox"><input type="number" min=${min} max=${max} step=${step} value=${value} onInput=${(e) => onChange(+e.target.value || 0)} />${unit && html`<em>${unit}</em>`}</span>
   </div>`;
 }
-export function Field({ label, tip, children }) {
-  return html`<div class="frow" title=${tip || ''}><span class="flabel">${myLabel(label)}</span><div class="fctl">${children}</div></div>`;
+export function Field({ label, tip, children, cls }) {
+  return html`<div class=${cx('frow', cls)} title=${tip || ''}><span class="flabel">${myLabel(label)}</span><div class="fctl">${children}</div></div>`;
 }

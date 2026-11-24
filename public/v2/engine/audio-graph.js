@@ -41,19 +41,23 @@ export function createClipChain(ctx, { reverbSeed = 0x5eed } = {}) {
   const delay = ctx.createDelay(2), echo = ctx.createGain();
   const convolver = ctx.createConvolver(), reverb = ctx.createGain();
   const gate = ctx.createGain(), gain = ctx.createGain(), pan = ctx.createStereoPanner();
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 10;
+  hp.Q.value = .707;
   convolver.buffer = buildImpulse(ctx, 1.8, 2.4, reverbSeed);
   delay.delayTime.value = .18;
   echo.gain.value = 0;
   reverb.gain.value = 0;
   comp.threshold.value = 0;
   comp.ratio.value = 1;
-  input.connect(eq[0]);
+  input.connect(hp).connect(eq[0]);
   eq[0].connect(eq[1]).connect(eq[2]).connect(gate).connect(comp);
   comp.connect(gain);
   comp.connect(delay); delay.connect(echo).connect(gain);
   comp.connect(convolver); convolver.connect(reverb).connect(gain);
   gain.connect(pan);
-  return { input, output: pan, eq, gate, comp, delay, echo, convolver, reverb, gain, pan };
+  return { input, output: pan, hp, eq, gate, comp, delay, echo, convolver, reverb, gain, pan };
 }
 
 const setParam = (param, value, now, smooth) => {
@@ -71,6 +75,7 @@ export function applyClipFx(chain, clip, { now = 0, smooth = .02, peaks = [], me
     if (gatePoints.length) applyEnvelope(chain.gate.gain, gatePoints);
     else setParam(chain.gate.gain, 1, now, smooth);
   }
+  if (chain.hp) setParam(chain.hp.frequency, bypass ? 10 : Math.max(10, clip.highpass || 10), now, smooth);
   setParam(chain.eq[0].gain, bypass ? 0 : (eq.low || 0), now, smooth);
   setParam(chain.eq[1].gain, bypass ? 0 : (eq.mid || 0), now, smooth);
   setParam(chain.eq[2].gain, bypass ? 0 : (eq.high || 0), now, smooth);
@@ -79,6 +84,12 @@ export function applyClipFx(chain, clip, { now = 0, smooth = .02, peaks = [], me
   setParam(chain.delay.delayTime, .12 + (clip.echo || 0) * .35, now, smooth);
   setParam(chain.echo.gain, bypass ? 0 : (clip.echo || 0) * .35, now, smooth);
   setParam(chain.reverb.gain, bypass ? 0 : (clip.reverb || 0) * .45, now, smooth);
+}
+
+// One-click cleanup for spoken takes: cut the rumble under the voice and
+// let the gate drop the room noise between lines.
+export function voiceCleanupPatch({ highpass = 80, gateThreshold = 0.06 } = {}) {
+  return { highpass, noiseGate: { enabled: true, threshold: gateThreshold } };
 }
 
 // Gate steps derived from the media peaks: a bucket at or above the threshold

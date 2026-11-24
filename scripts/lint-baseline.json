@@ -60,8 +60,8 @@
     "long": 8
   },
   "public/v2/styles.css": {
-    "lines": 222,
-    "long": 28
+    "lines": 229,
+    "long": 29
   },
   "public/v2/tests/e2e/groups.js": {
     "lines": 172,
@@ -76,8 +76,8 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 223,
-    "long": 10
+    "lines": 252,
+    "long": 11
   },
   "public/v2/tests/unit/engine.test.mjs": {
     "lines": 35,
@@ -144,8 +144,8 @@
     "long": 11
   },
   "public/v2/ui/panels.js": {
-    "lines": 238,
-    "long": 90
+    "lines": 250,
+    "long": 91
   },
   "public/v2/ui/relink-banner.js": {
     "lines": 34,

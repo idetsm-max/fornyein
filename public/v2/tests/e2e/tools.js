@@ -144,14 +144,43 @@ const ok = (name, cond, extra = '') => {
     const ctx = new OfflineAudioContext(1, 48000, 48000);
     const chain = createClipChain(ctx);
     applyClipFx(chain, { noiseGate: { enabled: true, threshold: 0.5 } }, { now: 0, peaks: [1, 0], mediaDur: 1, offset: 0, dur: 1 });
-    const src = ctx.createConstantSource();
-    src.offset.value = 0.5;
+    const src = ctx.createOscillator();
+    src.frequency.value = 440;
     src.connect(chain.input); chain.output.connect(ctx.destination); src.start(0);
     const data = (await ctx.startRendering()).getChannelData(0);
     return { head: Math.abs(data[9600]), tail: Math.abs(data[43200]) };
   });
   ok('gate lets loud audio through', gateDsp.head > 0.05, JSON.stringify(gateDsp));
   ok('gate silences the quiet half', gateDsp.tail < 0.01, JSON.stringify(gateDsp));
+  await page.evaluate(() => document.querySelectorAll('.inspector .tab')[0]?.click());
+  await sleep(300);
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .chipbtn.tiny')].find((b) => /Clean voice|အသံသန့်/.test(b.textContent))?.click());
+  await sleep(400);
+  const cleaned = await page.evaluate(() => {
+    const c = window.__store.get().project.tracks.find((t) => t.kind === 'audio').clips.find((x) => x.id === 'ac1');
+    return { highpass: c?.highpass, gate: c?.noiseGate };
+  });
+  ok('clean voice sets a rumble cut and the gate', cleaned.highpass === 80 && cleaned.gate?.enabled === true, JSON.stringify(cleaned));
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((t) => /Effects/i.test(t.textContent))?.click());
+  await sleep(300);
+  ok('rumble cut slider shows the new frequency', await page.evaluate(() => [...document.querySelectorAll('.inspector .frow')].some((r) => /Rumble cut|တုန်ချိုးသံ/.test(r.textContent) && r.querySelector('input[type=range]')?.value === '80')));
+  const hpDsp = await page.evaluate(async () => {
+    const { createClipChain, applyClipFx } = await import('/v2/engine/audio-graph.js');
+    const run = async (highpass) => {
+      const ctx = new OfflineAudioContext(1, 48000, 48000);
+      const chain = createClipChain(ctx);
+      applyClipFx(chain, { highpass }, { now: 0 });
+      const src = ctx.createOscillator();
+      src.frequency.value = 40;
+      src.connect(chain.input); chain.output.connect(ctx.destination); src.start(0);
+      const d = (await ctx.startRendering()).getChannelData(0);
+      let peak = 0;
+      for (let i = 24000; i < 48000; i++) peak = Math.max(peak, Math.abs(d[i]));
+      return +peak.toFixed(4);
+    };
+    return { off: await run(0), on: await run(120) };
+  });
+  ok('rumble cut attenuates a 40 Hz tone', hpDsp.on < hpDsp.off / 2, JSON.stringify(hpDsp));
 
   await page.evaluate(() => { window.__store.edit((d) => { d.media = { ...(d.media || {}), ghost1: { id: 'ghost1', name: 'ghost.png', kind: 'image', dur: 5, size: 10, type: 'image/png' } }; }); });
   await page.click('.railbtn[aria-label="Media"]'); await sleep(700);
