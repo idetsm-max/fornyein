@@ -73,7 +73,7 @@
 | G10 | **Snap guide/safe-area/grid/zoom-fit** controls မရှိ (Player) | |
 | G11 | **Toast/notification**၊ onboarding hint၊ empty-state CTA မညီညာ | |
 | G12 ✅ **ပိတ်ပြီး** — zoom select က preview zoom ကို ထိန်း (`fornyein:zoom`) — မူလ: **Top bar** ရဲ့ zoom select က ဘာကိုထိန်းလဲ မရှင်း | |
-| G13 🟡 တစ်ဝက် — UI မြန်မာ/English toggle 🟢 (`ui/locale.js`)၊ ကျန် hardcoded စာသား ဘာသာပြန်ရန် ကျန် | |
+| G13 🟢 — UI မြန်မာ/English toggle (`ui/locale.js`) + **inspector/tab/track label ဘာသာပြန် `ui/labels-my.js`**၊ ကျန် microcopy အနည်းငယ် | |
 
 > **ပိတ်ပြီး (v5.1, 2026-11-23)**: **G1** (Inspector registry — U1)၊ **G2** (right-click context menu + clipboard — U2)၊ **G3** (media → timeline/player drag & drop — U3)။ အထောက်အထား = `public/v2/tests/e2e/ux.js` (headless Chromium)။
 

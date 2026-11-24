@@ -99,6 +99,12 @@ const ok = (name, cond, extra = '') => {
   await page.click('.langbtn'); await sleep(250);
   ok('language toggle switches the rail to Burmese', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'မီဒီယာ');
   ok('language choice persists', (await page.evaluate(() => localStorage.getItem('fornyein.locale'))) === 'my');
+  await page.click('.trow.video .clip'); await sleep(200);
+  await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((t) => t.textContent === 'ဗီဒီယို')?.click());
+  await sleep(200);
+  const myLabels = await page.evaluate(() => [...document.querySelectorAll('.inspector .flabel')].map((n) => n.textContent));
+  ok('inspector labels turn Burmese', myLabels.includes('အလင်းဖောက်မှု'), myLabels.slice(0, 5).join('|'));
+  await page.click('.trow.text .clip'); await sleep(150);
 
   await page.click('.langbtn'); await sleep(250);
   ok('language toggles back to English', (await page.evaluate(() => document.querySelectorAll('.railbtn span')[0]?.textContent)) === 'Media');

@@ -68,7 +68,7 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 114,
+    "lines": 120,
     "long": 5
   },
   "public/v2/tests/unit/engine.test.mjs": {
@@ -104,7 +104,7 @@
     "long": 3
   },
   "public/v2/ui/chrome.js": {
-    "lines": 90,
+    "lines": 91,
     "long": 14
   },
   "public/v2/ui/curve-editor.js": {
@@ -164,8 +164,8 @@
     "long": 1
   },
   "public/v2/ui/widgets.js": {
-    "lines": 32,
-    "long": 4
+    "lines": 33,
+    "long": 5
   },
   "scripts/validate-export.mjs": {
     "lines": 35,

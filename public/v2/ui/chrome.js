@@ -3,13 +3,14 @@ import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
 import { useStore } from './hooks.js';
 import { L, H } from './strings.js';
-import { toggleLocale, useLocale } from './locale.js'; import { LayoutToggles } from './layout.js';
+import { toggleLocale, useLocale } from './locale.js';
+import { T } from './locale-core.js'; import { LayoutToggles } from './layout.js';
 import { listProjects, deleteProject } from '../engine/storage.js';
 import { RATIOS } from '../engine/model.js';
 import { ExportDialog } from './export-dialog.js';
 import { ShortcutsDialog } from './shortcuts-dialog.js';
 
-const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? 'just now' : s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
+const ago = (ts) => { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 10 ? T('just now', 'ယခုလေးတင်') : s < 60 ? `${s}${T(' s ago', ' စက္ကန့်က')}` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
 function ProjectsMenu({ onNew, onOpen, onExportJson, onImportJson }) {
   const [open, setOpen] = useState(false), [items, setItems] = useState([]);

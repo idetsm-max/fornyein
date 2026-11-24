@@ -10,6 +10,8 @@ const TRACK_UI = { text: ['text', 'trackText'], video: ['video', 'trackVideo'], 
 export function TrackHead({ store, track, renaming, setRenaming, onMenu }) {
   const [icon, key] = TRACK_UI[track.kind] || ['layers', 'trackOverlay'];
   const label = L(key);
+  const DEFAULT_NAMES = { text: 'Text', video: 'Video', overlay: 'Overlay', audio: 'Audio' };
+  const shown = track.name && track.name !== (DEFAULT_NAMES[track.kind] || '') ? track.name : label;
   const toggle = (key) => () => toggleTrack(store, track.id, key);
   const onContext = (e) => { e.preventDefault(); onMenu?.({ trackId: track.id, x: e.clientX, y: e.clientY }); };
   return html`<div class=${cx('thead', track.kind, track.height && `h-${track.height}`)} onContextMenu=${onContext}>
@@ -22,8 +24,8 @@ export function TrackHead({ store, track, renaming, setRenaming, onMenu }) {
       ? html`<input class="trename" value=${track.name || ''} autoFocus
           onBlur=${(e) => { renameTrack(store, track.id, e.target.value); setRenaming(null); }}
           onKeyDown=${(e) => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') setRenaming(null); }} />`
-      : html`<span class="tname" title=${(track.name || label) + ' · double-click to rename'}
+      : html`<span class="tname" title=${shown + ' · double-click to rename'}
           onDblClick=${(e) => { e.stopPropagation(); setRenaming(track.id); }}>
-          <${Icon} name=${icon} size=${15} /><span>${track.name || label}</span></span>`}
+          <${Icon} name=${icon} size=${15} /><span>${shown}</span></span>`}
   </div>`;
 }
