@@ -151,6 +151,23 @@ const ok = (name, cond, extra = '') => {
   await page.select('.topctl select', '150%'); await sleep(200);
   ok('top bar zoom drives the preview', (await page.evaluate(() => [...document.querySelectorAll('.zoomchip')][1]?.textContent)) === '150%');
 
+  await page.click('.stage, .player', { offset: { x: 20, y: 20 } }).catch(() => {});
+  await page.keyboard.press('f'); await sleep(350);
+  const fsState = await page.evaluate(() => ({ native: !!document.fullscreenElement, fallback: !!document.querySelector('.frame.fsfallback') }));
+  ok('F opens fullscreen preview (native or fallback)', fsState.native || fsState.fallback, JSON.stringify(fsState));
+  if (fsState.native) { await page.evaluate(() => document.exitFullscreen?.()); } else { await page.keyboard.press('Escape'); }
+  await sleep(300);
+  ok('Escape leaves the fullscreen fallback', await page.evaluate(() => !document.querySelector('.frame.fsfallback')));
+  await page.evaluate(() => { const el = document.querySelector('.frame'); el.requestFullscreen = () => Promise.reject(new Error('denied')); });
+  await page.keyboard.press('f'); await sleep(400);
+  ok('fullscreen falls back in-app when the API refuses', await page.evaluate(() => !!document.querySelector('.frame.fsfallback')));
+  await page.keyboard.press('Escape'); await sleep(300);
+
+  await page.keyboard.press('?'); await sleep(250);
+  const scList = await page.evaluate(() => document.querySelector('.shortcutbox')?.textContent || '');
+  ok('shortcut dialog lists the fullscreen key', /Fullscreen preview/.test(scList));
+  await page.keyboard.press('Escape'); await sleep(200);
+
   ok('no page errors', errors.length === 0, errors.join(' | '));
 
   await browser.close();

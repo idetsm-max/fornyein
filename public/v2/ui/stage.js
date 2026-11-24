@@ -27,6 +27,15 @@ export function Player({ store, transport, fonts, onMenu }) {
   const empty = !project.tracks.some((track) => track.clips.length);
   const [w, h] = RATIOS[project.size], dur = projectDuration(project);
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
+  const [fsFallback, setFsFallback] = useState(false);
+  const toggleFs = () => {
+    const el = frameRef.current;
+    if (document.fullscreenElement) { document.exitFullscreen?.(); setFsFallback(false); return; }
+    if (fsFallback) { setFsFallback(false); return; }
+    const req = el?.requestFullscreen?.();
+    if (req?.catch) req.catch(() => setFsFallback(true));
+    else if (!el?.requestFullscreen) setFsFallback(true);
+  };
   const [dim, setDim] = useState({ cw: 960, ch: 540 }), [ov, setOv] = useState(null), lastPaint = useRef(0);
   const [safe, setSafe] = useState(false), [zoomPct, setZoomPct] = useState(100), [guides, setGuides] = useState({ v: false, h: false });
   useEffect(() => { const onZoom = (e) => setZoomPct(Math.min(200, Math.max(25, +e.detail || 100))); window.addEventListener('fornyein:zoom', onZoom); return () => window.removeEventListener('fornyein:zoom', onZoom); }, []);
@@ -52,10 +61,14 @@ export function Player({ store, transport, fonts, onMenu }) {
   }, [project, t, dim, sel, fonts]);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key.toLowerCase() !== 'f' || /input|textarea/i.test(e.target.tagName) || e.ctrlKey || e.metaKey) return; e.preventDefault(); const el = frameRef.current; if (!document.fullscreenElement) el?.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape' && fsFallback) { setFsFallback(false); return; }
+      if (e.key.toLowerCase() !== 'f' || /input|textarea/i.test(e.target.tagName) || e.ctrlKey || e.metaKey) return;
+      e.preventDefault(); toggleFs();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [fsFallback]);
   const down = (e) => {                                          // drag the selected text on the frame
     const f = sel ? findClip(project, sel) : null; if (!f || f.track.locked) return;
     e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId);
@@ -77,7 +90,7 @@ export function Player({ store, transport, fonts, onMenu }) {
 
   return html`<section class="panel player">
     <div class="stagewrap">
-      <div class="frame" ref=${frameRef} style=${{ width: `min(100cqw, calc(100cqh * ${w / h}))`, aspectRatio: `${w} / ${h}`, transform: `scale(${zoomPct / 100})` }} onPointerDown=${(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) store.select(null); }} onContextMenu=${(e) => { e.preventDefault(); if (sel) onMenu?.(clipMenu({ store, transport, clipId: sel, x: e.clientX, y: e.clientY })); }} onDragOver=${(e) => { if (e.dataTransfer.types.includes('text/x-fornyein-media')) e.preventDefault(); }} onDrop=${(e) => { e.preventDefault(); const meta = project.media?.[e.dataTransfer.getData('text/x-fornyein-media')]; if (meta) addMediaAt(store, transport, meta, transport.t); }}>
+      <div class=${cx('frame', fsFallback && 'fsfallback')} ref=${frameRef} style=${{ width: `min(100cqw, calc(100cqh * ${w / h}))`, aspectRatio: `${w} / ${h}`, transform: `scale(${zoomPct / 100})` }} onPointerDown=${(e) => { if (e.target === e.currentTarget || e.target === canvasRef.current) store.select(null); }} onContextMenu=${(e) => { e.preventDefault(); if (sel) onMenu?.(clipMenu({ store, transport, clipId: sel, x: e.clientX, y: e.clientY })); }} onDragOver=${(e) => { if (e.dataTransfer.types.includes('text/x-fornyein-media')) e.preventDefault(); }} onDrop=${(e) => { e.preventDefault(); const meta = project.media?.[e.dataTransfer.getData('text/x-fornyein-media')]; if (meta) addMediaAt(store, transport, meta, transport.t); }}>
         <canvas ref=${canvasRef} class="stagecanvas" role="img" aria-label="Video preview canvas"></canvas>
         ${empty && html`<div class="stageempty"><div class="emptycard"><b>ကဗျာ ဗီဒီယို စတင်ရအောင်</b><ol><li>မီဒီယာ ထည့်ပါ — ဖတ်သံ သို့မဟုတ် ပုံ</li><li>စာတန်း ထည့်ပါ — ကဗျာကို paste လုပ်နိုင်</li><li>Export နှိပ်ပြီး သိမ်းပါ</li></ol><button type="button" class="btn primary" onClick=${() => { addText(store, transport); toast('စာတန်း ထည့်ပြီး', 'ok'); }}>စာတန်း ထည့်ပါ</button></div></div>`}
         ${safe && html`<div class="safearea"><div class="sa outer"></div><div class="sa inner"></div></div>`}
@@ -105,7 +118,7 @@ export function Player({ store, transport, fonts, onMenu }) {
         <button type="button" class="zoomchip" title="Preview zoom out" onClick=${() => setZoomPct((z) => Math.max(25, z - 25))}>−</button>
         <button type="button" class="zoomchip" title="Preview zoom reset" onClick=${() => setZoomPct(100)}>${zoomPct}%</button>
         <button type="button" class="zoomchip" title="Preview zoom in" onClick=${() => setZoomPct((z) => Math.min(200, z + 25))}>+</button>
-        <${IconBtn} name="maximize" size=${18} title=${L('fullscreen') + ' · F'} onClick=${() => { const el = frameRef.current; if (!document.fullscreenElement) el?.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); }} />
+        <${IconBtn} name="maximize" size=${18} title=${L('fullscreen') + ' · F'} onClick=${toggleFs} />
       </div>
     </div>
   </section>`;

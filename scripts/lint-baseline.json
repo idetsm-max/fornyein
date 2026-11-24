@@ -68,7 +68,7 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 159,
+    "lines": 176,
     "long": 8
   },
   "public/v2/tests/unit/engine.test.mjs": {
@@ -152,8 +152,8 @@
     "long": 4
   },
   "public/v2/ui/stage.js": {
-    "lines": 153,
-    "long": 29
+    "lines": 166,
+    "long": 27
   },
   "public/v2/ui/strings.js": {
     "lines": 29,

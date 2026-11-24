@@ -25,7 +25,12 @@ test('core bindings are registered as implemented', () => {
   }
 });
 
-test('planned bindings stay out of the implemented list', () => {
-  assert.ok(all.some((i) => i.done === false));
-  assert.ok(!implementedShortcuts().flatMap((g) => g.items).some((i) => i.done === false));
+test('the implemented list only exposes done bindings', () => {
+  const shown = implementedShortcuts().flatMap((g) => g.items);
+  assert.ok(!shown.some((i) => i.done === false));
+  assert.ok(shown.some((i) => i.keys.startsWith('F')), 'fullscreen key is listed');
+});
+
+test('every listed shortcut is implemented', () => {
+  assert.equal(all.filter((i) => !i.done).length, 0);
 });
