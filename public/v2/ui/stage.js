@@ -1,8 +1,10 @@
 import { html, useState, useEffect, useRef } from './deps.js';
 import { Icon } from './icons.js';
 import { IconBtn, Select, cx } from './widgets.js';
+import { createQualityGovernor } from '../engine/perf.js';
 import { useStore, useTransport } from './hooks.js';
 import { L, H } from './strings.js';
+import { T } from './locale-core.js';
 import { RATIOS, findClip, projectDuration, fmtClock } from '../engine/model.js';
 import { drawFrame, bboxes, measureText } from '../engine/render.js';
 import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, trimClip, splitClip, addMediaAt, addText } from '../engine/actions.js';
@@ -28,6 +30,9 @@ export function Player({ store, transport, fonts, onMenu }) {
   const [w, h] = RATIOS[project.size], dur = projectDuration(project);
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
   const [fsFallback, setFsFallback] = useState(false);
+  const [quality, setQuality] = useState(1);
+  const govRef = useRef(null);
+  if (!govRef.current) govRef.current = createQualityGovernor();
   const toggleFs = () => {
     const el = frameRef.current;
     if (document.fullscreenElement) { document.exitFullscreen?.(); setFsFallback(false); return; }
@@ -50,8 +55,13 @@ export function Player({ store, transport, fonts, onMenu }) {
   useEffect(() => {                                              // draw + place the selection box
     const cv = canvasRef.current; if (!cv) return;
     const now = performance.now(); if (playing && now - lastPaint.current < 1000 / 30) return; lastPaint.current = now;
-    if (cv.width !== dim.cw) cv.width = dim.cw; if (cv.height !== dim.ch) cv.height = dim.ch;
-    const ctx = cv.getContext('2d'); drawFrame(ctx, dim.cw, dim.ch, project, t);
+    const bw = Math.max(64, Math.round(dim.cw * quality)), bh = Math.max(64, Math.round(dim.ch * quality));
+    if (cv.width !== bw) cv.width = bw; if (cv.height !== bh) cv.height = bh;
+    const ctx = cv.getContext('2d');
+    const drawStart = performance.now();
+    drawFrame(ctx, bw, bh, project, t);
+    const nextQuality = govRef.current.sample({ ms: performance.now() - drawStart });
+    if (nextQuality !== quality) setQuality(nextQuality);
     let b = null; const f = sel ? findClip(project, sel) : null;
     const kf = f ? resolvedTransform(f.clip, t) : null, view = f ? { ...f.clip, pos: { ...f.clip.pos, x: kf.x, y: kf.y, scale: kf.scale }, opacity: kf.opacity } : null;
     if (f && f.clip.kind === 'text') b = bboxes.get(sel) || measureText(ctx, dim.cw, dim.ch, view);
@@ -118,6 +128,7 @@ export function Player({ store, transport, fonts, onMenu }) {
         <button type="button" class="zoomchip" title="Preview zoom out" onClick=${() => setZoomPct((z) => Math.max(25, z - 25))}>−</button>
         <button type="button" class="zoomchip" title="Preview zoom reset" onClick=${() => setZoomPct(100)}>${zoomPct}%</button>
         <button type="button" class="zoomchip" title="Preview zoom in" onClick=${() => setZoomPct((z) => Math.min(200, z + 25))}>+</button>
+        ${quality < 1 && html`<span class="zoomchip qbadge" title=${T('Preview quality drops automatically when frames run slow; export stays full quality', 'Frame နှေးရင် preview အရည်အသွေး အလိုအလျောက် ကျမည်၊ export က အပြည့်အရည်အသွေး')}>${Math.round(quality * 100)}%</span>`}
         <${IconBtn} name="maximize" size=${18} title=${L('fullscreen') + ' · F'} onClick=${toggleFs} />
       </div>
     </div>

@@ -24,7 +24,7 @@
     "long": 10
   },
   "public/v2/engine/perf.js": {
-    "lines": 3,
+    "lines": 20,
     "long": 3
   },
   "public/v2/engine/playback.js": {
@@ -72,7 +72,7 @@
     "long": 5
   },
   "public/v2/tests/e2e/tools.js": {
-    "lines": 197,
+    "lines": 215,
     "long": 10
   },
   "public/v2/tests/unit/engine.test.mjs": {
@@ -156,8 +156,8 @@
     "long": 4
   },
   "public/v2/ui/stage.js": {
-    "lines": 166,
-    "long": 27
+    "lines": 177,
+    "long": 28
   },
   "public/v2/ui/strings.js": {
     "lines": 29,

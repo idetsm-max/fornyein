@@ -114,6 +114,24 @@ const ok = (name, cond, extra = '') => {
   const normGain = await page.evaluate(() => window.__store.get().project.tracks.find((t) => t.kind === 'audio').clips.find((c) => c.id === 'ac1')?.gain);
   ok('normalize raises the clip gain', normGain > 2, String(normGain));
 
+  const qState = await page.evaluate(async () => {
+    const { createQualityGovernor } = await import('/v2/engine/perf.js');
+    const g = createQualityGovernor({ downAfter: 3 });
+    const levels = [];
+    for (let i = 0; i < 9; i++) levels.push(g.sample({ ms: 50 }));
+    return { levels: levels.join(','), badge: !!document.querySelector('.qbadge') };
+  });
+  ok('preview quality governor steps 100 -> 75 -> 50%', qState.levels === '1,1,0.75,0.75,0.75,0.5,0.5,0.5,0.5', qState.levels);
+  ok('no quality badge while the preview keeps up', qState.badge === false);
+  const smallDraw = await page.evaluate(async () => {
+    const { drawFrame } = await import('/v2/engine/render.js');
+    const cv = document.createElement('canvas'); cv.width = 240; cv.height = 135;
+    const ctx = cv.getContext('2d');
+    drawFrame(ctx, 240, 135, window.__store.get().project, 0);
+    return ctx.getImageData(0, 0, 240, 135).data.some((v, i) => i % 4 !== 3 && v > 0);
+  });
+  ok('drawFrame paints at a reduced preview size', smallDraw);
+
   await page.evaluate(() => [...document.querySelectorAll('.inspector .tab')].find((b) => /Effects/i.test(b.textContent))?.click());
   await sleep(350);
   await page.evaluate(() => [...document.querySelectorAll('.inspector .frow')].find((r) => /Noise gate/i.test(r.textContent))?.querySelector('input[type=checkbox]')?.click());
