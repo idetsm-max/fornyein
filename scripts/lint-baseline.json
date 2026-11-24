@@ -1,7 +1,7 @@
 {
   "public/v2/editor.css": {
-    "lines": 40,
-    "long": 3
+    "lines": 53,
+    "long": 4
   },
   "public/v2/engine/actions.js": {
     "lines": 208,
@@ -60,7 +60,7 @@
     "long": 2
   },
   "public/v2/main.js": {
-    "lines": 52,
+    "lines": 54,
     "long": 8
   },
   "public/v2/styles.css": {
@@ -72,8 +72,8 @@
     "long": 1
   },
   "public/v2/tests/e2e/layout.js": {
-    "lines": 147,
-    "long": 7
+    "lines": 178,
+    "long": 14
   },
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
@@ -164,8 +164,8 @@
     "long": 4
   },
   "public/v2/ui/stage.js": {
-    "lines": 177,
-    "long": 28
+    "lines": 196,
+    "long": 30
   },
   "public/v2/ui/strings.js": {
     "lines": 29,

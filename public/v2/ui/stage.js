@@ -29,19 +29,32 @@ export function Player({ store, transport, fonts, onMenu }) {
   const empty = !project.tracks.some((track) => track.clips.length);
   const [w, h] = RATIOS[project.size], dur = projectDuration(project);
   const frameRef = useRef(), canvasRef = useRef(), drag = useRef(null), ovKey = useRef('');
-  const [fsFallback, setFsFallback] = useState(false);
+  const [fsFallback, setFsFallback] = useState(false), [fsNative, setFsNative] = useState(false), [ctl, setCtl] = useState(true);
+  const fs = fsNative || fsFallback;
   const [quality, setQuality] = useState(1);
   const govRef = useRef(null);
   if (!govRef.current) govRef.current = createQualityGovernor();
   const toggleFs = () => {
     const el = frameRef.current;
-    if (document.fullscreenElement) { document.exitFullscreen?.(); setFsFallback(false); return; }
+    if (document.fullscreenElement) { document.exitFullscreen?.().catch?.(() => {}); setFsFallback(false); return; }
     if (fsFallback) { setFsFallback(false); return; }
     const req = el?.requestFullscreen?.();
     if (req?.catch) req.catch(() => setFsFallback(true));
     else if (!el?.requestFullscreen) setFsFallback(true);
   };
   const [dim, setDim] = useState({ cw: 960, ch: 540 }), [ov, setOv] = useState(null), lastPaint = useRef(0);
+  useEffect(() => {
+    const onFs = () => setFsNative(document.fullscreenElement === frameRef.current);
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
+  useEffect(() => {
+    if (!fs) return setCtl(true);
+    let timer = setTimeout(() => setCtl(false), 2500);
+    const wake = () => { setCtl(true); clearTimeout(timer); timer = setTimeout(() => setCtl(false), 2500); };
+    window.addEventListener('pointermove', wake);
+    return () => { clearTimeout(timer); window.removeEventListener('pointermove', wake); };
+  }, [fs]);
   const [safe, setSafe] = useState(false), [zoomPct, setZoomPct] = useState(100), [guides, setGuides] = useState({ v: false, h: false });
   useEffect(() => { const onZoom = (e) => setZoomPct(Math.min(200, Math.max(25, +e.detail || 100))); window.addEventListener('fornyein:zoom', onZoom); return () => window.removeEventListener('fornyein:zoom', onZoom); }, []);
 
@@ -72,7 +85,7 @@ export function Player({ store, transport, fonts, onMenu }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape' && fsFallback) { setFsFallback(false); return; }
+      if (e.key === 'Escape' && (fsFallback || document.fullscreenElement)) { document.exitFullscreen?.().catch?.(() => {}); setFsFallback(false); return; }
       if (e.key.toLowerCase() !== 'f' || /input|textarea/i.test(e.target.tagName) || e.ctrlKey || e.metaKey) return;
       e.preventDefault(); toggleFs();
     };
@@ -112,6 +125,12 @@ export function Player({ store, transport, fonts, onMenu }) {
             <${IconBtn} name="copy" size=${16} title="Duplicate · Ctrl+D" onClick=${() => duplicateSelected(store)} /><${IconBtn} name="trash" size=${16} title="Delete" onClick=${() => deleteSelected(store)} /><${IconBtn} name="marker" size=${16} title="Add keyframe at playhead" onClick=${() => { store.edit((d) => { const g = findClip(d, sel); if (g) addKeyframe(g.clip, transport.t); }, { key: 'kf-' + sel }); toast('Keyframe ထည့်ပြီး', 'ok'); }} />
           </div>
           ${['tl', 'tm', 'tr', 'ml', 'mr', 'bl', 'bm', 'br'].map((p) => html`<i class=${'h ' + p} onPointerDown=${(e) => handleDown(e, 'resize')}></i>`)}<i class="rotator" onPointerDown=${(e) => handleDown(e, 'rotate')}></i></div>`}
+        ${fs && html`<div class=${cx('fsctl', !ctl && 'hide')} role="toolbar" aria-label="Fullscreen controls" onPointerDown=${(e) => e.stopPropagation()}>
+          <button type="button" class="playbtn" title=${(playing ? 'Pause' : 'Play') + ' · Space'} onClick=${() => transport.toggle()}><${Icon} name=${playing ? 'pause' : 'play'} size=${20} /></button>
+          <span class="tcode"><b>${fmtClock(t)}</b> / ${fmtClock(dur)}</span>
+          <input class="fsrange" type="range" min="0" max=${Math.max(dur, .01)} step="0.01" value=${t} aria-label="Seek" onInput=${(e) => transport.seek(+e.target.value)} />
+          <${IconBtn} name="close" size=${18} title="ထွက် · Esc" onClick=${toggleFs} />
+        </div>`}
         ${dur === 0 && html`<div class="hint">Text tool မှာ <b>Add text</b> နှိပ်ပါ</div>`}
       </div>
     </div>

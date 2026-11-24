@@ -24,7 +24,7 @@ node scripts/validate-export.mjs <file> --duration 6 --tolerance 0.1
 | **S4/B5 audio clock** | ✅ code + e2e | AudioContext clock ပေါ်တွင် AudioBufferSource scheduling (long media = element path)၊ playhead ကို rAF က ဆက် drive ပြီး ကွာဟမှု 0.12 s ကျော်ရင် reschedule။ e2e: `scheduled=1`, ctx running, media-element `currentTime` ရေး 0 ကြိမ်၊ pause က sources ရပ် |
 | **S6/B6 preview=export** | ✅ code + e2e | `audio-graph.js` တစ်ခုတည်းကို preview/export နှစ်ခုလုံးသုံး (EQ/comp/echo/reverb/loop/duck/fade)၊ deterministic IR၊ render ၂ ခု diff 0။ spectrum A/B capture မလုပ်ရသေး |
 | Unit tests | ✅ ၁၄၇ ခု အားလုံးအောင် | engine 8၊ model-v4 11၊ phase5 7၊ phase6 9၊ phase7 4၊ phase8 3၊ playback 10၊ timeline-commands 13၊ groups-markers 5၊ range 4၊ virtual 4၊ captions 4၊ export-range 4၊ keymap 4၊ toast 4၊ tool-presets 4၊ keyframes 5၊ locale 3၊ curve 4၊ transitions 5၊ mask 3၊ timeline 9 |
-| E2E browser tests | ✅ ၁၆၀ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၅၇ · groups ၅၈ · layout ၃၆ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
+| E2E browser tests | ✅ ၁၆၈ ခု — phase1 ၁၄ + ux ၁၂ + audio ၁၀ + layout ၁၃ + groups ၂၁ + onboarding ၁၅ + tools ၅၇ · groups ၅၈ · layout ၄၄ | `tests/e2e/{phase1,ux,audio,layout,groups,onboarding,tools}.js` (headless Chromium) — page error မရှိ |
 | **S7 CI/lint** | ✅ | `.github/workflows/test.yml`၊ `scripts/lint-lines.mjs` (line budget ratchet) |
 
 `node scripts/validate-export.mjs` ရလဒ်:
@@ -82,6 +82,7 @@ Container ကခွင့်ပြုသော audio codec များအနက
 - **T4**: ←/→ (Shift = ၁ စက္ကန့်)၊ Home/End၊ J/K/L (J = pause + ၁ စက္ကန့် နောက်ဆုတ်)။ e2e စစ်ပြီး။
 - **T2**: Shift-drag = ripple trim၊ Alt-drag edge = roll၊ Alt-drag body = slip၊ Ctrl-drag body = slide၊ N = snap။ e2e roll စစ်ပြီး။
 - **T3 select**: marquee drag on empty timeline area (`ui/marquee.js`)၊ Alt+→ = clips right of playhead။ e2e စစ်ပြီး။
+- **UX Part 1 modes**: `ui/capability.js` gate (မရှိရင် app မဖွင့်၊ diagnostics ကူးယူ)၊ `Tab` က panel နှစ်ခုကို ဖျောက်/ပြ၊ `F` က fullscreen + overlay controls (၂.၅ s idle auto-hide၊ pointer လှုပ်ရင် ပြ၊ `Esc` ထွက်)၊ native fullscreen မရရင် `.frame.fsfallback`။
 - **UX Part 1 workspace**: `ui/layout.js` — `defaults()`/`tlMax()`/`snapToDefault()`/`resizeTo()`၊ splitter keyboard (၁၆/၆၄ px၊ Home၊ Enter)၊ chevron + `CollapsedHandles`၊ key `fn.layout.v1` + legacy migrate၊ resize clamp။ `chrome.js` StatusBar တွင် fps · duration · selection၊ <၁၂၈၀ တွင် CSS ဖျောက်၊ Export ခလုတ်က `fornyein:export` ဖြစ်စေသည်။ e2e: snap/keyboard/aria/collapse+handle/player min/status bar/၃ viewport scroll/persist။
 - **M5b voice cleanup**: `audio-graph.js` — chain ထိပ်တွင် high-pass biquad (10 Hz = ပိတ်)၊ `clip.highpass` က Hz သတ်မှတ်။ `voiceCleanupPatch()` (80 Hz + gate 0.06) ကို inspector Basic tab ရှိ "Clean voice" ခလုတ်က သုံး။ e2e က 40 Hz tone ကို ½ အောက် လျော့ကြောင်း DSP ဖြင့် စစ်။
 - **M7 caption reflow**: `engine/captions.js` ရှိ `reflowCues()` (pure၊ unit ၆) — ရှည်သော ASR/VAD စာကြောင်းကို ၂၈ လုံးအထိ ဖြတ် (မြန်မာစာအတွက် စာလုံးအရေအတွက်၊ Latin အတွက် စကားလုံးအလိုက်)၊ အချိန်ကို စာလုံးအလိုက် ခွဲ၊ cue တစ်ခု ၆ စက္ကန့်အထိ၊ အနည်းဆုံး ၀.၇ စက္ကန့်၊ ထပ်နေသော cue များကို ဖြတ်။ `addAsrLines` က ဒါကို ဖြတ်သုံး။ e2e ၃ ခု။

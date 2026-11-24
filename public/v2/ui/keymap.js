@@ -40,6 +40,7 @@ export const SHORTCUT_GROUPS = [
     { keys: '?', en: 'Show this shortcut list', done: true },
     { keys: 'Esc', en: 'Close menus', done: true },
     { keys: 'F / Esc', en: 'Fullscreen preview (Esc leaves)', done: true },
+    { keys: 'Tab', en: 'Player-only layout (hide both side panels)', done: true },
   ] },
 ];
 

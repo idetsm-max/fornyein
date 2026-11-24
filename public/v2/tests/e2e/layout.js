@@ -140,6 +140,37 @@ const box = (p, sel) => p.evaluate((s) => { const r = document.querySelector(s)?
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('fn.layout.v1') || '{}'));
   ok('layout survives a reload (fn.layout.v1)', Math.abs(afterReload - beforeReload) < 3 && typeof stored.left === 'number', `${beforeReload} -> ${afterReload} ${JSON.stringify(stored)}`);
 
+  await page.keyboard.press('Tab');
+  await sleep(250);
+  const only = await page.evaluate(() => ({ left: getComputedStyle(document.querySelector('.media')).display, insp: getComputedStyle(document.querySelector('.inspector')).display, tl: getComputedStyle(document.querySelector('.timeline')).display }));
+  ok('Tab hides both side panels and keeps the timeline', only.left === 'none' && only.insp === 'none' && only.tl !== 'none', JSON.stringify(only));
+  await page.keyboard.press('Tab');
+  await sleep(250);
+  const restored = await page.evaluate(() => ({ left: getComputedStyle(document.querySelector('.media')).display, insp: getComputedStyle(document.querySelector('.inspector')).display }));
+  ok('Tab again restores both side panels', restored.left !== 'none' && restored.insp !== 'none', JSON.stringify(restored));
+
+  await page.keyboard.press('f');
+  await sleep(500);
+  const fsState = await page.evaluate(() => ({ native: !!document.fullscreenElement, fallback: !!document.querySelector('.frame.fsfallback'), ctl: !!document.querySelector('.fsctl'), play: !!document.querySelector('.fsctl .playbtn'), seek: !!document.querySelector('.fsctl .fsrange') }));
+  ok('F opens the fullscreen preview with overlay controls', (fsState.native || fsState.fallback) && fsState.ctl && fsState.play && fsState.seek, JSON.stringify(fsState));
+  await sleep(2700);
+  ok('fullscreen controls fade after 2.5 s idle', await page.evaluate(() => document.querySelector('.fsctl')?.classList.contains('hide')));
+  await page.mouse.move(720, 420);
+  await sleep(250);
+  ok('moving the pointer brings the controls back', await page.evaluate(() => !document.querySelector('.fsctl')?.classList.contains('hide')));
+  await page.keyboard.press('Escape');
+  await sleep(400);
+  ok('Escape leaves the fullscreen preview', await page.evaluate(() => !document.fullscreenElement && !document.querySelector('.frame.fsfallback') && !document.querySelector('.fsctl')));
+
+  const gate = await browser.newPage();
+  await gate.setViewport({ width: 1440, height: 900 });
+  await gate.evaluateOnNewDocument(() => { delete window.VideoEncoder; delete window.VideoDecoder; });
+  await gate.goto(BASE + '/index.html', { waitUntil: 'networkidle0' });
+  const gateState = await gate.evaluate(() => ({ shown: !!document.querySelector('.gate'), items: [...document.querySelectorAll('.gatemiss li')].map((x) => x.textContent), app: !!document.querySelector('.app') }));
+  ok('capability gate blocks a browser without WebCodecs', gateState.shown && !gateState.app && gateState.items.some((t) => /VideoEncoder/.test(t)), JSON.stringify(gateState));
+  await gate.close();
+  ok('capability gate stays hidden when the APIs exist', await page.evaluate(() => !document.querySelector('.gate')));
+
   ok('no page errors', errors.length === 0, JSON.stringify(errors));
   await browser.close();
   console.log(failed ? `\n${failed} FAILED` : '\nall passed');

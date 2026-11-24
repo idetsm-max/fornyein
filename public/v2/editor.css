@@ -38,3 +38,16 @@
   .thead.text,.thead.audio,.thead.overlay,.trow.text,.trow.audio,.trow.overlay{height:38px}.thead.video,.trow.video{height:46px}
   .tltools{padding:5px 10px}
 }
+.frame.fsfallback{position:fixed;inset:0;margin:auto;z-index:120;transform:none!important;border-radius:0;max-width:100vw;max-height:100vh;box-shadow:none}
+.fsctl{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(12,14,20,.82);border:1px solid rgba(255,255,255,.14);z-index:30;transition:opacity .25s,transform .25s;max-width:min(760px,92%)}
+.fsctl.hide{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(8px)}
+.fsctl .fsrange{width:clamp(120px,40vw,420px);accent-color:var(--accent)}
+.fsctl .tcode{color:#fff;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.gate{height:100vh;display:grid;place-items:center;background:var(--bg);padding:24px}
+.gatecard{max-width:520px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:12px}
+.gatecard h1{margin:0;font-size:20px}
+.gatecard h1,.gatecard .btn{font-family:"Noto Sans Myanmar",Inter,system-ui,sans-serif}
+.gatecard p{margin:0;color:var(--mut);line-height:1.6}
+.gatelogo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#3b8bff,#7d4dff)}
+.gatemiss{margin:0;padding-left:18px;color:var(--tx);display:flex;flex-direction:column;gap:6px}
+.gatecard .btn{align-self:flex-start;margin-top:6px}
