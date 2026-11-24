@@ -71,7 +71,7 @@
 |---|---|---|
 | **Player-only** | `Tab` (input မပါ) | Left panel + Inspector ကို ဝှက် (collapse)၊ Timeline ကျန်၊ Player ကျယ်၊ ထပ်နှိပ် = ပြန်ပြ |
 | **Fullscreen preview** | `F` / Top "Preview" | Browser fullscreen၊ Player အပြည့်၊ **overlay controls** (play, scrub bar, time, exit) ၂.၅ s မလှုပ်ရင် ဖျောက်၊ `Space` play/pause၊ `Esc` ထွက်၊ mouse လှုပ်ရင်ပြ၊ project ကို **playhead မှာ** စ |
-| **Focus mode** (P2) | Shift+Tab | Timeline ပါ ဝှက် |
+| **Focus mode** | Shift+Tab | Timeline ပါ ဝှက် — ✅ (rail/panels/timeline အားလုံး ဝှက်၊ player အပြည့်၊ `.focuspill`) |
 
 ---
 
@@ -168,6 +168,6 @@ Items (အပေါ်ကနေ): `＋ New project` (Ctrl+Alt+N) · `📂 Open�
 | UX-TOP-06 | Settings → Snap/Magnet/Preview quality ပြောင်းရင် ချက်ချင်း သက်ရောက်၊ reload မှာ မှတ်ထား |
 | UX-STB-01 | Status bar fields (Project/Resolution/FPS/Duration/Selection)၊ Resolution နှိပ် → Project settings |
 | UX-STB-02 | Save Project (Ctrl+S) toast "သိမ်းပြီး ✓"၊ ကျဉ်းရင် fields ဖျောက် |
-| UX-GLB-01 | `visibilitychange` မှာ အတင်းသိမ်း (e2e)၊ crash-recovery dialog (flag ဖန်တီးပြီး reload) |
-| UX-GLB-02 | Tab နှစ်ခု → ဒုတိယ read-only banner |
-| UX-GLB-03 | Window title ● unsaved |
+| UX-GLB-01 | `visibilitychange` မှာ အတင်းသိမ်း (e2e)၊ crash-recovery dialog (flag ဖန်တီးပြီး reload) — ✅ e2e ၂ ခု |
+| UX-GLB-02 | Tab နှစ်ခု → ဒုတိယ read-only banner — ✅ (`BroadcastChannel` + takeover) |
+| UX-GLB-03 | Window title ● unsaved — ✅ e2e |

@@ -54,6 +54,7 @@
 | **E1 export** | 🟢 | dialog: range (I/O) + captions burn-in/SRT sidecar (`engine/export-range.js`) |
 | **T6 captions** | 🟢 | SRT import → caption clips (`engine/captions.js`)၊ timeline မှာ dashed outline၊ SRT export ရှိပြီး |
 | **T5 perf** | 🟢 | viewport virtualization (`engine/virtual.js`) + waveform LOD (bars by width) + horizontal scroll |
+| **Global behaviours (UX §၁.၈)** | 🟢 | focus mode (Shift+Tab)၊ window title ●၊ hide/unload အတင်းသိမ်း၊ crash recovery၊ multi-tab read-only (`engine/session.js`) — e2e `session.js` ၁၃ |
 | **T4 transport** | 🟢 | ←/→၊ Home/End၊ J/K/L၊ I/O + loop၊ fit၊ scrub (edge/marker snap + audio burst) |
 
 ### ၂.၂ UI/UX audit (လက်ရှိ UI ကို headless Chromium မှာ တကယ်နှိပ်စမ်းပြီး တွေ့တာ — Nov 2026)

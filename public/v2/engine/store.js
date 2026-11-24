@@ -5,7 +5,8 @@ import { createHistory } from './history.js';
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export function createStore(initialProject) {
   const history = createHistory();
-  let state = { project: initialProject, selection: null, canUndo: false, canRedo: false, undoLabel: '', redoLabel: '' };
+  let state = { project: initialProject, selection: null, canUndo: false, canRedo: false, undoLabel: '', redoLabel: '', readOnly: false };
+  let readOnly = false;
   const subs = new Set();
   const set = (patch) => {
     state = { ...state, ...patch, canUndo: history.canUndo, canRedo: history.canRedo, ...history.labels() };
@@ -15,9 +16,10 @@ export function createStore(initialProject) {
   return {
     get: () => state,
     subscribe: (f) => { subs.add(f); return () => subs.delete(f); },
-    edit(fn, { key = null, label = 'Edit' } = {}) { const draft = clone(state.project); fn(draft); history.record(state.project, key, label); set({ project: draft }); },
-    undo() { const p = history.undo(state.project); if (p) set({ project: p }); },
-    redo() { const p = history.redo(state.project); if (p) set({ project: p }); },
+    edit(fn, { key = null, label = 'Edit' } = {}) { if (readOnly) return; const draft = clone(state.project); fn(draft); history.record(state.project, key, label); set({ project: draft }); },
+    undo() { if (readOnly) return; const p = history.undo(state.project); if (p) set({ project: p }); },
+    redo() { if (readOnly) return; const p = history.redo(state.project); if (p) set({ project: p }); },
+    setReadOnly(v) { readOnly = !!v; set({ readOnly }); },
     select(id) { set({ selection: id }); },
     load(project) { history.reset(); set({ project, selection: null }); },
   };

@@ -36,11 +36,11 @@
     "long": 10
   },
   "public/v2/engine/storage.js": {
-    "lines": 19,
-    "long": 4
+    "lines": 40,
+    "long": 3
   },
   "public/v2/engine/store.js": {
-    "lines": 24,
+    "lines": 26,
     "long": 1
   },
   "public/v2/engine/transport.js": {
@@ -56,11 +56,11 @@
     "long": 2
   },
   "public/v2/layout.css": {
-    "lines": 34,
-    "long": 2
+    "lines": 45,
+    "long": 5
   },
   "public/v2/main.js": {
-    "lines": 59,
+    "lines": 84,
     "long": 8
   },
   "public/v2/styles.css": {
@@ -78,6 +78,10 @@
   "public/v2/tests/e2e/phase1.js": {
     "lines": 50,
     "long": 5
+  },
+  "public/v2/tests/e2e/session.js": {
+    "lines": 81,
+    "long": 6
   },
   "public/v2/tests/e2e/tools.js": {
     "lines": 252,
@@ -106,6 +110,10 @@
   "public/v2/tests/unit/phase8.test.mjs": {
     "lines": 7,
     "long": 3
+  },
+  "public/v2/tests/unit/session.test.mjs": {
+    "lines": 69,
+    "long": 1
   },
   "public/v2/tests/unit/settings.test.mjs": {
     "lines": 49,
@@ -157,6 +165,10 @@
   },
   "public/v2/ui/relink-banner.js": {
     "lines": 34,
+    "long": 1
+  },
+  "public/v2/ui/session-banner.js": {
+    "lines": 29,
     "long": 1
   },
   "public/v2/ui/settings-dialog.js": {

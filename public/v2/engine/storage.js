@@ -1,5 +1,6 @@
 // Projects and imported media are saved in IndexedDB in this browser.
 import { isEmpty } from './model.js';
+import { markRecovery, clearRecovery } from './session.js';
 const DB = 'fornyein2', ST = 'projects', MEDIA = 'media';
 let dbp;
 const db = () => (dbp ||= new Promise((res, rej) => {
@@ -16,4 +17,24 @@ export const saveMedia = async (id, blob) => run('readwrite', (s) => s.put({ id,
 export const loadMedia = async (id) => { const r = await run('readonly', (s) => s.get(id), [MEDIA]); return r?.blob || null; };
 export const deleteMedia = (id) => run('readwrite', (s) => s.delete(id), [MEDIA]);
 export const listMediaIds = async () => new Set(await run('readonly', (s) => s.getAllKeys(), [MEDIA]));
-export function attachAutosave(store, onStatus, getDelay = () => 700) { let timer = null, last = store.get().project; store.subscribe(() => { const p = store.get().project; if (p === last) return; last = p; onStatus('dirty'); clearTimeout(timer); timer = setTimeout(async () => { if (isEmpty(p) && p.name === 'Untitled Project') { onStatus('idle'); return; } onStatus('saving'); try { await saveProject(p); onStatus('saved', Date.now()); } catch { onStatus('error'); } }, getDelay()); }); }
+export function attachAutosave(store, onStatus, getDelay = () => 700) {
+  let timer = null, last = store.get().project, pending = false;
+  const flush = async () => {
+    if (!pending) return;
+    const p = store.get().project;
+    if (isEmpty(p) && p.name === 'Untitled Project') { pending = false; onStatus('idle'); return; }
+    pending = false; onStatus('saving');
+    try { await saveProject(p); onStatus('saved', Date.now()); clearRecovery(); } catch { pending = true; onStatus('error'); }
+  };
+  store.subscribe(() => {
+    const p = store.get().project; if (p === last) return; last = p;
+    pending = true; markRecovery(); onStatus('dirty');
+    clearTimeout(timer); timer = setTimeout(flush, getDelay());
+  });
+  const onHide = () => { if (document.visibilityState === 'hidden') { clearTimeout(timer); flush(); } };
+  const onUnload = (e) => { if (pending) { flush(); e.preventDefault(); e.returnValue = ''; } };
+  document.addEventListener('visibilitychange', onHide);
+  window.addEventListener('pagehide', flush);
+  window.addEventListener('beforeunload', onUnload);
+  return { flush };
+}

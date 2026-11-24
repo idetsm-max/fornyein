@@ -1,4 +1,5 @@
 import { html, render, useEffect, useRef, useState } from './ui/deps.js';
+import { useStore } from './ui/hooks.js';
 import { TopBar, Rail, StatusBar } from './ui/chrome.js';
 import { detectCapabilities, CapabilityGate } from './ui/capability.js';
 import { Toaster, toast } from './ui/toast.js';
@@ -9,7 +10,7 @@ import { Player, Timeline } from './ui/stage.js';
 import { newProject, projectDuration } from './engine/model.js';
 import { createStore } from './engine/store.js';
 import { createTransport } from './engine/transport.js';
-import { attachAutosave, loadProject, saveProject } from './engine/storage.js';
+import { attachAutosave, loadProject, saveProject, listProjects } from './engine/storage.js';
 import { baseFonts, loadR2Fonts } from './engine/fonts.js';
 import { deleteSelected, duplicateSelected, splitClip } from './engine/actions.js';
 import { createAudioController } from './engine/audio.js';
@@ -17,6 +18,8 @@ import { migrate } from './engine/migrate.js';
 import { ContextMenu } from './ui/context-menu.js'; import { Splitters, mainProps, useLayout } from './ui/layout.js';
 import { copyClips, cutClips, pasteClips } from './engine/clipboard.js';
 import { loadSettings, saveSettings } from './engine/settings.js';
+import { createTabLock, hasRecovery, recoveryAge, clearRecovery, CHANNEL } from './engine/session.js';
+import { RecoveryDialog, ReadOnlyBar } from './ui/session-banner.js';
 
 const store = createStore(newProject());
 window.__store = store; // debug/e2e handle
@@ -39,21 +42,43 @@ function App() {
   const [, redrawSave] = useState(0);
   const [layout, setLayout] = useLayout(), shell = mainProps(layout);
   const [settings, setSettings] = useState(loadSettings);
+  const [focus, setFocus] = useState(false), [peer, setPeer] = useState(false), lockRef = useRef(null);
+  const [recovery, setRecovery] = useState(() => (hasRecovery() ? recoveryAge() : 0));
   useEffect(() => { const clean = saveSettings(settings); autosaveMs = clean.autosaveMs; if (clean.theme !== theme) setTheme(clean.theme); }, [settings]);
   useEffect(() => { if (settings.theme !== theme) setSettings((s) => ({ ...s, theme })); }, [theme]);
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const lock = createTabLock({ channel: new BroadcastChannel(CHANNEL), at: Date.now(), onPeer: setPeer });
+    lockRef.current = lock;
+    return () => { lock.close(); lockRef.current = null; };
+  }, []);
+  useEffect(() => { store.setReadOnly(peer); }, [peer]);
+  const projectName = useStore(store, (s) => s.project.name), askedRef = useRef(false);
+  useEffect(() => {
+    if (save.status !== 'saved' || askedRef.current) return;
+    askedRef.current = true;
+    navigator.storage?.persist?.().then((ok) => { if (ok) toast('Browser က ဒေတာမဖျက်အောင် တောင်းထားတယ်', 'ok'); }).catch(() => {});
+  }, [save.status]);
+  useEffect(() => { document.title = `${save.status === 'dirty' ? '● ' : ''}${projectName || 'Untitled Project'} — For Nyein`; }, [save.status, projectName]);
   useEffect(() => { document.documentElement.dataset.theme = theme; try { localStorage.setItem('fn.theme', theme); } catch {} }, [theme]);
   useEffect(() => { const f = () => redrawSave((n) => n + 1), err = (e) => setRuntimeError(e.detail || e.message || String(e)), reject = (e) => setRuntimeError(e.reason?.message || String(e.reason)); window.addEventListener('fn-save', f); window.addEventListener('fn-error', err); window.addEventListener('error', err); window.addEventListener('unhandledrejection', reject); loadR2Fonts().then((x) => setFonts((old) => [...old, ...x])).catch((e) => setRuntimeError(e)); return () => { window.removeEventListener('fn-save', f); window.removeEventListener('fn-error', err); window.removeEventListener('error', err); window.removeEventListener('unhandledrejection', reject); }; }, []);
   const audioRef = useRef(null);
   useEffect(() => { const audio = createAudioController(transport, () => store.get().project, store); audioRef.current = audio; return () => { audio.dispose(); audioRef.current = null; }; }, []);
-  useEffect(() => { const onKey = (e) => { const typing = /input|textarea/i.test(e.target.tagName), mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase(); if (key === 'escape') { setMenu(null); window.dispatchEvent(new Event('fornyein:escape')); return; } if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? store.redo() : store.undo(); } else if (mod && key === 'y') { e.preventDefault(); store.redo(); } else if (mod && key === 'c' && !typing) { e.preventDefault(); copyClips(store); } else if (mod && key === 'x' && !typing) { e.preventDefault(); cutClips(store); } else if (mod && key === 'v' && !typing) { e.preventDefault(); pasteClips(store, transport); } else if (mod && key === 'd' && !typing) { e.preventDefault(); duplicateSelected(store); } else if (mod && key === 's' && !typing) { e.preventDefault(); saveNow(); } else if (mod && key === 'e' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:export')); } else if (e.key === '?' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:shortcuts')); } else if (e.key === 'F2' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:rename')); } else if (((mod && key === 'b') || (!mod && key === 's')) && !typing) { e.preventDefault(); const id = store.get().selection; if (id) splitClip(store, id, transport.t); } else if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) { e.preventDefault(); deleteSelected(store, { ripple: e.shiftKey }); } else if (e.code === 'Space' && !typing) { e.preventDefault(); transport.toggle(); } else if (e.key === 'Tab' && !typing && !mod && !e.altKey && !e.target.closest?.('[role=dialog]')) { e.preventDefault(); setLayout((l) => (l.leftHidden && l.inspHidden ? { ...l, leftHidden: false, inspHidden: false } : { ...l, leftHidden: true, inspHidden: true })); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
+  useEffect(() => { const onKey = (e) => { const typing = /input|textarea/i.test(e.target.tagName), mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase(); if (key === 'escape') { setMenu(null); window.dispatchEvent(new Event('fornyein:escape')); return; } if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? store.redo() : store.undo(); } else if (mod && key === 'y') { e.preventDefault(); store.redo(); } else if (mod && key === 'c' && !typing) { e.preventDefault(); copyClips(store); } else if (mod && key === 'x' && !typing) { e.preventDefault(); cutClips(store); } else if (mod && key === 'v' && !typing) { e.preventDefault(); pasteClips(store, transport); } else if (mod && key === 'd' && !typing) { e.preventDefault(); duplicateSelected(store); } else if (mod && key === 's' && !typing) { e.preventDefault(); saveNow(); } else if (mod && key === 'e' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:export')); } else if (e.key === '?' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:shortcuts')); } else if (e.key === 'F2' && !typing) { e.preventDefault(); window.dispatchEvent(new Event('fornyein:rename')); } else if (((mod && key === 'b') || (!mod && key === 's')) && !typing) { e.preventDefault(); const id = store.get().selection; if (id) splitClip(store, id, transport.t); } else if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) { e.preventDefault(); deleteSelected(store, { ripple: e.shiftKey }); } else if (e.code === 'Space' && !typing) { e.preventDefault(); transport.toggle(); } else if (e.key === 'Tab' && e.shiftKey && !typing && !mod && !e.target.closest?.('[role=dialog]')) { e.preventDefault(); setFocus((v) => !v); } else if (e.key === 'Tab' && !typing && !mod && !e.altKey && !e.target.closest?.('[role=dialog]')) { e.preventDefault(); setLayout((l) => (l.leftHidden && l.inspHidden ? { ...l, leftHidden: false, inspHidden: false } : { ...l, leftHidden: true, inspHidden: true })); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
   const saveNow = async () => { setSave('saving'); try { await saveProject(store.get().project); setSave('saved', Date.now()); toast('သိမ်းပြီးပါပြီ', 'ok'); } catch { setSave('error'); toast('သိမ်းလို့ မရပါ', 'error'); } };
   useLocale();
   const [tour, setTour] = useState(() => { try { return !localStorage.getItem(TOUR_KEY); } catch { return false; } });
   useEffect(() => { const open = () => setTour(true); window.addEventListener('fornyein:tour', open); return () => window.removeEventListener('fornyein:tour', open); }, []);
   const closeTour = () => { setTour(false); try { localStorage.setItem(TOUR_KEY, '1'); } catch { /* private mode */ } };
+  const restoreSession = async () => {
+    setRecovery(0);
+    const list = await listProjects().catch(() => []);
+    if (list[0]) { const p = await loadProject(list[0].id).catch(() => null); if (p) { transport.pause(); store.load(migrate(p)); } }
+    clearRecovery();
+  };
   const onNew = () => { transport.pause(); store.load(newProject()); };
   const onOpen = async (id) => { const p = await loadProject(id).catch(() => null); if (p) { transport.pause(); store.load(migrate(p)); } };
-  return html`<div class="app" role="main" aria-label="For Nyein video editor">${runtimeError && html`<div class="runtimeerror" role="alert"><b>Something went wrong</b><span>${runtimeError}</span><button type="button" onClick=${() => setRuntimeError('')}>Dismiss</button></div>`}<${TopBar} theme=${theme} setTheme=${setTheme} zoom=${zoom} setZoom=${setZoom} store=${store} save=${save} onNew=${onNew} onOpen=${onOpen} onExportJson=${() => downloadProjectJson(store.get().project)} onImportJson=${() => importProjectJson(store, transport)} transport=${transport} layout=${layout} setLayout=${setLayout} settings=${settings} onSettingsChange=${setSettings} /><div class=${shell.class} style=${shell.style}><${Rail} tool=${tool} setTool=${setTool} /><${MediaPanel} tool=${tool} store=${store} transport=${transport} onMenu=${setMenu} /><${Player} store=${store} transport=${transport} fonts=${fonts} onMenu=${setMenu} settings=${settings} /><${Inspector} store=${store} fonts=${fonts} transport=${transport} /><${Timeline} store=${store} transport=${transport} pps=${pps} setPps=${setPps} onMenu=${setMenu} audio=${audioRef} settings=${settings} /><${EffectsPanel} /><${Splitters} layout=${layout} setLayout=${setLayout} /></div>${tour && html`<${CoachTour} onClose=${closeTour} />`}<${Toaster} /><${ContextMenu} menu=${menu} onClose=${() => setMenu(null)} /><${StatusBar} store=${store} settings=${settings} onSave=${() => { const p = store.get().project; import('./engine/storage.js').then(({ saveProject }) => saveProject(p).then(() => setSave('saved', Date.now()))); }} /></div>`;
+  return html`<div class=${'app' + (focus ? ' focusmode' : '')} role="main" aria-label="For Nyein video editor">${runtimeError && html`<div class="runtimeerror" role="alert"><b>Something went wrong</b><span>${runtimeError}</span><button type="button" onClick=${() => setRuntimeError('')}>Dismiss</button></div>`}<${TopBar} theme=${theme} setTheme=${setTheme} zoom=${zoom} setZoom=${setZoom} store=${store} save=${save} onNew=${onNew} onOpen=${onOpen} onExportJson=${() => downloadProjectJson(store.get().project)} onImportJson=${() => importProjectJson(store, transport)} transport=${transport} layout=${layout} setLayout=${setLayout} settings=${settings} onSettingsChange=${setSettings} /><div class=${shell.class} style=${shell.style}><${Rail} tool=${tool} setTool=${setTool} /><${MediaPanel} tool=${tool} store=${store} transport=${transport} onMenu=${setMenu} /><${Player} store=${store} transport=${transport} fonts=${fonts} onMenu=${setMenu} settings=${settings} /><${Inspector} store=${store} fonts=${fonts} transport=${transport} /><${Timeline} store=${store} transport=${transport} pps=${pps} setPps=${setPps} onMenu=${setMenu} audio=${audioRef} settings=${settings} /><${EffectsPanel} /><${Splitters} layout=${layout} setLayout=${setLayout} /></div>${focus && html`<div class="focuspill" role="status">Focus mode · Shift+Tab</div>`}${peer && html`<${ReadOnlyBar} onTakeOver=${() => lockRef.current?.takeOver()} />`}${recovery > 0 && html`<${RecoveryDialog} at=${recovery} onRestore=${restoreSession} onDiscard=${() => { clearRecovery(); setRecovery(0); }} />`}${tour && html`<${CoachTour} onClose=${closeTour} />`}<${Toaster} /><${ContextMenu} menu=${menu} onClose=${() => setMenu(null)} /><${StatusBar} store=${store} settings=${settings} onSave=${() => { const p = store.get().project; import('./engine/storage.js').then(({ saveProject }) => saveProject(p).then(() => setSave('saved', Date.now()))); }} /></div>`;
 }
 const caps = detectCapabilities();
 render(caps.ok ? html`<${App} />` : html`<${CapabilityGate} caps=${caps} />`, document.getElementById('app'));
