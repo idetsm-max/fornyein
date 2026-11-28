@@ -131,6 +131,64 @@ const ok = (name, cond, extra = '') => { if (!cond) failed++; console.log((cond 
   const full = await page.evaluate((t) => window.__frame(t), clips[0].start + 1.5);
   ok('the frame is back to full strength after the fade', Math.abs(full[0][0] - base[0][0]) < 8, JSON.stringify(full[0]));
 
+  await page.evaluate((id) => window.__store.select(id), clips[0].id); await sleep(150);
+  await page.click('.rail [data-tool=effects]'); await sleep(200);
+  ok('the effects panel lists a full library', await page.evaluate(() => document.querySelectorAll('[data-effect]').length >= 15));
+  await page.click('[data-effect=invert]'); await sleep(300);
+  ok('the invert effect lands on the clip stack', await page.evaluate((id) => {
+    const clip = window.__store.get().project.tracks.flatMap((t) => t.clips).find((c) => c.id === id);
+    return clip?.fx?.some((e) => e.id === 'invert' && e.amount === 100);
+  }, clips[0].id));
+  const inv = await page.evaluate((t) => window.__frame(t), t1);
+  ok('invert flips the sampled colour', inv[0][0] < 60 && inv[0][1] > 200, JSON.stringify(inv[0]));
+  const other = await page.evaluate((t) => window.__frame(t), t2);
+  ok('the other clip keeps its own look', Math.abs(other[0][0] - 74) < 12, JSON.stringify(other[0]));
+  await page.click('[data-effect=invert]'); await sleep(300);
+  const off = await page.evaluate((t) => window.__frame(t), t1);
+  ok('toggling the tile off removes the effect', Math.abs(off[0][0] - base[0][0]) < 8, JSON.stringify(off[0]));
+  await page.click('[data-effect=scanlines]'); await sleep(300);
+  const scan = await page.evaluate(async (t) => {
+    const pts = Array.from({ length: 24 }, (_, i) => [0.1 + (i % 6) * 0.14, 0.2 + Math.floor(i / 6) * 0.2]);
+    return window.__frame(t, pts);
+  }, t1);
+  const avg = (rows) => rows.reduce((s, p) => s + p[0] + p[1] + p[2], 0) / rows.length;
+  ok('scanlines darken the frame overall', avg(scan) < avg(base) * 0.92, `${Math.round(avg(scan))} vs ${Math.round(avg(base))}`);
+  await page.click('[data-effects-clear]'); await sleep(300);
+  ok('clear empties the stack', await page.evaluate((id) => {
+    const clip = window.__store.get().project.tracks.flatMap((t) => t.clips).find((c) => c.id === id);
+    return Array.isArray(clip?.fx) && clip.fx.length === 0;
+  }, clips[0].id));
+
+  await page.click('.rail [data-tool=transitions]'); await sleep(200);
+  const dropped = await page.evaluate(() => {
+    const tile = document.querySelector('[data-transition=wipe]');
+    const row = document.querySelector('.trow.video');
+    const clipEl = row?.querySelector('.clip');
+    if (!tile || !clipEl) return null;
+    const dt = new DataTransfer(), r = clipEl.getBoundingClientRect();
+    tile.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+    for (const type of ['dragover', 'drop']) {
+      row.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt, clientX: r.left + 5 }));
+    }
+    return dt.getData('text/x-fornyein-transition');
+  });
+  await sleep(300);
+  ok('dragging a transition tile carries its id', dropped === 'wipe', String(dropped));
+  const bound = await page.evaluate((ids) => {
+    const all = window.__store.get().project.tracks.flatMap((t) => t.clips);
+    const at = (id) => all.find((c) => c.id === id)?.transition;
+    return { first: at(ids[0]), second: at(ids[1]) };
+  }, [clips[0].id, second.id]);
+  ok('the drop binds the in-side of the clip it landed on', bound.first?.in === 'wipe', JSON.stringify(bound));
+  ok('the other clip is untouched by the drop', bound.second?.in !== 'wipe', JSON.stringify(bound.second));
+  const early = await page.evaluate((t) => window.__frame(t), clips[0].start + 0.45);
+  ok('the dropped wipe repaints only the left strip', early[0][0] > 180 && early[1][0] < 120, JSON.stringify(early));
+  await page.evaluate(() => window.__store.undo()); await sleep(250);
+  ok('the drop is one undo step', await page.evaluate((id) => {
+    const clip = window.__store.get().project.tracks.flatMap((t) => t.clips).find((c) => c.id === id);
+    return clip?.transition?.in === 'fade';
+  }, clips[0].id));
+
   await page.screenshot({ path: process.env.SHOT || '/tmp/filters.png' });
   ok('no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
   await browser.close();

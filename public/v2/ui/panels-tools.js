@@ -3,7 +3,7 @@ import { useStore } from './hooks.js';
 import { Slider, cx } from './widgets.js';
 import { findClip } from '../engine/model.js';
 import { addText, insertPreset } from '../engine/actions.js';
-import { EFFECTS, PRESETS } from '../engine/text.js';
+import { PRESETS } from '../engine/text.js';
 import { clipMediaId } from '../engine/clip.js';
 import { FILTER_PRESETS, STICKERS, STICKER_STYLE, TRANSITION_PRESETS, toggleEffect } from './tool-presets.js';
 import { toast } from './toast.js';
@@ -11,6 +11,7 @@ import { L, H } from './strings.js';
 import { myLabel } from './labels-my.js';
 import { TemplatesTool } from './panels-templates.js';
 import { AdjustTool, FiltersTool } from './panels-adjust.js';
+import { EffectsTool } from './panels-effects.js';
 
 const panel = (title, tip, body) => html`<section class="panel tools"><div class="phead"><b>${title}</b><small class="panelhint inline">${tip}</small></div><div class="pbody scroll">${body}</div></section>`;
 const hint = (text) => html`<p class="panelhint">${text}</p>`;
@@ -20,16 +21,6 @@ function useSelected(store) {
   const project = useStore(store, (s) => s.project), sel = useStore(store, (s) => s.selection);
   const found = sel ? findClip(project, sel) : null;
   return { project, clip: found ? found.clip : null };
-}
-
-function EffectsTool({ store }) {
-  const { clip } = useSelected(store), isText = clip?.kind === 'text', active = isText ? clip.style?.effects || [] : [];
-  const apply = (key) => {
-    if (!isText) return toast('Effects အတွက် စာတန်း clip ရွေးပါ', 'error');
-    patch(store, clip.id, (c) => { c.style = { ...c.style, effects: toggleEffect(c.style.effects || [], key) }; }, 'fx-' + clip.id);
-  };
-  return panel(L('effects'), H('effects'), html`${!isText && hint('Effects ကို စာတန်း clip ပေါ်တွင် သုံးနိုင်သည် — စာတန်း clip တစ်ခု ရွေးပါ။')}
-    <div class="fxgrid">${EFFECTS.map(([key, name], i) => html`<button type="button" class=${cx('fxtile', active.includes(key) && 'on')} onClick=${() => apply(key)}><span class=${'fxthumb g' + (i % 8 + 1)}></span><em>${myLabel(name)}</em></button>`)}</div>`);
 }
 
 function TransitionsTool({ store }) {
@@ -45,7 +36,8 @@ function TransitionsTool({ store }) {
   return panel(L('transitions'), H('transitions'), html`${!clip && hint('Transition ထည့်လိုသော clip ကို အရင်ရွေးပါ။')}
     ${dur > 0 && html`<${Slider} label="Duration" value=${dur} min=${0.1} max=${2} step=${0.05} unit="s"
       onChange=${setDur} />`}
-    <div class="fxgrid">${TRANSITION_PRESETS.map((preset) => html`<button type="button" data-transition=${preset.id} class=${cx('fxtile', current === preset.id && 'on')} onClick=${() => apply(preset)}><span class="fxthumb g2"></span><em>${myLabel(preset.name)}</em></button>`)}</div>`);
+    <div class="fxgrid">${TRANSITION_PRESETS.map((preset) => html`<button type="button" data-transition=${preset.id} draggable=${true}
+      onDragStart=${(e) => e.dataTransfer.setData('text/x-fornyein-transition', preset.id)} class=${cx('fxtile', current === preset.id && 'on')} onClick=${() => apply(preset)}><span class="fxthumb g2"></span><em>${myLabel(preset.name)}</em></button>`)}</div>`);
 }
 
 function AudioTool({ store, transport }) {

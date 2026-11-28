@@ -7,7 +7,7 @@ import { L, H } from './strings.js';
 import { T } from './locale-core.js';
 import { RATIOS, findClip, projectDuration, fmtClock } from '../engine/model.js';
 import { drawFrame, bboxes, measureText } from '../engine/render.js';
-import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, trimClip, splitClip, addMediaAt, addText } from '../engine/actions.js';
+import { deleteSelected, deleteClips, duplicateSelected, toggleTrack, trimClip, splitClip, addText } from '../engine/actions.js';
 import { splitClips } from '../engine/timeline.js'; import { applyClipDrag } from './clip-drag.js';
 import { marqueeStyle, useMarquee } from './marquee.js'; import { clipsRightOf } from './timeline-keys.js';
 import { scrubSeek } from './scrub.js'; import { useTimelineScroll } from './tl-scroll.js'; import { clipVisible } from '../engine/virtual.js';
@@ -17,7 +17,7 @@ import { clipMediaId } from '../engine/clip.js';
 import { clipMenu, trackMenu, rulerMenu } from './menus.js';
 import { toast } from './toast.js';
 import { addKeyframe, removeKeyframeAt, resolvedTransform } from '../engine/keyframes.js';
-import { qualityCap, snapSeconds } from '../engine/settings.js';
+import { qualityCap, snapSeconds } from '../engine/settings.js'; import { dropOnTimeline } from '../engine/timeline-drop.js';
 
 export { RATIOS };
 
@@ -178,7 +178,7 @@ export function Timeline({ store, transport, pps, setPps, onMenu, onMixer, audio
   const upClip = () => { gesture.current = null; };
   const split = () => { const id = selectedIds[0] || sel; if (id) splitClip(store, id, transport.t, { snap, snapSec }); };
   const timeAt = (e) => { const el = scrollRef.current, r = el.getBoundingClientRect(); return Math.max(0, (e.clientX - r.left + el.scrollLeft) / pps); };
-  const dropOnTrack = (e, trackId) => { e.preventDefault(); const meta = project.media?.[e.dataTransfer.getData('text/x-fornyein-media')]; if (meta) addMediaAt(store, transport, meta, timeAt(e), { trackId }); setDrop(null); };
+  const dropOnTrack = (e, trackId) => { e.preventDefault(); dropOnTimeline(store, transport, project, trackId, timeAt(e), e.dataTransfer); setDrop(null); };
   const remove = (ripple = false) => { deleteClips(store, selectedIds.length ? selectedIds : [sel], { ripple }); setSelectedIds([]); };
   useEffect(() => transport.subscribe(() => { if (!transport.playing) return; const el = scrollRef.current, x = transport.t * pps; if (el && (x > el.scrollLeft + el.clientWidth - 40 || x < el.scrollLeft)) el.scrollLeft = Math.max(0, x - 60); }), [pps]);
   const zoomVal = Math.round(100 * Math.log(pps / 10) / Math.log(20));

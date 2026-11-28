@@ -49,6 +49,7 @@
 | **S8 stabilization** | 🟢 | `scripts/test-all.sh` gate (lint+unit+known-bugs+e2e)၊ CI e2e job (Chromium + puppeteer-core) |
 | **U1–U3 (G1–G3)** | 🟢 | Inspector registry၊ context menu/clipboard၊ drag & drop — headless e2e `tests/e2e/ux.js` ✅ |
 | **Adjust/Filters (M4a) + Transitions (M4b)** | 🟢 | clip တစ်ခုချင်း grade (`engine/grading.js`)၊ fade duration slider၊ e2e `filters.js` ၁၉ — mono 74/74/74၊ vignette 126 vs 216၊ clip ၂ ခု မတူ၊ fade mid 63 vs 220၊ intensity 0/50/100 |
+| **Effects (M4c)** | 🟢 | `engine/effects.js` — effect ၁၆ stack (`clip.fx`၊ amount 0–100) + overlay (glow/leak/scanlines/grain)၊ e2e `filters.js` — invert 34 vs 215၊ scanlines −18% |
 | **U4–U6** | 🟢 | Splitters/collapse (localStorage)၊ track mute/solo/rename/height၊ razor/fit/Q/W — e2e `tests/e2e/layout.js` ✅ |
 | **T1 command layer** | 🟢 | `engine/timeline.js` + undo labels (`history.js`)၊ unit ၁၃ + property checks |
 | **T3 groups/markers** | 🟢 | link/unlink + group move/delete၊ markers (M / ↑↓ / right-click)၊ marquee select၊ Alt+→ — e2e `groups.js` |
@@ -67,8 +68,8 @@
 | G1 ✅ **ပိတ်ပြီး** (kind→tabs registry) — မူလ: **Inspector tab တွေက clip အမျိုးအစားနဲ့ မကိုက်** — Audio clip ရွေးတာတောင် "Text / Animation / Timing" tab ပြ | selection-driven မဟုတ်၊ အသုံးပြုသူ ရှုပ် |
 | G2 | **Right-click context menu မရှိ** | CapCut သုံးသူ အကျင့်နဲ့ မကိုက် |
 | G3 | **Media tile ကို Timeline ပေါ်ဆွဲချလို့မရ** (`draggable` မရှိ၊ click ပဲ) | CapCut ရဲ့ အဓိကအလုပ်လုပ်ပုံ ပျက် |
-| G4 | **Rail tool ၈ ခုက panel အလွတ်** (Audio, Stickers, Effects, Transitions, Filters, Adjust, Templates, More) — Media/Text ပဲ အလုပ်လုပ် | ခလုတ်နှိပ်ရင် ဘာမှမရှိ |
-| G5 | **ညာဘက်အောက်က Effects/Transitions/Filters panel က demo** (tile နှိပ်လည်း clip မပြောင်း) | ထင်ရှားတဲ့ လှည့်စားမှု |
+| G4 ✅ **ပိတ်ပြီး** — rail tool ၁၀ ခုလုံး panel ရှိ (Media/Text/Audio/Stickers/Effects/Transitions/Filters/Adjust/Templates/More) | e2e `tools.js` |
+| G5 ✅ **ပိတ်ပြီး** — demo panel မရှိတော့၊ tile တိုင်း ရွေးထားတဲ့ clip ကို တကယ်ပြောင်း (filter/intensity၊ effect stack၊ transition+duration) | e2e `filters.js` ၃၁ |
 | G6 | **Panel resize/collapse (splitter) မရှိ** | laptop မျက်နှာပြင်ငယ်မှာ ကျဉ်း |
 | G7 | **Track header** က hide/lock ပဲ — mute/solo/rename/height/reorder မရှိ | |
 | G8 | **Timeline toolbar** မှာ Razor၊ Magnet (main track)၊ Link၊ Marker၊ In/Out၊ Delete-left/right မရှိ | |
@@ -78,7 +79,7 @@
 | G12 ✅ **ပိတ်ပြီး** — zoom select က preview zoom ကို ထိန်း (`fornyein:zoom`) — မူလ: **Top bar** ရဲ့ zoom select က ဘာကိုထိန်းလဲ မရှင်း | |
 | G13 🟢 — UI မြန်မာ/English toggle (`ui/locale.js`) + **inspector/tab/track label ဘာသာပြန် `ui/labels-my.js`**၊ ကျန် microcopy အနည်းငယ် | |
 
-> **ပိတ်ပြီး (v5.1, 2026-11-23)**: **G1** (Inspector registry — U1)၊ **G2** (right-click context menu + clipboard — U2)၊ **G3** (media → timeline/player drag & drop — U3)။ အထောက်အထား = `public/v2/tests/e2e/ux.js` (headless Chromium)။
+> **ပိတ်ပြီး (v5.1, 2026-11-23)**: **G1** (Inspector registry — U1)၊ **G2** (right-click context menu + clipboard — U2)၊ **G3** (media → timeline/player drag & drop — U3)၊ **G4/G5** (rail panel ၁၀ ခုလုံးအလုပ်လုပ်၊ demo panel ဖျက် — e2e `tools.js`/`filters.js`)။ အထောက်အထား = `public/v2/tests/e2e/ux.js` (headless Chromium)။
 
 ---
 
@@ -106,8 +107,8 @@ Rail ကို နှိပ်တိုင်း **ဘယ် panel ပြော�
 | **Audio** | Music (R2 + ကိုယ်ပိုင်) · Sound effects · **Record voiceover** · Extracted audio၊ preview ▶ ကိုနှိပ်ကြား၊ drag→audio track | M1/M5 |
 | **Text** | **Default text** · Presets/Templates (Title, Lower third, Quote, Credits…) · **Captions** (Paste poem၊ Auto-draft၊ SRT import) · Poem Mode · Font manager | M2 |
 | **Stickers** | Shapes · Logos/PNG · (နောက်မှ animated) | M3/M6 |
-| **Effects** | Category (Trending/Basic/Retro/B&W/Blur…)၊ tile နှိပ် → ရွေးထားတဲ့ clip ကို **effect ထည့်** (fx stack)၊ ရွေးထားတာမရှိရင် "adjustment layer" ထည့်ဖို့ ပေး | M4c |
-| **Transitions** | **🟢** ၈ မျိုး + duration slider 0.1–2s၊ preview=export (e2e ကိန်းဂဏန်း) — timeline ပေါ် drop ကျန် | M4b |
+| **Effects** | **🟢** effect ၁၆ (Mono/Sepia/Invert/Vivid/Dream/Noir/Warm/Cool/Old film/VHS/Glow/Light leak/Scanlines/Grain/Blur/Vignette)၊ tile = toggle၊ **amount slider 0–100**၊ Clear၊ စာတန်း clip ဆိုရင် text effect ၁၅။ ရွေးမထားရင် tile နှိပ် → "clip ရွေးပါ" | M4c |
+| **Transitions** | **🟢** ၈ မျိုး + duration slider 0.1–2s၊ preview=export (e2e ကိန်းဂဏန်း)၊ **tile → timeline clip အနားပေါ် drag-drop** (နီးတဲ့ဘက် in/out ကိုပဲ၊ undo ၁ ဆင့် — `engine/timeline-drop.js`) | M4b |
 | **Filters** | **🟢** preset ၇ (Warm/Cool/Vivid/Mono/Dream/Noir) + **intensity 0–100** (`clip.filterIntensity`၊ `scaleAdjust`)၊ ရွေးထားတဲ့ clip ပေါ် သိမ်း | M4a |
 | **Adjust** | **🟢** slider ၈ (brightness/contrast/saturation/temp/tint/fade/vignette/blur) + Reset — Inspector Adjust tab လည်း တူတူ (`ui/panels-adjust.js`) | M4a |
 | **Templates** | Project template / Text template ၊ preview + "Use" | M6 |
@@ -205,7 +206,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | **M1 Core NLE** | S1–S8 (မြန်မာစာ၊ export အသံ၊ `src` v4၊ audio schedule၊ lane၊ audio graph) + T1–T6 (command/tools/selection/scrub/perf/caption) + E1 | **U1 U2 U3 U4 U5 U6 U10 U11 U12(အစ)** | X1–X7 (L3 §၀) + **UX gate**: G1–G3, G6–G8 ပိတ်၊ CapCut-user test (§၇) |
 | **M2 Text & Captions** | text template/animation/SRT/Poem Mode/font manager/Zawgyi | **U8 (Text/Audio panel)**၊ U12 | မြန်မာ corpus ၁၀၀%၊ ကဗျာ ၃ ပုဒ် e2e |
 | **M3 Transform & Keyframes** | `buildFrame`+WebGL2 compositor၊ transform/crop/opacity/fit/canvas bg၊ keyframes | **U7 U9** (+ Stickers panel) | golden frame၊ keyframe preview=export |
-| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | **Adjust/Filters 🟢 clip-scoped** (`engine/grading.js` — brightness/contrast/saturation/temp/tint/fade/vignette/blur၊ `clip.adjust` + media fallback၊ vignette composite)၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ **grading e2e 🟢 `tests/e2e/filters.js` ၁၉ (clip တစ်ခုချင်း၊ mono → 74/74/74၊ vignette 126 vs 216၊ fade mid 63 vs 220)**၊ GPU fallback |
+| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | **Adjust/Filters 🟢 clip-scoped** (`engine/grading.js` — brightness/contrast/saturation/temp/tint/fade/vignette/blur၊ `clip.adjust` + media fallback၊ vignette composite)၊ **Effects 🟢 `clip.fx` stack ၁၆** (`engine/effects.js` + overlay)၊ transition 🟢 + tile drop | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ **grading e2e 🟢 `tests/e2e/filters.js` ၁၉ (clip တစ်ခုချင်း၊ mono → 74/74/74၊ vignette 126 vs 216၊ fade mid 63 vs 220)**၊ GPU fallback |
 | **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | speed time-map 🟢 (`setClipSpeed`၊ `srcTime` reverse)၊ noise reduction/loudness ကျန် | Inspector **Speed tab** 🟢 (0.25×–4×၊ reverse)၊ **Mixer panel 🟢** (`ui/mixer-dialog.js` — volume/pan/mute/solo/ducking + live meter၊ e2e `mixer.js`) | A/V drift ≤၄၀ ms (speed ပါ) |
 | **M6 Templates & Assets** | **project template 🟢 ၅ ခု** (`engine/templates.js` + `ui/panels-templates.js`၊ e2e `templates.js` ၈)၊ text preset၊ asset relink 🟢၊ stickers 🟢 | U8 (Templates/Stickers) | template ၅ ခု ✅ |
 | **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |

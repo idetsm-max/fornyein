@@ -2,6 +2,7 @@
 // the transition transform. Split out of render.js to keep that file small.
 import { transitionState } from './visual.js';
 import { filterString, paintVignette, scaleAdjust } from './grading.js';
+import { effectStack, paintEffects, sumAdjust } from './effects.js';
 import { transitionFx } from './transitions.js';
 import { applyMask } from './mask.js';
 import { clipMediaId, srcTime } from './clip.js';
@@ -52,8 +53,10 @@ export function drawVisual(ctx, cw, ch, project, c, t) {
     if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local;
     if (!c.reverse) item.el.play?.().catch(() => {});
   }
-  const adjust = scaleAdjust(c.adjust || media.adjust, c.filterIntensity ?? 100);
-  const fx = transitionFx(transitionState(c, t), cw, ch), base = filterString(adjust);
+  const stack = effectStack(c.fx);
+  const adjust = sumAdjust(scaleAdjust(c.adjust || media.adjust, c.filterIntensity ?? 100), stack.adjust);
+  const fx = transitionFx(transitionState(c, t), cw, ch);
+  const base = [filterString(adjust), ...stack.css].filter((v) => v && v !== 'none').join(' ');
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, (c.opacity ?? 100) / 100 * fx.alpha));
   ctx.filter = [base === 'none' ? '' : base, fx.blur ? `blur(${fx.blur}px)` : ''].filter(Boolean).join(' ') || 'none';
@@ -65,11 +68,10 @@ export function drawVisual(ctx, cw, ch, project, c, t) {
   const px = (c.pos ? c.pos.x / 100 * cw : cw / 2) + fx.dx;
   const py = (c.pos ? c.pos.y / 100 * ch : ch / 2) + fx.dy;
   const turns = fx.rot || 0;
-  if (turns || adjust.vignette) {
-    ctx.translate(px, py);
-    if (turns) ctx.rotate(turns * Math.PI / 180);
-    ctx.drawImage(item.el, -w / 2, -h / 2, w, h);
-    paintVignette(ctx, w, h, adjust.vignette);
-  } else ctx.drawImage(item.el, px - w / 2, py - h / 2, w, h);
+  ctx.translate(px, py);
+  if (turns) ctx.rotate(turns * Math.PI / 180);
+  ctx.drawImage(item.el, -w / 2, -h / 2, w, h);
+  paintVignette(ctx, w, h, adjust.vignette);
+  paintEffects(ctx, w, h, stack.overlays, t);
   ctx.restore();
 }
