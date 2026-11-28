@@ -189,6 +189,16 @@ const ok = (name, cond, extra = '') => { if (!cond) failed++; console.log((cond 
     return clip?.transition?.in === 'fade';
   }, clips[0].id));
 
+  await page.evaluate((id) => window.__store.select(id), clips[0].id); await sleep(150);
+  await page.click('.inspector [data-tab=mask]'); await sleep(250);
+  await page.click('[data-mask=ellipse]'); await sleep(300);
+  const masked = await page.evaluate((t) => window.__frame(t), t1);
+  ok('an ellipse mask hides the frame corners but keeps the centre', masked[2][0] < 120
+    && Math.abs(masked[3][0] - base[3][0]) < 6 && Math.abs(masked[3][2] - base[3][2]) < 10, JSON.stringify(masked));
+  await page.click('[data-mask=none]'); await sleep(300);
+  const unmasked = await page.evaluate((t) => window.__frame(t), t1);
+  ok('clearing the mask restores the corners', unmasked[2][0] > 180, JSON.stringify(unmasked[2]));
+
   await page.screenshot({ path: process.env.SHOT || '/tmp/filters.png' });
   ok('no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
   await browser.close();

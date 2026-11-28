@@ -9,7 +9,7 @@ export function IconBtn({ name, title, active, onClick, size = 18, disabled, cls
 }
 export function Tabs({ tabs, value, onChange, cls }) {      // tabs = [[id, label, tooltip], ...]
   return html`<div class=${cx('tabs', cls)} role="tablist">${tabs.map(([id, label, tip]) =>
-    html`<button type="button" role="tab" title=${tip || ''} class=${cx('tab', id === value && 'on')} onClick=${() => onChange(id)}>${myLabel(label)}</button>`)}</div>`;
+    html`<button type="button" role="tab" data-tab=${id} title=${tip || ''} class=${cx('tab', id === value && 'on')} onClick=${() => onChange(id)}>${myLabel(label)}</button>`)}</div>`;
 }
 export function Chips({ items, value, onChange }) {
   return html`<div class="chips">${items.map(([id, label, tip]) =>
