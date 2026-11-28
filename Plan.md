@@ -48,7 +48,7 @@
 | **S7 CI/lint** | 🟢 | `scripts/lint-lines.mjs` ratchet ✅; `.github/workflows/test.yml` (unit/lint/syntax/e2e) ကို token `workflow` scope မရှိ၍ repo မတင်၊ local သာ |
 | **S8 stabilization** | 🟢 | `scripts/test-all.sh` gate (lint+unit+known-bugs+e2e)၊ CI e2e job (Chromium + puppeteer-core) |
 | **U1–U3 (G1–G3)** | 🟢 | Inspector registry၊ context menu/clipboard၊ drag & drop — headless e2e `tests/e2e/ux.js` ✅ |
-| **Adjust/Filters (M4a)** | 🟢 | clip တစ်ခုချင်း grade (`engine/grading.js`)၊ e2e `filters.js` ၁၁ — mono 74/74/74၊ vignette 126 vs 216၊ clip ၂ ခု မတူ |
+| **Adjust/Filters (M4a) + Transitions (M4b)** | 🟢 | clip တစ်ခုချင်း grade (`engine/grading.js`)၊ fade duration slider၊ e2e `filters.js` ၁၆ — mono 74/74/74၊ vignette 126 vs 216၊ clip ၂ ခု မတူ၊ fade mid 63 vs 220 |
 | **U4–U6** | 🟢 | Splitters/collapse (localStorage)၊ track mute/solo/rename/height၊ razor/fit/Q/W — e2e `tests/e2e/layout.js` ✅ |
 | **T1 command layer** | 🟢 | `engine/timeline.js` + undo labels (`history.js`)၊ unit ၁၃ + property checks |
 | **T3 groups/markers** | 🟢 | link/unlink + group move/delete၊ markers (M / ↑↓ / right-click)၊ marquee select၊ Alt+→ — e2e `groups.js` |
@@ -107,7 +107,7 @@ Rail ကို နှိပ်တိုင်း **ဘယ် panel ပြော�
 | **Text** | **Default text** · Presets/Templates (Title, Lower third, Quote, Credits…) · **Captions** (Paste poem၊ Auto-draft၊ SRT import) · Poem Mode · Font manager | M2 |
 | **Stickers** | Shapes · Logos/PNG · (နောက်မှ animated) | M3/M6 |
 | **Effects** | Category (Trending/Basic/Retro/B&W/Blur…)၊ tile နှိပ် → ရွေးထားတဲ့ clip ကို **effect ထည့်** (fx stack)၊ ရွေးထားတာမရှိရင် "adjustment layer" ထည့်ဖို့ ပေး | M4c |
-| **Transitions** | **🟢 engine** (၈ မျိုး၊ preview=export) — panel drop/duration slider ကျန် | M4b |
+| **Transitions** | **🟢** ၈ မျိုး + duration slider 0.1–2s၊ preview=export (e2e ကိန်းဂဏန်း) — timeline ပေါ် drop ကျန် | M4b |
 | **Filters** | **🟢** preset ၇ (Warm/Cool/Vivid/Mono/Dream/Noir)၊ ရွေးထားတဲ့ **clip** ပေါ် သိမ်း | M4a |
 | **Adjust** | **🟢** slider ၈ (brightness/contrast/saturation/temp/tint/fade/vignette/blur) + Reset — Inspector Adjust tab လည်း တူတူ (`ui/panels-adjust.js`) | M4a |
 | **Templates** | Project template / Text template ၊ preview + "Use" | M6 |
@@ -205,7 +205,7 @@ Space play/pause · **Ctrl+B / S split** · Delete (Shift=ripple) · **Ctrl+Z / 
 | **M1 Core NLE** | S1–S8 (မြန်မာစာ၊ export အသံ၊ `src` v4၊ audio schedule၊ lane၊ audio graph) + T1–T6 (command/tools/selection/scrub/perf/caption) + E1 | **U1 U2 U3 U4 U5 U6 U10 U11 U12(အစ)** | X1–X7 (L3 §၀) + **UX gate**: G1–G3, G6–G8 ပိတ်၊ CapCut-user test (§၇) |
 | **M2 Text & Captions** | text template/animation/SRT/Poem Mode/font manager/Zawgyi | **U8 (Text/Audio panel)**၊ U12 | မြန်မာ corpus ၁၀၀%၊ ကဗျာ ၃ ပုဒ် e2e |
 | **M3 Transform & Keyframes** | `buildFrame`+WebGL2 compositor၊ transform/crop/opacity/fit/canvas bg၊ keyframes | **U7 U9** (+ Stickers panel) | golden frame၊ keyframe preview=export |
-| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | **Adjust/Filters 🟢 clip-scoped** (`engine/grading.js` — brightness/contrast/saturation/temp/tint/fade/vignette/blur၊ `clip.adjust` + media fallback၊ vignette composite)၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ **grading e2e 🟢 `tests/e2e/filters.js` ၁၁ (clip တစ်ခုချင်း၊ mono → 74/74/74၊ vignette 126 vs 216)**၊ GPU fallback |
+| **M4 Visual FX** (a Adjust/Filters → b Transitions → c Effects → d Mask) | **Adjust/Filters 🟢 clip-scoped** (`engine/grading.js` — brightness/contrast/saturation/temp/tint/fade/vignette/blur၊ `clip.adjust` + media fallback၊ vignette composite)၊ fx stack၊ transition | **U8 (Adjust/Filters/Transitions/Effects panels)** + Inspector Adjust/**Mask 🟢** tab | effect ≥၁၅၊ **transition ≥၈ 🟢 (၈ မျိုး + none)**၊ **mask 🟢 (rect/ellipse + invert)**၊ **grading e2e 🟢 `tests/e2e/filters.js` ၁၆ (clip တစ်ခုချင်း၊ mono → 74/74/74၊ vignette 126 vs 216၊ fade mid 63 vs 220)**၊ GPU fallback |
 | **M5 Audio & Time** (a Noise/Loudness/Ducking → b Speed/Reverse/Freeze) | speed time-map 🟢 (`setClipSpeed`၊ `srcTime` reverse)၊ noise reduction/loudness ကျန် | Inspector **Speed tab** 🟢 (0.25×–4×၊ reverse)၊ **Mixer panel 🟢** (`ui/mixer-dialog.js` — volume/pan/mute/solo/ducking + live meter၊ e2e `mixer.js`) | A/V drift ≤၄၀ ms (speed ပါ) |
 | **M6 Templates & Assets** | **project template 🟢 ၅ ခု** (`engine/templates.js` + `ui/panels-templates.js`၊ e2e `templates.js` ၈)၊ text preset၊ asset relink 🟢၊ stickers 🟢 | U8 (Templates/Stickers) | template ၅ ခု ✅ |
 | **M7 AI/Smart** | Auto captions (benchmark အောင်မှ)၊ bg removal | caption UX | CER ကန့်သတ်ချက်အောက် |

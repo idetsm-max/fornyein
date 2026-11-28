@@ -40,8 +40,12 @@ function TransitionsTool({ store }) {
     toast(preset.name + ' transition သတ်မှတ်ပြီး', 'ok');
   };
   const current = clip?.transition?.in || 'none';
+  const setDur = (v) => patch(store, clip.id, (c) => { c.transition = { ...(c.transition || {}), dur: v }; }, 'trdur-' + clip.id);
+  const dur = clip?.transition?.dur || 0;
   return panel(L('transitions'), H('transitions'), html`${!clip && hint('Transition ထည့်လိုသော clip ကို အရင်ရွေးပါ။')}
-    <div class="fxgrid">${TRANSITION_PRESETS.map((preset) => html`<button type="button" class=${cx('fxtile', current === preset.id && 'on')} onClick=${() => apply(preset)}><span class="fxthumb g2"></span><em>${myLabel(preset.name)}</em></button>`)}</div>`);
+    ${dur > 0 && html`<${Slider} label="Duration" value=${dur} min=${0.1} max=${2} step=${0.05} unit="s"
+      onChange=${setDur} />`}
+    <div class="fxgrid">${TRANSITION_PRESETS.map((preset) => html`<button type="button" data-transition=${preset.id} class=${cx('fxtile', current === preset.id && 'on')} onClick=${() => apply(preset)}><span class="fxthumb g2"></span><em>${myLabel(preset.name)}</em></button>`)}</div>`);
 }
 
 function AudioTool({ store, transport }) {

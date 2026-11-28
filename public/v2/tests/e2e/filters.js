@@ -103,6 +103,24 @@ const ok = (name, cond, extra = '') => { if (!cond) failed++; console.log((cond 
   ok('the first clip keeps its own look', perClip[0][0][0] > 150 && perClip[0][1][2] > 150, JSON.stringify(perClip[0][0]));
   ok('the second clip is graded on its own', Math.abs(perClip[1][0][0] - perClip[1][0][1]) < 14, JSON.stringify(perClip[1][0]));
 
+  await page.evaluate((id) => window.__store.select(id), clips[0].id); await sleep(150);
+  await page.click('.rail [data-tool=transitions]'); await sleep(200);
+  await page.click('[data-transition=fade]'); await sleep(300);
+  ok('a fade transition is applied to the clip', await page.evaluate((id) => {
+    const clip = window.__store.get().project.tracks.flatMap((t) => t.clips).find((c) => c.id === id);
+    return clip?.transition?.in === 'fade' && clip.transition.dur === 0.4;
+  }, clips[0].id));
+  ok('the transition duration slider is wired', await page.evaluate(() => window.__setSlider('Duration', 0.8)));
+  await sleep(300);
+  ok('the longer duration is stored', await page.evaluate((id) => {
+    const clip = window.__store.get().project.tracks.flatMap((t) => t.clips).find((c) => c.id === id);
+    return clip?.transition?.dur === 0.8;
+  }, clips[0].id));
+  const mid = await page.evaluate((t) => window.__frame(t), clips[0].start + 0.2);
+  ok('the fade is rendered mid transition', mid[0][0] < base[0][0] * 0.55 && mid[0][0] > 0, JSON.stringify(mid[0]));
+  const full = await page.evaluate((t) => window.__frame(t), clips[0].start + 1.5);
+  ok('the frame is back to full strength after the fade', Math.abs(full[0][0] - base[0][0]) < 8, JSON.stringify(full[0]));
+
   await page.screenshot({ path: process.env.SHOT || '/tmp/filters.png' });
   ok('no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
   await browser.close();
