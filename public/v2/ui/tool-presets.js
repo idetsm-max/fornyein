@@ -6,12 +6,12 @@ export const STICKERS = ['✨', '💖', '🌸', '🌙', '⭐', '🎵', '🕊️'
 
 export const FILTER_PRESETS = [
   { id: 'none', name: 'မူလ', adjust: {} },
-  { id: 'warm', name: 'Warm', adjust: { brightness: 6, contrast: 6, saturation: 14 } },
-  { id: 'cool', name: 'Cool', adjust: { brightness: 2, contrast: 4, saturation: -8 } },
-  { id: 'vivid', name: 'Vivid', adjust: { contrast: 12, saturation: 32 } },
+  { id: 'warm', name: 'Warm', adjust: { temp: 45, contrast: 6, saturation: 8 } },
+  { id: 'cool', name: 'Cool', adjust: { temp: -40, contrast: 4, saturation: -6 } },
+  { id: 'vivid', name: 'Vivid', adjust: { contrast: 12, saturation: 32, tint: 6 } },
   { id: 'mono', name: 'Mono', adjust: { contrast: 8, saturation: -100 } },
-  { id: 'dream', name: 'Dream', adjust: { brightness: 8, blur: 1, saturation: 10 } },
-  { id: 'noir', name: 'Noir', adjust: { brightness: -6, contrast: 22, saturation: -100 } },
+  { id: 'dream', name: 'Dream', adjust: { brightness: 8, saturation: 10, fade: 30, vignette: 10 } },
+  { id: 'noir', name: 'Noir', adjust: { brightness: -6, contrast: 22, saturation: -100, vignette: 30 } },
 ];
 
 export const TRANSITION_PRESETS = TRANSITION_TYPES.map((id) => ({

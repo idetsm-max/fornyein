@@ -10,6 +10,7 @@ import { toast } from './toast.js';
 import { L, H } from './strings.js';
 import { myLabel } from './labels-my.js';
 import { TemplatesTool } from './panels-templates.js';
+import { AdjustTool, FiltersTool } from './panels-adjust.js';
 
 const panel = (title, tip, body) => html`<section class="panel tools"><div class="phead"><b>${title}</b><small class="panelhint inline">${tip}</small></div><div class="pbody scroll">${body}</div></section>`;
 const hint = (text) => html`<p class="panelhint">${text}</p>`;
@@ -41,30 +42,6 @@ function TransitionsTool({ store }) {
   const current = clip?.transition?.in || 'none';
   return panel(L('transitions'), H('transitions'), html`${!clip && hint('Transition ထည့်လိုသော clip ကို အရင်ရွေးပါ။')}
     <div class="fxgrid">${TRANSITION_PRESETS.map((preset) => html`<button type="button" class=${cx('fxtile', current === preset.id && 'on')} onClick=${() => apply(preset)}><span class="fxthumb g2"></span><em>${myLabel(preset.name)}</em></button>`)}</div>`);
-}
-
-function FiltersTool({ store }) {
-  const { project, clip } = useSelected(store), visual = clip && (clip.kind === 'video' || clip.kind === 'image');
-  const apply = (preset) => {
-    if (!visual) return toast('Filter အတွက် ဗီဒီယို/ပုံ clip ရွေးပါ', 'error');
-    const mediaId = clipMediaId(clip);
-    store.edit((d) => { if (d.media?.[mediaId]) d.media[mediaId].adjust = { ...preset.adjust }; }, { key: 'filter-' + clip.id });
-    toast(preset.name + ' filter သုံးပြီး', 'ok');
-  };
-  const active = visual ? JSON.stringify(project.media?.[clipMediaId(clip)]?.adjust || {}) : '';
-  return panel(L('filters'), H('filters'), html`${!visual && hint('Filter အတွက် ဗီဒီယို သို့မဟုတ် ပုံ clip ရွေးပါ။')}
-    <div class="fxgrid">${FILTER_PRESETS.map((preset) => html`<button type="button" class=${cx('fxtile', active === JSON.stringify(preset.adjust) && 'on')} onClick=${() => apply(preset)}><span class=${'fxthumb g' + (FILTER_PRESETS.indexOf(preset) % 8 + 1)}></span><em>${preset.name}</em></button>`)}</div>`);
-}
-
-function AdjustTool({ store }) {
-  const { project, clip } = useSelected(store), visual = clip && (clip.kind === 'video' || clip.kind === 'image');
-  const media = visual ? project.media?.[clipMediaId(clip)] : null, a = media?.adjust || {};
-  const set = (key, value) => store.edit((d) => { const m = d.media?.[clipMediaId(clip)]; if (m) m.adjust = { ...(m.adjust || {}), [key]: value }; }, { key: 'adjust-' + clip.id });
-  return panel(L('adjust'), H('adjust'), html`${!visual && hint('Adjust အတွက် ဗီဒီယို သို့မဟုတ် ပုံ clip ရွေးပါ။')}
-    <${Slider} label="Brightness" value=${a.brightness || 0} min=${-100} max=${100} onChange=${(v) => set('brightness', v)} />
-    <${Slider} label="Contrast" value=${a.contrast || 0} min=${-100} max=${100} onChange=${(v) => set('contrast', v)} />
-    <${Slider} label="Saturation" value=${a.saturation || 0} min=${-100} max=${100} onChange=${(v) => set('saturation', v)} />
-    <${Slider} label="Blur" value=${a.blur || 0} min=${0} max=${20} onChange=${(v) => set('blur', v)} />`);
 }
 
 function AudioTool({ store, transport }) {

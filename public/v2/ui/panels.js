@@ -6,6 +6,8 @@ import { addKeyframe, clearKeyframes } from '../engine/keyframes.js';
 import { CurveEditor } from './curve-editor.js';
 import { T } from './locale-core.js';
 import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
+import { AdjustPanel } from './panels-adjust.js';
+import { normalizeAdjust } from '../engine/grading.js';
 import { SpeedPanel } from './speed-panel.js';
 import { MaskPanel } from './mask-panel.js';
 import { RelinkBanner } from './relink-banner.js';
@@ -115,7 +117,6 @@ export function Inspector({ store, fonts, transport }) {
   const [W] = RATIOS[project.size], [, H2] = RATIOS[project.size];
   const upd = (key, fn) => store.edit((d) => { const f = findClip(d, sel); if (f) fn(f.clip); }, { key: key + sel });
   const updTrack = (key, fn) => store.edit((d) => { const f = findClip(d, sel); if (f) fn(f.track); }, { key: 'track-' + key + sel });
-  const updMedia = (key, fn) => store.edit((d) => { const f = findClip(d, sel), mid = f?.clip ? clipMediaId(f.clip) : null, m = mid ? d.media?.[mid] : null; if (m) fn(m); }, { key: 'media-' + key + sel });
   const updProject = (key, fn) => store.edit((d) => fn(d), { key: 'project-' + key });
   const kind = c?.kind || 'project', tabKeys = tabsFor(kind);
   useEffect(() => { if (!tabKeys.some((t) => t.key === tab)) setTab(tabKeys[0].key); }, [kind]);
@@ -172,7 +173,7 @@ export function Inspector({ store, fonts, transport }) {
     <${Field} label="Duration" tip="ကြာချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0.1" value=${+c.dur.toFixed(2)} onInput=${(e) => upd('adu', (k) => { k.dur = Math.max(0.1, +e.target.value || 0.1); })} /></label><//>
     `}
   </div></aside>`;
-  if (c.kind === 'video' || c.kind === 'image') { const m = project.media?.[clipMediaId(c)] || {}, a = m.adjust || {}; return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
+  if (c.kind === 'video' || c.kind === 'image') { const m = project.media?.[clipMediaId(c)] || {}, a = normalizeAdjust(c.adjust || m.adjust); return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
     <div class="audioins"><b>${c.name || m.name || (c.kind === 'video' ? 'Video clip' : 'Photo clip')}</b><small>Visual clip settings</small></div>
     ${tab === 'video' && html`<${Field} label="Fit"><${Select} value=${c.fit || 'cover'} onChange=${(v) => upd('fit', (k) => { k.fit = v; })} options=${[['cover', 'Cover'], ['contain', 'Contain']]}/><//>
     <${Slider} label="Opacity" value=${c.opacity ?? 100} min=${0} max=${100} onChange=${(v) => upd('opacity', (k) => { k.opacity = v; })} unit="%" />
@@ -181,10 +182,7 @@ export function Inspector({ store, fonts, transport }) {
     ${tab === 'keys' && html`<${CurveEditor} store=${store} clipId=${c.id} clip=${c} transport=${transport} />`}
     ${tab === 'speed' && html`<${SpeedPanel} store=${store} clipId=${c.id} clip=${c} />`}
     ${tab === 'mask' && html`<${MaskPanel} store=${store} clipId=${c.id} clip=${c} />`}
-    ${tab === 'adjust' && html`<${Slider} label="Brightness" value=${a.brightness || 0} min=${-100} max=${100} onChange=${(v) => updMedia('brightness', (k) => { k.adjust = { ...(k.adjust || {}), brightness: v }; })} unit="%" />
-    <${Slider} label="Contrast" value=${a.contrast || 0} min=${-100} max=${100} onChange=${(v) => updMedia('contrast', (k) => { k.adjust = { ...(k.adjust || {}), contrast: v }; })} unit="%" />
-    <${Slider} label="Saturation" value=${a.saturation || 0} min=${-100} max=${100} onChange=${(v) => updMedia('saturation', (k) => { k.adjust = { ...(k.adjust || {}), saturation: v }; })} unit="%" />
-    <${Slider} label="Blur" value=${a.blur || 0} min=${0} max=${20} onChange=${(v) => updMedia('blur', (k) => { k.adjust = { ...(k.adjust || {}), blur: v }; })} unit="px" />`}
+    ${tab === 'adjust' && html`<${AdjustPanel} store=${store} clip=${c} />`}
     ${tab === 'video' && html`<${Field} label="Transition in"><${Select} value=${c.transition?.in || 'fade'} onChange=${(v) => upd('tin', (k) => { k.transition = { ...(k.transition || {}), in: v }; })} options=${TRANSITION_TYPES.map((id) => [id, TRANSITION_NAMES[id]])}/><//>
     <${Field} label="Transition out"><${Select} value=${c.transition?.out || 'fade'} onChange=${(v) => upd('tout', (k) => { k.transition = { ...(k.transition || {}), out: v }; })} options=${TRANSITION_TYPES.map((id) => [id, TRANSITION_NAMES[id]])}/><//>`}
   </div></aside>`; }
