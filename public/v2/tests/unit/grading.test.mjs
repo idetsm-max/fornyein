@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ADJUST_LABELS, ADJUST_RANGE, DEFAULT_ADJUST, filterString, normalizeAdjust, paintVignette,
+  ADJUST_LABELS, ADJUST_RANGE, DEFAULT_ADJUST, filterString, normalizeAdjust, paintVignette, scaleAdjust,
 } from '../../engine/grading.js';
 import { FILTER_PRESETS } from '../../ui/tool-presets.js';
 
@@ -75,6 +75,20 @@ test('paintVignette covers the clip box with a radial gradient', () => {
   paintVignette(ctx, 200, 100, 100);
   assert.equal(calls[0][0], 'grad');
   assert.deepEqual(calls[1], ['fill', -100, -50, 200, 100]);
+});
+
+test('filter intensity scales every slider proportionally', () => {
+  const half = scaleAdjust({ saturation: -100, brightness: 40, vignette: 50 }, 50);
+  assert.equal(half.saturation, -50);
+  assert.equal(half.brightness, 20);
+  assert.equal(half.vignette, 25);
+  assert.equal(filterString(scaleAdjust({ brightness: 100 }, 0)), 'none');
+});
+
+test('out-of-range intensity is clamped', () => {
+  assert.equal(scaleAdjust({ contrast: 20 }, 500).contrast, 20);
+  assert.equal(scaleAdjust({ contrast: 20 }, -20).contrast, 0);
+  assert.equal(scaleAdjust({ contrast: 20 }, 'x').contrast, 0);
 });
 
 test('filter presets only use known adjust keys and reach the CSS filter', () => {

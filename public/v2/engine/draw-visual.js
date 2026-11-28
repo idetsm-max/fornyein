@@ -1,6 +1,7 @@
 // Visual (photo/video) drawing for drawFrame: media cache, per-clip grading and
 // the transition transform. Split out of render.js to keep that file small.
-import { transitionState, filterString, paintVignette } from './visual.js';
+import { transitionState } from './visual.js';
+import { filterString, paintVignette, scaleAdjust } from './grading.js';
 import { transitionFx } from './transitions.js';
 import { applyMask } from './mask.js';
 import { clipMediaId, srcTime } from './clip.js';
@@ -51,7 +52,7 @@ export function drawVisual(ctx, cw, ch, project, c, t) {
     if (Math.abs(item.el.currentTime - local) > .08) item.el.currentTime = local;
     if (!c.reverse) item.el.play?.().catch(() => {});
   }
-  const adjust = c.adjust || media.adjust || {};
+  const adjust = scaleAdjust(c.adjust || media.adjust, c.filterIntensity ?? 100);
   const fx = transitionFx(transitionState(c, t), cw, ch), base = filterString(adjust);
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, (c.opacity ?? 100) / 100 * fx.alpha));

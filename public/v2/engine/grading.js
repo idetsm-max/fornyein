@@ -23,6 +23,16 @@ export function normalizeAdjust(value = {}) {
   return out;
 }
 
+// A filter preset carries an intensity so the same look can be dialled down
+// without re-editing every slider.
+export function scaleAdjust(value, intensity = 100) {
+  const a = normalizeAdjust(value), pct = clamp(Number(intensity) || 0, 0, 100) / 100;
+  if (pct >= 1) return a;
+  const out = { ...a };
+  for (const key of Object.keys(out)) out[key] = Math.round(out[key] * pct * 100) / 100;
+  return out;
+}
+
 // Temperature and tint ride on sepia/hue-rotate because CSS filters have no
 // colour-balance primitive; the result is monotonic, which is what the sliders
 // promise.

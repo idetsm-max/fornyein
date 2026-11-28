@@ -69,6 +69,16 @@ const ok = (name, cond, extra = '') => { if (!cond) failed++; console.log((cond 
   const mono = await page.evaluate((t) => window.__frame(t), t1);
   ok('mono collapses the colour channels', Math.abs(mono[0][0] - mono[0][1]) < 14 && Math.abs(mono[0][1] - mono[0][2]) < 14, JSON.stringify(mono[0]));
 
+  ok('the filter intensity slider appears', await page.evaluate(() => window.__setSlider('Intensity', 0)), 'set to 0');
+  await sleep(300);
+  const zeroed = await page.evaluate((t) => window.__frame(t), t1);
+  ok('intensity 0 leaves the photo untouched', Math.abs(zeroed[0][0] - base[0][0]) < 6, JSON.stringify(zeroed[0]));
+  await page.evaluate(() => window.__setSlider('Intensity', 50)); await sleep(300);
+  const half = await page.evaluate((t) => window.__frame(t), t1);
+  ok('intensity 50 halves the effect', half[0][0] < base[0][0] && Math.abs(half[0][1] - half[0][2]) < 8
+    && half[0][0] > 100, JSON.stringify(half[0]));
+  await page.evaluate(() => window.__setSlider('Intensity', 100)); await sleep(300);
+
   await page.click('.rail [data-tool=adjust]'); await sleep(150);
   ok('the vignette slider is wired', await page.evaluate(() => window.__setSlider('Vignette', 100)));
   await sleep(300);

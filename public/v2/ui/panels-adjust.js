@@ -44,16 +44,21 @@ export function FiltersTool({ store }) {
   const current = visual ? normalizeAdjust(clip.adjust) : null;
   const apply = (preset) => {
     if (!visual) return toast('Filter အတွက် ဗီဒီယို/ပုံ clip ရွေးပါ', 'error');
-    patch(store, clip.id, (c) => { c.adjust = { ...DEFAULT_ADJUST, ...preset.adjust }; }, 'filter-' + clip.id);
+    patch(store, clip.id, (c) => { c.adjust = { ...DEFAULT_ADJUST, ...preset.adjust }; c.filterIntensity = 100; }, 'filter-' + clip.id);
     toast(myLabel(preset.name) + ' filter သုံးပြီး', 'ok');
   };
+  const intensity = clip?.filterIntensity ?? 100;
+  const hasLook = visual && Object.keys(DEFAULT_ADJUST).some((k) => current?.[k]);
+  const setIntensity = (v) => patch(store, clip.id, (c) => { c.filterIntensity = v; }, 'fint-' + clip.id);
   return panel(L('filters'), H('filters'), html`${!visual && hint('Filter အတွက် ဗီဒီယို သို့မဟုတ် ပုံ clip ရွေးပါ။')}
     <div class="fxgrid">${FILTER_PRESETS.map((preset, i) => {
       const target = { ...DEFAULT_ADJUST, ...preset.adjust };
       const on = visual && JSON.stringify(target) === JSON.stringify(current);
       return html`<button type="button" data-filter=${preset.id} class=${cx('fxtile', on && 'on')}
         onClick=${() => apply(preset)}><span class=${'fxthumb g' + (i % 8 + 1)}></span><em>${myLabel(preset.name)}</em></button>`;
-    })}</div>`);
+    })}</div>
+    ${hasLook && html`<${Slider} label=${myLabel('Intensity')} value=${intensity} min=${0} max=${100}
+      onChange=${setIntensity} />`}`);
 }
 
 export function AdjustTool({ store }) {

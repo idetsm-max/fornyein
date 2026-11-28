@@ -7,7 +7,7 @@ import { CurveEditor } from './curve-editor.js';
 import { T } from './locale-core.js';
 import { TRANSITION_TYPES, TRANSITION_NAMES } from '../engine/transitions.js';
 import { AdjustPanel } from './panels-adjust.js';
-import { normalizeAdjust } from '../engine/grading.js';
+import { normalizeAdjust, scaleAdjust } from '../engine/grading.js';
 import { SpeedPanel } from './speed-panel.js';
 import { MaskPanel } from './mask-panel.js';
 import { RelinkBanner } from './relink-banner.js';
@@ -173,7 +173,7 @@ export function Inspector({ store, fonts, transport }) {
     <${Field} label="Duration" tip="ကြာချိန်"><label class="xy"><em>s</em><input type="number" step="0.1" min="0.1" value=${+c.dur.toFixed(2)} onInput=${(e) => upd('adu', (k) => { k.dur = Math.max(0.1, +e.target.value || 0.1); })} /></label><//>
     `}
   </div></aside>`;
-  if (c.kind === 'video' || c.kind === 'image') { const m = project.media?.[clipMediaId(c)] || {}, a = normalizeAdjust(c.adjust || m.adjust); return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
+  if (c.kind === 'video' || c.kind === 'image') { const m = project.media?.[clipMediaId(c)] || {}, a = scaleAdjust(c.adjust || m.adjust, c.filterIntensity ?? 100); return html`<aside class="panel inspector">${tabs}<div class="pbody scroll">
     <div class="audioins"><b>${c.name || m.name || (c.kind === 'video' ? 'Video clip' : 'Photo clip')}</b><small>Visual clip settings</small></div>
     ${tab === 'video' && html`<${Field} label="Fit"><${Select} value=${c.fit || 'cover'} onChange=${(v) => upd('fit', (k) => { k.fit = v; })} options=${[['cover', 'Cover'], ['contain', 'Contain']]}/><//>
     <${Slider} label="Opacity" value=${c.opacity ?? 100} min=${0} max=${100} onChange=${(v) => upd('opacity', (k) => { k.opacity = v; })} unit="%" />
